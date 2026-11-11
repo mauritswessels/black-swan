@@ -15,7 +15,7 @@ import { PARAMS as P } from './params';
 import { Rng, seedFrom } from './rng';
 import { taylorRate, toPolicyStep } from './rules';
 import { distanceOutside, targetFor } from './targets';
-import type { Decision, EconomyState, GameOverReason, Guidance, Quarter, Settings } from './types';
+import type { Decision, Drivers, EconomyState, GameOverReason, Guidance, Quarter, Settings } from './types';
 
 /** The thaler/aurel rate when the thaler is at its long-run value. */
 const BASE_KST_PER_AUREL = 0.95;
@@ -28,6 +28,11 @@ function lag(history: Quarter[], k: number, pick: (q: Quarter) => number): numbe
   const q = history[Math.max(0, history.length - k)];
   return pick(q);
 }
+
+const ZERO_DRIVERS: Drivers = {
+  gapMomentum: 0, gapRates: 0, gapThaler: 0, gapForeign: 0, gapEnergy: 0, gapCredit: 0, gapShocks: 0,
+  inflMomentum: 0, inflExpectations: 0, inflDemand: 0, inflThaler: 0, inflShocks: 0, inflEnergy: 0,
+};
 
 export const DEFAULT_SETTINGS: Settings = { seed: 1, targetMode: 'range', quarters: 20 };
 
@@ -72,6 +77,9 @@ export function initialState(partial: Partial<Settings> = {}): EconomyState {
       loss: 0,
       errors: zeroErrors,
       events: [],
+      activeEvents: [],
+      surprise: 0,
+      drivers: ZERO_DRIVERS,
     });
   }
   return {
@@ -180,28 +188,25 @@ export function step(state: EconomyState, decision: Decision): EconomyState {
   const risk = P.riskPersistence * prev.risk + Math.max(0, creditGrowth - P.normalCreditGrowth);
 
   // (2) Demand: the IS curve
-  const outputGap =
-    P.demandPersistence * prev.outputGap -
-    P.demandRateEffect * (rEff - P.rStar) -
-    P.demandFxEffect * prev.thaler +
-    P.foreignSpillover * foreignGap +
-    P.fiscalMultiplier * shock.fiscal +
-    P.creditEffect * (creditGrowth - P.normalCreditGrowth) -
-    (P.energyDrag * energyYoY) / 10 +
-    shock.demand +
-    rng.normal(P.noise.output);
+  const gapMomentum = P.demandPersistence * prev.outputGap;
+  const gapRates = -P.demandRateEffect * (rEff - P.rStar);
+  const gapThaler = -P.demandFxEffect * prev.thaler;
+  const gapForeign = P.foreignSpillover * foreignGap;
+  const gapCredit = P.creditEffect * (creditGrowth - P.normalCreditGrowth);
+  const gapEnergy = -(P.energyDrag * energyYoY) / 10;
+  const gapShocks = P.fiscalMultiplier * shock.fiscal + shock.demand;
+  const outputGap = gapMomentum + gapRates + gapThaler + gapForeign + gapCredit + gapEnergy + gapShocks + rng.normal(P.noise.output);
 
   // (3) Inflation: the Phillips curve
   const fxChangeYear = prev.thaler - lag(h, 5, (q) => q.thaler); // change over the year to last quarter
-  const core =
-    P.inflationInertia * prev.core +
-    (1 - P.inflationInertia) * pie +
-    P.phillipsSlope * lag(h, 2, (q) => q.outputGap) -
-    P.fxPassThrough * fxChangeYear +
-    shock.supply +
-    shock.wage +
-    rng.normal(P.noise.core);
-  const headline = core + P.energyWeight * energyYoY + rng.normal(P.noise.headline);
+  const inflMomentum = P.inflationInertia * prev.core;
+  const inflExpectations = (1 - P.inflationInertia) * pie;
+  const inflDemand = P.phillipsSlope * lag(h, 2, (q) => q.outputGap);
+  const inflThaler = -P.fxPassThrough * fxChangeYear;
+  const inflShocks = shock.supply + shock.wage;
+  const core = inflMomentum + inflExpectations + inflDemand + inflThaler + inflShocks + rng.normal(P.noise.core);
+  const inflEnergy = P.energyWeight * energyYoY;
+  const headline = core + inflEnergy + rng.normal(P.noise.headline);
 
   // (5) Unemployment: Okun's law
   const unemployment = P.unemploymentSpeed * prev.unemployment + (1 - P.unemploymentSpeed) * (P.uStar - P.okunCoefficient * outputGap);
@@ -229,6 +234,10 @@ export function step(state: EconomyState, decision: Decision): EconomyState {
     promise = null;
   }
   if (prev.guidance === 'readyToAct' && i < prev.policyRate) credibility -= P.credibilityBrokenGuidance / 2;
+  // Political pressure: the minister demanded a cut last quarter. Cutting now looks like caving in.
+  const pressured = state.activeEvents.some((e) => e.id === 'ministerPressure' && e.startedAt === t - 1);
+  const caved = pressured && i < prev.policyRate;
+  if (caved) credibility -= P.credibilityCaved;
   if (decision.guidance === 'extended' && !promise) promise = { rate: i, madeAt: t };
   if (decision.guidance !== 'extended' && promise && promise.madeAt === t) promise = null;
   credibility = clamp(credibility, 0, 100);
@@ -241,7 +250,8 @@ export function step(state: EconomyState, decision: Decision): EconomyState {
     3 * Math.max(0, target.low - headline) -
     2 * Math.max(0, mortgageRate - 3.5) +
     1.5 * Math.min(0, paperGain);
-  const approval = clamp(prev.approval + P.approvalSpeed * (approvalTarget - prev.approval), 0, 100);
+  const politics = pressured ? (caved ? 3 : -4) : 0; // the government is pleased, or briefs against you
+  const approval = clamp(prev.approval + P.approvalSpeed * (approvalTarget - prev.approval) + politics, 0, 100);
 
   // (4) Expectations for next quarter: anchored by credibility, otherwise backward-looking
   const anchor = P.anchorBase + P.anchorRange * (credibility / 100) ** 2;
@@ -292,6 +302,12 @@ export function step(state: EconomyState, decision: Decision): EconomyState {
     loss,
     errors,
     events: newEvent ? [newEvent] : [],
+    activeEvents: active.map((a) => a.id),
+    surprise,
+    drivers: {
+      gapMomentum, gapRates, gapThaler, gapForeign, gapEnergy, gapCredit, gapShocks,
+      inflMomentum, inflExpectations, inflDemand, inflThaler, inflShocks, inflEnergy,
+    },
   };
 
   // Game-over checks

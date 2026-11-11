@@ -56,6 +56,26 @@ export interface DataErrors {
   outputGap: number;
 }
 
+/**
+ * What pushed the output gap and inflation this quarter, in points. Used to explain
+ * "why did that happen?". Each number is one term of equation 2 or 3 in MODEL.md.
+ */
+export interface Drivers {
+  gapMomentum: number; // carry-over from last quarter
+  gapRates: number; // interest rates (real, with lags)
+  gapThaler: number; // strong or weak currency
+  gapForeign: number; // the Continental Union's economy
+  gapEnergy: number; // energy prices
+  gapCredit: number; // credit boom or squeeze
+  gapShocks: number; // events: confidence, fiscal, pandemic, bank trouble
+  inflMomentum: number; // last quarter's core inflation (inertia)
+  inflExpectations: number; // expected inflation
+  inflDemand: number; // output gap two quarters ago
+  inflThaler: number; // import prices via the exchange rate
+  inflShocks: number; // supply shocks and wage deals
+  inflEnergy: number; // energy prices (headline only)
+}
+
 /** One quarter of the TRUE economy (the player never sees this directly). */
 export interface Quarter {
   t: number;
@@ -90,6 +110,11 @@ export interface Quarter {
   loss: number; // this quarter's loss score (lower is better)
   errors: DataErrors;
   events: string[]; // events that started this quarter
+  /** All events in effect this quarter (including ones that started earlier). */
+  activeEvents: string[];
+  /** How far the rate decision differed from what markets expected (+ = more hawkish). */
+  surprise: number;
+  drivers: Drivers;
 }
 
 export type GameOverReason = 'fired' | 'independenceRemoved' | 'hyperinflation' | 'financialCrisis';

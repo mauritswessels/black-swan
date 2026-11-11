@@ -1,5 +1,25 @@
 # Changelog
 
+## Stage 2: first playable version (2026-11-11)
+
+- Run `npm run dev` to play. A title screen, an appointment letter where you pick the target
+  and the seed, then 20 quarterly meetings and an end-of-term report.
+- War Room screen: the situation with first-estimate tags, an inflation fan chart with the staff
+  forecast (50% and 90% ranges), the five-member committee around the table with advice in
+  their own voices, credibility gauge, approval, market expectations and a news feed.
+- Decision panel: the rate dial, four statements (forward guidance) and currency purchases.
+- After each decision: a newspaper front page with the market reaction.
+- Briefing: "why did that happen?" chains that trace each big move back to its cause,
+  including your own rate changes from quarters ago.
+- Data Room: eight charts and a table of releases and revisions.
+- End-of-term report: score, grade, four sub-grades, a timeline, and how the Taylor rule
+  would have scored on exactly the same luck.
+- Codex with 41 terms (the full 80+ comes in a later stage), shown as tooltips on underlined words.
+- Three save slots plus an autosave; keyboard shortcuts for everything; sound made in code
+  with a mute key; reduced-motion support.
+- New event: the finance minister demands a rate cut (14 events in total).
+- Animation uses CSS rather than the Motion library: it was enough, and keeps the game smaller.
+
 ## Stage 1: the economy engine (2026-11-11)
 
 - Economic model of Kestria: a small open economy New Keynesian model with demand (IS curve),

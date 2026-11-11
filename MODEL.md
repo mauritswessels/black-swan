@@ -224,6 +224,10 @@ Each event pushes on one or more of the equations above (see `src/sim/events.ts`
   Phillips curve. Output and inflation move **in opposite directions**. Rate changes cannot fix
   the cause, so central banks often "look through" them, as long as expectations stay anchored.
 
+- A **political event** (the finance minister demands a cut) has no direct economic effect.
+  If you cut in the next meeting, approval rises by 3 but credibility falls by 5, because markets
+  see a bank that bends to politicians. If you hold firm, approval falls by 4.
+
 Events are paced: none in the 3 quarters after an event starts, so the game has calm spells.
 
 ## 15. The Taylor rule and the score

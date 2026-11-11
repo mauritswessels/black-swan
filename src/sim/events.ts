@@ -9,6 +9,7 @@
  * event starts, so the game has calm stretches as well as crises.
  */
 import { Rng } from './rng';
+
 import type { ActiveEvent, EconomyState, Shocks } from './types';
 
 export type EventKind = 'supply' | 'demand' | 'financial' | 'political' | 'data';
@@ -133,6 +134,19 @@ export const EVENTS: EventDef[] = [
     lesson: 'A demand shock: output and inflation rise together. This is what rate rises are for.',
     probability: () => 0.03,
     effect: (age) => ({ demand: during(age, 0, 2, 0.8) }),
+  },
+  {
+    id: 'ministerPressure',
+    title: 'Finance Minister demands a rate cut',
+    kind: 'political',
+    lesson: 'Central bank independence: giving in may win friends today, but it costs credibility for years.',
+    probability: (s) => {
+      const q = last(s);
+      return 0.01 + (q.approval < 55 ? 0.03 : 0) + (q.unemployment > 3.4 ? 0.04 : 0);
+    },
+    // The economic effect is nothing; the political effect is handled in model.ts:
+    // cutting in the next quarter counts as caving in.
+    effect: () => ({}),
   },
   {
     id: 'dataError',

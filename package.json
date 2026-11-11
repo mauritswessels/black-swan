@@ -1,0 +1,23 @@
+{
+  "name": "black-swan",
+  "version": "0.1.0",
+  "private": true,
+  "description": "An educational strategy game: run the central bank of Kestria.",
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "playtest": "tsx scripts/playtest.ts",
+    "sim": "tsx scripts/sim-one.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vitest": "^2.1.8"
+  }
+}

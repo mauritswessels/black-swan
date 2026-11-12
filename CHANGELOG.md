@@ -1,5 +1,46 @@
 # Changelog
 
+## War game, Stage D: factories, manpower and paying for the war (2026-11-12)
+
+- **An economy for every country.** Civilian and military factories stand in provinces (most in
+  capitals and the industrial regions), so taking or losing land takes or loses industry. An
+  occupier gets 30% of a province's factories and half its steel and oil.
+- **The Economy panel** (key E, or click Treasury, Balance, Inflation or Stability in the top
+  bar): the monthly budget line by line, a tax slider, a slider for how much of a shortfall to
+  borrow and how much to print, rationing, and the reasons behind inflation, the interest rate
+  and stability, biggest first, with charts of inflation and debt.
+- **Three ways to pay, each with a price.** Taxes cost stability and slow the factories. Bonds
+  pile up debt, and lenders ask for more interest as debt grows, as the war goes badly and as
+  they come to expect inflation (i = r + expected inflation). Printed money costs nothing today
+  and turns into inflation over the next few months. Bonds nobody will buy are printed anyway.
+- **Inflation** follows the design document's formula, with expectations that are slow to fade.
+  Over 10% a year stability falls, over 30% factories slow and bonds stop selling, over 100% is
+  hyperinflation. Inflation also melts debt, which is the temptation.
+- **The Production panel** (key P): three production lines (infantry, artillery, armour) that
+  speed up the longer they run, new divisions raised from finished equipment and 15,000 men,
+  a building queue for new factories, conscription laws, and steel and oil.
+- **Guns or butter.** Civilian factories that build are not filling the shops. Take too many
+  and shortages push prices up and stability down.
+- **Losses now cost something.** Damaged divisions refill only from equipment in store and the
+  manpower pool; the free trickle of Stage C is gone. War triples army upkeep.
+- **AI countries run their economies** with a simple finance minister, at peace and at war. The
+  dictatorships accept big deficits to rearm; the democracies do not. Left alone until 1940,
+  Germany grows from 30 to about 120 divisions and France from 32 to about 70.
+- Province details show factories and raw materials, with buttons to build there. News lines
+  report new divisions, finished factories, inflation passing 10, 30 and 100%, and the day the
+  printing starts.
+- 19 new codex entries, 14 of them AP Macroeconomics terms (opportunity cost, real interest
+  rate, quantity theory of money, crowding out, inflation tax and more), plus Mefo bills and
+  Keynes's "How to Pay for the War".
+- Engine: `economy.ts`, `aiEconomy.ts` and `testeconomy.ts`, all pure TypeScript. 84 unit tests
+  (29 new), including bot playtests of four finance policies and of four years of AI peace.
+  `npm run balance` now also runs 24 finance playtests and writes `docs/balance-stage-d.md`.
+- Saves from Stage C no longer load (a save now holds every country's economy).
+
+Not in this stage: roads, forts, airfields and ports in the building queue; trade deals and
+blockade (imports always arrive until the navy exists in Stage G); war support and what else
+moves stability (Stage E); history cards for the economics (Stage H).
+
 ## War game, Stage C: the Map table screen, the first playable version (2026-11-12)
 
 - **The Map table.** The map now fills the window in the "glowing map table" look: glowing

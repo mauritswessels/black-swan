@@ -1,13 +1,16 @@
 /**
- * AI against AI test wars, to check the balance of land combat and supply.
+ * Bot playtests: AI against AI test wars, to check the balance of land combat, supply and
+ * production, and finance playtests, to check what each way of paying for a war costs.
  *
- *   npm run balance            200 wars, writes docs/balance-stage-b.md
+ *   npm run balance            200 wars and 24 finance runs, writes docs/balance-stage-d.md
  *   npm run balance -- 40      a quicker run with fewer wars
  *
  * Every war uses the real 1936 map and starting armies, with both sides led by the simple AI
- * in src/sim/ai.ts. The same command always gives the same report (seeded random numbers).
+ * in src/sim/ai.ts and the AI finance minister in src/sim/aiEconomy.ts. The same command always gives the same report (seeded random numbers).
  */
 import fs from 'node:fs';
+import { COUNTRIES } from '../src/sim/countries';
+import { POLICIES, runFinance } from '../src/sim/testeconomy';
 import { runWar, SCENARIOS, type WarResult } from '../src/sim/testwar';
 
 const total = Number(process.argv[2]) || 200;
@@ -32,46 +35,54 @@ for (const s of SCENARIOS) {
   console.log(rows[rows.length - 1]);
 }
 
-const report = `# Balance report, Stage B: ${all.length} AI against AI wars
+// Finance playtests: each major power on a war footing for four years under four policies.
+const financeRows: string[] = [];
+for (const c of COUNTRIES.filter((k) => k.major)) {
+  for (const p of POLICIES) {
+    const r = runFinance(c.name, p, 4);
+    const start = c.startArmy[0] + c.startArmy[1] + c.startArmy[2];
+    financeRows.push(`| ${c.name} | ${p.name} | ${start} to ${r.divisions} | ${r.militaryFactories} | ${r.peakInflation > 1000 ? 'over 1,000' : Math.round(r.peakInflation)}% | ${r.prices > 100000 ? 'worthless money' : `x ${(r.prices / 100).toFixed(1)}`} | ${Math.round(r.debtRatio * 100)}% | ${Math.round(r.lowestStability)} | ${Math.round(r.output * 100)}% | ${Math.round(r.printedShare * 100)}% |`);
+    console.log(financeRows[financeRows.length - 1]);
+  }
+}
 
-Made by \`npm run balance\`. Do not edit by hand; run the command again instead.
+const report = `# Balance report, Stage D: ${all.length} AI against AI wars and ${financeRows.length} finance playtests
 
-Each war starts on 1 January 1936 with the real map and each country's starting army. The first
-country declares war on the second on day 1 and both are led by the same simple AI. A war ends
-when one side surrenders (enemies hold 60% of its home victory points) or after 2 years, which
-counts as a stalemate. Only the two countries fight; everyone else stays neutral.
+Made by \`npm run balance\`. Do not edit the tables by hand; run the command again instead.
+
+## Wars
+
+Each war starts on 1 January 1936 with the real map and each country's starting army and
+economy. The first country declares war on the second on day 1. Both are led by the same simple
+army AI and the same AI finance minister, which raises new divisions, refills damaged ones and
+pays for it all. A war ends when one side surrenders (enemies hold 60% of its home victory
+points) or after 2 years, which counts as a stalemate. Only the two countries fight.
 
 | War | Divisions at the start | First side wins | Second side wins | Stalemate | Average days to win | Divisions lost, first | Divisions lost, second | Battles | Attacks that succeed | What really happened |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 ${rows.join('\n')}
 
-"Divisions lost" counts strength: 100 points of strength lost is one division, wherever it was lost.
+"Divisions lost" compares strength on the field at the start and the end, so divisions raised
+during the war count against losses and the figure can be zero for a side that grew.
 
-Across all wars, ${Math.round((all.reduce((a, r) => a + r.attackWinShare * r.battles, 0) / Math.max(1, all.reduce((a, r) => a + r.battles, 0))) * 100)}% of attacks on a defended province succeeded.
+## Paying for a war
 
-## What the results say
+Each major power is put at war for four years with a country it cannot reach, so nothing is
+lost in battle and the only difference between runs is how the war is paid for. Conscription is
+"extensive". The AI raises divisions and builds arms factories until the shortfall reaches 20%
+of output; the money policy is fixed:
 
-- **Numbers win, but not quickly.** A country with a clearly bigger army beats a small neighbour in
-  two to four weeks (the Netherlands, Belgium, Czechoslovakia). Evenly matched armies fight for
-  months, and the result can go either way.
-- **1936 is not 1939.** Germany starts with 30 divisions against France's 32, so France usually
-  wins a one-on-one war. That matches the real balance in 1936; Germany's advantage came from
-  rearming, which arrives with factories in Stage D.
-- **Attacks that are launched mostly succeed** because the AI only attacks when it expects to
-  outlast the defenders. With equal numbers an attack fails; it takes about 2 to 1 on open
-  ground and far more into hills or mountains.
-- **Mountain borders freeze.** Italy and Yugoslavia touch along a single mountain province that
-  can supply only 7 divisions, so neither side can gather enough to break through, and the AI
-  rightly does not try. France and Italy mostly end the same way in the Alps.
+${POLICIES.map((p) => `- **${p.name}**: ${p.what.toLowerCase()}.`).join('\n')}
 
-## Known weak spots, to revisit in later stages
-
-- Finland falls faster and far more cheaply than in the real Winter War. The game has no
-  winter and no difference in army quality yet (research and leaders come in Stage E).
-- Losses are lower than in real wars of this length. A beaten division retreats with most of
-  its men, and lost strength slowly returns for free until manpower exists (Stage D).
-- The test AI has no memory and no plan beyond the next province. Stage F replaces it.
+| Country | Policy | Divisions | Military factories | Highest inflation | Prices after 4 years | Debt, % of a year's output | Lowest stability | Factory speed at the end | Share of shortfall printed |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+${financeRows.join('\n')}
 `;
 fs.mkdirSync('docs', { recursive: true });
-fs.writeFileSync('docs/balance-stage-b.md', report);
-console.log(`\n${all.length} wars in ${((Date.now() - t0) / 1000).toFixed(1)} s. Report written to docs/balance-stage-b.md`);
+const file = 'docs/balance-stage-d.md';
+// Keep the hand-written notes below the tables when the numbers are refreshed.
+const marker = '\n## What the results say';
+const old = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
+const notes = old.includes(marker) ? old.slice(old.indexOf(marker)) : '';
+fs.writeFileSync(file, report + notes);
+console.log(`\n${all.length} wars and ${financeRows.length} finance runs in ${((Date.now() - t0) / 1000).toFixed(1)} s. Report written to ${file}`);

@@ -3,6 +3,7 @@
  * Used by `npm run balance` and by the "watch a test war" preview in the app.
  */
 import { aiOrders } from './ai';
+import { aiEconomyOrders } from './aiEconomy';
 import { COUNTRIES } from './countries';
 import type { Order, World } from './types';
 import { newWorld, step } from './world';
@@ -33,7 +34,7 @@ export const SCENARIOS: Scenario[] = [
 ];
 
 /** Both countries' orders for today. */
-export const bothSides = (w: World, a: string, b: string): Order[] => [...aiOrders(w, a), ...aiOrders(w, b)];
+export const bothSides = (w: World, a: string, b: string): Order[] => [...aiOrders(w, a), ...aiOrders(w, b), ...aiEconomyOrders(w, a), ...aiEconomyOrders(w, b)];
 
 /** A fresh world in which `attacker` has just declared war on `defender`. */
 export function startWar(attacker: string, defender: string, seed: string): World {

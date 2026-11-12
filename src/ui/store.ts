@@ -5,6 +5,7 @@
 import { create } from 'zustand';
 import { advance } from '../sim/game';
 import { PROVINCES } from '../sim/map';
+import type { EconomyOrder } from '../sim/economy';
 import type { Mode, Order, World } from '../sim/types';
 import { atWar } from '../sim/war';
 import { applyOrders, dateLabel, newWorld } from '../sim/world';
@@ -22,7 +23,12 @@ export type Selection =
   | { kind: 'country'; name: string }
   | { kind: 'battle'; id: number }
   | { kind: 'report'; id: number }
-  | { kind: 'reports' };
+  | { kind: 'reports' }
+  | { kind: 'economy' }
+  | { kind: 'production' };
+
+/** An economic order before the player's country is filled in. */
+export type EconomyAction = EconomyOrder extends infer O ? (O extends { country: string } ? Omit<O, 'country'> : never) : never;
 
 export interface News {
   id: number;
@@ -83,6 +89,8 @@ interface Store {
   declareWar: (on: string) => void;
   makePeace: (withCountry: string) => void;
   cycleArmy: (step: 1 | -1) => void;
+  /** Give an order about your economy (taxes, factories, new divisions). It takes effect at once. */
+  economy: (action: EconomyAction) => void;
 }
 
 const MUTE_KEY = 'black-swan:muted';
@@ -132,6 +140,30 @@ function headlines(before: World, after: World): News[] {
     if (!p.capital || before.controller[p.id] === after.controller[p.id] || after.capitulated.includes(p.owner)) continue;
     const to = after.controller[p.id];
     add(to === p.owner ? `${p.owner} retakes ${p.city ?? p.name}` : `${p.city ?? p.name} falls to ${to}`, to === me ? 'good' : p.owner === me ? 'bad' : 'plain', p.id, { kind: 'province', id: p.id });
+  }
+  // Your own economy: new divisions, finished factories and the monthly figures.
+  const was = me ? before.economies[me] : undefined;
+  const now = me ? after.economies[me] : undefined;
+  if (me && was && now && !after.capitulated.includes(me)) {
+    const raised = after.units.filter((u) => u.owner === me && u.id >= before.nextUnitId);
+    if (raised.length) add(raised.length === 1 ? `A new ${raised[0].type} division is ready in ${PROVINCES[raised[0].at].name}` : `${raised.length} new divisions are ready in ${PROVINCES[raised[0].at].name}`, 'good', raised[0].at, { kind: 'units', ids: raised.map((u) => u.id) });
+    for (const p of PROVINCES) {
+      if (after.controller[p.id] !== me) continue;
+      if (after.factories.civ[p.id] > before.factories.civ[p.id]) add(`A civilian factory is finished in ${p.name}`, 'good', p.id, { kind: 'production' });
+      if (after.factories.mil[p.id] > before.factories.mil[p.id]) add(`A military factory is finished in ${p.name}: give it a production line`, 'good', p.id, { kind: 'production' });
+    }
+    if (now.history !== was.history && now.history.length) {
+      const month = now.history[now.history.length - 1];
+      const earlier = now.history[now.history.length - 2];
+      const crossed = (level: number) => was.inflation < level && now.inflation >= level;
+      if (crossed(100)) add('Hyperinflation: prices are rising more than 100% a year', 'bad', undefined, { kind: 'economy' });
+      else if (crossed(30)) add('Inflation passes 30%: factories slow down and bonds stop selling', 'bad', undefined, { kind: 'economy' });
+      else if (crossed(10)) add('Inflation passes 10% a year: people are getting angry', 'bad', undefined, { kind: 'economy' });
+      else if (was.inflation >= 10 && now.inflation < 10) add('Inflation is back under 10% a year', 'good', undefined, { kind: 'economy' });
+      if (month.printed > 0.01 && (!earlier || earlier.printed <= 0.01)) add('The treasury is empty and bonds did not cover the bills: the central bank is printing money', 'bad', undefined, { kind: 'economy' });
+      if (earlier && earlier.stability >= 50 && month.stability < 50) add('Strikes are spreading: stability has fallen below 50', 'bad', undefined, { kind: 'economy' });
+      if (month.shortage > 0.02 && (!earlier || earlier.shortage <= 0.02)) add('Shops are running short of goods', 'bad', undefined, { kind: 'production' });
+    }
   }
   return out;
 }
@@ -284,6 +316,12 @@ export const useGame = create<Store>((set, get) => {
       say(`Peace between ${world.player} and ${other}`, 'plain', { kind: 'country', name: other });
     },
 
+    economy: (action) => {
+      const { world } = get();
+      if (!world?.player || world.capitulated.includes(world.player)) return;
+      give([{ ...action, country: world.player } as Order]);
+    },
+
     cycleArmy: (step) => {
       const { world, selection } = get();
       if (!world?.player) return;
@@ -298,3 +336,5 @@ export const useGame = create<Store>((set, get) => {
 });
 
 if (useGame.getState().muted) sound.setMuted(true);
+// While developing, `game.getState()` in the browser console gives the whole app state.
+if (import.meta.env.DEV) (window as unknown as { game: typeof useGame }).game = useGame;

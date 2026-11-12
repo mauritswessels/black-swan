@@ -98,6 +98,8 @@ export function Help() {
     ['Arrows', 'Move the map'],
     ['+ and -', 'Zoom in and out (or scroll, or pinch)'],
     ['R', 'Battle reports'],
+    ['P', 'Production: factories, new divisions, manpower'],
+    ['E', 'Economy: budget, taxes, debt and inflation'],
     ['X', 'Codex'],
     ['S', 'Save and load'],
     ['M', 'Sound on or off'],

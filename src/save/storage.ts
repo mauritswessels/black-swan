@@ -13,7 +13,7 @@ export const SLOTS = ['auto', '1', '2', '3'] as const;
 export type Slot = (typeof SLOTS)[number];
 
 export interface SaveFile<State = unknown> {
-  version: 5;
+  version: 6;
   /** Shown on the save screen, e.g. "France · 7 March 1936". */
   summary: string;
   state: State;
@@ -24,7 +24,7 @@ const key = (slot: Slot) => `black-swan:war:save:${slot}`;
 
 export function writeSave<State>(slot: Slot, summary: string, state: State): boolean {
   try {
-    const file: SaveFile<State> = { version: 5, summary, state, savedAt: new Date().toISOString() };
+    const file: SaveFile<State> = { version: 6, summary, state, savedAt: new Date().toISOString() };
     localStorage.setItem(key(slot), JSON.stringify(file));
     return true;
   } catch {
@@ -37,7 +37,7 @@ export function readSave<State = unknown>(slot: Slot): SaveFile<State> | null {
     const raw = localStorage.getItem(key(slot));
     if (!raw) return null;
     const file = JSON.parse(raw) as SaveFile<State>;
-    return file.version === 5 ? file : null;
+    return file.version === 6 ? file : null;
   } catch {
     return null;
   }

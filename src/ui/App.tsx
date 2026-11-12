@@ -50,6 +50,8 @@ function useShortcuts() {
       if (k === '.' && !g.running) return g.tick();
       if (k === 'h') return g.halt();
       if (k === 'r') return g.select({ kind: 'reports' });
+      if (k === 'p' && g.world?.player) return g.select({ kind: 'production' });
+      if (k === 'e' && g.world?.player) return g.select({ kind: 'economy' });
       if (k === 'g' && g.selection?.kind === 'units') {
         e.preventDefault();
         g.setOrdering(true);

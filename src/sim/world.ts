@@ -85,11 +85,12 @@ function startingUnits(rng: Rng): Unit[] {
   return units;
 }
 
-export function newWorld(mode: Mode, seedText: string, startDate = '1936-01-01'): World {
+/** `player` is the country the person at the keyboard leads; null means every country is led by the AI. */
+export function newWorld(mode: Mode, seedText: string, startDate = '1936-01-01', player: string | null = null): World {
   const seed = seedFrom(seedText);
   const rng = new Rng(seed);
   const units = startingUnits(rng);
-  return { mode, seed, rng: rng.state, day: 0, startDate, units, nextUnitId: units.length, controller: PROVINCES.map((p) => p.owner), wars: [], capitulated: [], battles: [], nextBattleId: 0, reports: [] };
+  return { mode, player, seed, rng: rng.state, day: 0, startDate, units, nextUnitId: units.length, controller: PROVINCES.map((p) => p.owner), wars: [], capitulated: [], battles: [], nextBattleId: 0, reports: [] };
 }
 
 /** Organisation regained per day of rest with full supply. */
@@ -102,22 +103,9 @@ export const ATTRITION_STRENGTH = 2;
 /** A country surrenders when enemies hold this share of its home victory points. */
 export const SURRENDER_SHARE = 0.6;
 
-/** Advance the world by one day, after applying the orders given today. */
-export function step(world: World, orders: Order[] = []): World {
-  const rng = new Rng(world.rng);
-  const d: Draft = {
-    day: world.day,
-    units: world.units.map((u) => ({ ...u, path: [...u.path] })),
-    controller: [...world.controller],
-    wars: [...world.wars],
-    battles: world.battles.map((b) => ({ ...b, attackers: [...b.attackers], defenders: [...b.defenders], attackerUnits: [...b.attackerUnits], defenderUnits: [...b.defenderUnits], tally: { ...b.tally } })),
-    nextBattleId: world.nextBattleId,
-    reports: [...world.reports],
-  };
-  let capitulated = world.capitulated;
+/** Carry out orders on a world that is being changed. Orders that make no sense are ignored. */
+function giveOrders(d: Pick<Draft, 'units' | 'controller' | 'wars'>, capitulated: string[], orders: Order[]): void {
   const byId = new Map(d.units.map((u) => [u.id, u]));
-
-  // 1. Orders.
   for (const order of orders) {
     if (order.type === 'declareWar' || order.type === 'makePeace') {
       const [a, b] = order.type === 'declareWar' ? [order.by, order.on] : [order.a, order.b];
@@ -140,6 +128,35 @@ export function step(world: World, orders: Order[] = []): World {
       u.path = route;
     }
   }
+}
+
+/**
+ * Give orders without letting a day pass, so that the map can show them while the game is
+ * paused. step(applyOrders(w, orders)) gives the same world as step(w, orders).
+ */
+export function applyOrders(world: World, orders: Order[]): World {
+  if (!orders.length) return world;
+  const d = { units: world.units.map((u) => ({ ...u, path: [...u.path] })), controller: world.controller, wars: [...world.wars] };
+  giveOrders(d, world.capitulated, orders);
+  return { ...world, units: d.units, wars: d.wars };
+}
+
+/** Advance the world by one day, after applying the orders given today. */
+export function step(world: World, orders: Order[] = []): World {
+  const rng = new Rng(world.rng);
+  const d: Draft = {
+    day: world.day,
+    units: world.units.map((u) => ({ ...u, path: [...u.path] })),
+    controller: [...world.controller],
+    wars: [...world.wars],
+    battles: world.battles.map((b) => ({ ...b, attackers: [...b.attackers], defenders: [...b.defenders], attackerUnits: [...b.attackerUnits], defenderUnits: [...b.defenderUnits], tally: { ...b.tally } })),
+    nextBattleId: world.nextBattleId,
+    reports: [...world.reports],
+  };
+  let capitulated = world.capitulated;
+
+  // 1. Orders.
+  giveOrders(d, capitulated, orders);
 
   // 2. Supply, from where everyone stands this morning.
   const levels = supplyLevels(d);

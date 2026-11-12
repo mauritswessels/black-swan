@@ -78,7 +78,7 @@ export function Saves() {
         })}
       </ul>
       <p className="muted" role="status">
-        {msg || 'Saves stay on this computer. The game also autosaves when you start.'}
+        {msg || 'Saves stay on this computer. The game also autosaves on the first of each month and when you go back to the menu.'}
       </p>
     </Shell>
   );
@@ -86,14 +86,24 @@ export function Saves() {
 
 export function Help() {
   const keys: [string, string][] = [
-    ['N', 'New Story game (from the title screen)'],
-    ['F', 'New Free-for-all game (from the title screen)'],
-    ['C', 'Continue from the autosave (from the title screen)'],
+    ['Space', 'Pause or resume'],
+    ['1 to 5', 'Game speed'],
+    ['.', 'Advance one day while paused'],
+    ['Click', 'Select your divisions, or open details of a province, country, foreign army or battle'],
+    ['Shift-click', 'Add another of your counters to the selection'],
+    ['Right-click', 'Send the selected divisions there (attack if the enemy is there). On a trackpad: two-finger click'],
+    ['G', 'Move or attack: then click the destination, or type its name'],
+    ['H', 'Halt the selected divisions'],
+    ['Tab', 'Step through your armies (Shift+Tab goes back), while the map has the focus'],
+    ['Arrows', 'Move the map'],
+    ['+ and -', 'Zoom in and out (or scroll, or pinch)'],
+    ['R', 'Battle reports'],
     ['X', 'Codex'],
     ['S', 'Save and load'],
     ['M', 'Sound on or off'],
     ['?', 'This help'],
-    ['Esc', 'Close a panel'],
+    ['Esc', 'Close a panel or the sidebar'],
+    ['N / F / C', 'On the title screen: Story, Free-for-all, Continue'],
   ];
   return (
     <Shell title="Keyboard shortcuts">

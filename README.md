@@ -4,10 +4,26 @@ A grand-strategy game set in Europe from 1936. You lead a real country through t
 the war that followed, and face what its leaders faced: armies, factories, money, allies and
 public support. It is built to teach the history and the economics as you play.
 
-> **Status: Stage B of the war game.** Divisions now fight battles, need supply, retreat,
-> get surrounded and surrender, and every battle ends with a report that says why it went the
-> way it did. You cannot give orders yourself yet (the Map table screen is Stage C), but you
-> can watch two AI countries fight a test war on the plain map.
+> **Status: Stage C of the war game, the first playable version.** Pick a country, declare
+> war on a neighbour and command your divisions on the Map table: select, march, attack,
+> pause, and read why each battle went the way it did. There is no economy yet, so the army
+> you start with is the army you have.
+
+## How to play (Stage C)
+
+1. Start a game and choose a country. The clock starts paused.
+2. Click a country's name on the map (or any of its provinces, then the country button) and
+   press **Declare war**.
+3. Click one of your counters, for example `FRA 4`, to select those divisions. Shift-click
+   adds another counter.
+4. Right-click a province to send them there (two-finger click on a trackpad). If enemy
+   divisions are in it, they attack. The sidebar shows the **outlook** before you commit.
+5. Press Space to run the clock. Click a battle marker to follow the fight; finished battles
+   appear in the news ticker with the reasons for the result.
+
+Tips: an attack needs about 2 to 1. Attack from several provinces at once so more divisions
+fit into the fight, bring artillery against dug-in defenders, and do not stack more divisions
+in a province than it can feed (see the Supply map mode).
 
 The earlier central bank game is kept, complete and playable, on the branch
 [`central-bank-v0.2`](../../tree/central-bank-v0.2).
@@ -64,12 +80,23 @@ Apple Developer account.
 
 | Key | Does |
 | --- | --- |
-| N / F | New Story game / new Free-for-all game (title screen) |
-| C | Continue from the autosave (title screen) |
+| Space | Pause or resume |
+| 1 to 5 | Game speed |
+| . | Advance one day while paused |
+| Click | Select your divisions, or open the details of anything else |
+| Shift-click | Add another of your counters to the selection |
+| Right-click | Send the selected divisions there (attack if the enemy is there) |
+| G | Move or attack: then click the destination or type its name |
+| H | Halt the selected divisions |
+| Tab | Step through your armies (while the map has the focus) |
+| Arrows, + and - | Move and zoom the map (or drag, scroll and pinch) |
+| R | Battle reports |
 | X | Codex |
 | S | Save and load (3 slots plus an autosave) |
 | M | Sound on or off |
 | ? | All shortcuts |
+| Esc | Close a panel or the sidebar |
+| N / F / C | Title screen: Story, Free-for-all, Continue |
 
 ## How the code is organised
 
@@ -80,7 +107,9 @@ src/sim/          the game engine: pure TypeScript, no UI, fully testable
   supply.ts       depots, links home and how many divisions a province can feed
   war.ts          who is at war with whom
   ai.ts           a simple army commander for AI countries
-  testwar.ts      AI against AI test wars, used by the balance report and the app
+  game.ts         advance(): one day with a player, the AI leading the other side
+  intel.ts        what a country can see (fog of war)
+  testwar.ts      AI against AI test wars, used by the balance report
   map.ts          the provinces, distances, marching speeds and route finding
   countries.ts    the 31 countries of 1936 and their starting armies
   types.ts        the shapes of all engine data
@@ -88,7 +117,9 @@ src/sim/          the game engine: pure TypeScript, no UI, fully testable
 src/content/map/  the 1936 map data (built by scripts/build-map.mjs)
 src/content/      the codex
 src/save/         save slots (whole game state as JSON)
-src/ui/           React screens, charts, widgets, sound and the War Room theme
+src/ui/           React screens, widgets, sound and the War Room theme
+  map/            the Map table: shapes, colours and the map itself
+  screens/        title, choose your country, the Map table, sidebar, overlays
 src-tauri/        the Mac app wrapper (Tauri); you rarely need to touch this
 scripts/          build-map.mjs turns modern map data into 1936 provinces;
                   update.mjs is `npm run update`
@@ -116,8 +147,8 @@ the middle of a modern region are therefore approximate:
 
 ## Plan
 
-See CHANGELOG.md for what is done. Next is Stage B (land combat and supply), then C (the map
-table screen), D (production and war finance), E (research and politics), F (diplomacy and AI),
+See CHANGELOG.md for what is done. Next is Stage D (production and war finance), then E
+(research and politics), F (diplomacy and AI),
 G (navy and air), H (Story mode) and I (polish).
 
 ## History and symbols

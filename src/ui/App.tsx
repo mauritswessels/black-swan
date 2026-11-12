@@ -1,9 +1,8 @@
 import { useEffect } from 'react';
-import { dateLabel } from '../sim/world';
 import { readSave } from '../save/storage';
-import { MapPreview } from './components/MapPreview';
-import { TestWar } from './screens/TestWar';
+import { MapTable } from './screens/MapTable';
 import { Codex, Help, Saves } from './screens/Overlays';
+import { Setup } from './screens/Setup';
 import { Title } from './screens/Title';
 import { useGame } from './store';
 import './screens/screens.css';
@@ -15,8 +14,18 @@ function useShortcuts() {
       const el = e.target as HTMLElement;
       const g = useGame.getState();
       const k = e.key.toLowerCase();
-      if (k === 'escape') return g.setOverlay(null);
-      if (el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'TEXTAREA') return;
+      const typing = el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'TEXTAREA';
+      if (k === 'escape') {
+        if (g.overlay) return g.setOverlay(null);
+        if (g.screen === 'setup') return g.go('title');
+        if (g.screen === 'game') {
+          if (g.ordering) g.setOrdering(false);
+          else g.select(null);
+          (document.querySelector('.mt-map') as HTMLElement | null)?.focus();
+        }
+        return;
+      }
+      if (typing) return;
       if (k === 'm') return g.toggleMute();
       if (k === 'x' || k === '?') {
         e.preventDefault(); // stop the key being typed into the codex search box
@@ -25,54 +34,31 @@ function useShortcuts() {
       }
       if (g.overlay) return;
       if (g.screen === 'title') {
-        if (k === 'n') g.startGame('story');
-        if (k === 'f') g.startGame('freeForAll');
+        if (k === 'n') g.chooseMode('story');
+        if (k === 'f') g.chooseMode('freeForAll');
         if (k === 'c' && readSave('auto')) g.load('auto');
         return;
       }
+      if (g.screen !== 'game') return;
       if (k === 's') return g.setOverlay('saves');
+      if (k === ' ') {
+        // Space on a focused button would also press it, so only the clock reacts.
+        e.preventDefault();
+        return g.setRunning(!g.running);
+      }
+      if (k >= '1' && k <= '5') return g.setSpeed(Number(k));
+      if (k === '.' && !g.running) return g.tick();
+      if (k === 'h') return g.halt();
+      if (k === 'r') return g.select({ kind: 'reports' });
+      if (k === 'g' && g.selection?.kind === 'units') {
+        e.preventDefault();
+        g.setOrdering(true);
+        (document.getElementById('goto') as HTMLInputElement | null)?.focus();
+      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
-}
-
-/** Stand-in for the map screen until Stage C. */
-function Placeholder() {
-  const { world, go, setOverlay, muted, toggleMute } = useGame();
-  const w = world!;
-  return (
-    <div className="shell">
-      <header className="shell-head">
-        <div className="brand">Black Swan · {w.mode === 'story' ? 'Story' : 'Free-for-all'} · {dateLabel(w)}</div>
-        <nav aria-label="Menu">
-          <button className="btn" onClick={() => setOverlay('codex')}>
-            Codex <kbd>X</kbd>
-          </button>
-          <button className="btn" onClick={() => setOverlay('saves')}>
-            Save <kbd>S</kbd>
-          </button>
-          <button className="btn" onClick={toggleMute} aria-pressed={!muted} aria-label={muted ? 'Sound is off' : 'Sound is on'}>
-            {muted ? 'Sound off' : 'Sound on'} <kbd>M</kbd>
-          </button>
-          <button className="btn" onClick={() => go('title')}>
-            Main menu
-          </button>
-        </nav>
-      </header>
-      <main className="shell-body">
-        <div className="glass shell-card rise">
-          <h2>Europe, {dateLabel(w)}</h2>
-          <p className="muted">
-            Stage B: divisions now fight, need supply and can be surrounded. The Map table screen, where you give the orders yourself,
-            arrives in Stage C. Until then you can watch two AI countries fight a test war below.
-          </p>
-          <MapPreview world={w} />
-        </div>
-        <TestWar />
-      </main>
-    </div>
-  );
 }
 
 export function App() {
@@ -81,7 +67,8 @@ export function App() {
   return (
     <>
       {screen === 'title' && <Title />}
-      {screen === 'game' && <Placeholder />}
+      {screen === 'setup' && <Setup />}
+      {screen === 'game' && <MapTable />}
       {overlay === 'codex' && <Codex />}
       {overlay === 'saves' && <Saves />}
       {overlay === 'help' && <Help />}

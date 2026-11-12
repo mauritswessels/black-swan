@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { GLOSSARY } from '../../content/glossary';
 import { readSave, SLOTS, type Slot } from '../../save/storage';
-import { quarterLabel, useGame } from '../store';
+import { useGame } from '../store';
 
 function Shell({ title, children }: { title: string; children: React.ReactNode }) {
   const close = () => useGame.getState().setOverlay(null);
@@ -45,7 +45,7 @@ export function Codex() {
 }
 
 export function Saves() {
-  const { game, save, load, screen } = useGame();
+  const { world, save, load, screen } = useGame();
   const [msg, setMsg] = useState('');
   const label = (slot: Slot) => (slot === 'auto' ? 'Autosave' : `Slot ${slot}`);
   return (
@@ -58,12 +58,12 @@ export function Saves() {
               <div>
                 <b>{label(slot)}</b>
                 <div className="muted">
-                  {f ? `${f.decisions.length} quarters played · next ${quarterLabel(f.decisions.length)} · saved ${new Date(f.savedAt).toLocaleString('en-GB')}` : 'Empty'}
+                  {f ? `${f.summary} · saved ${new Date(f.savedAt).toLocaleString('en-GB')}` : 'Empty'}
                 </div>
               </div>
               <div className="slot-actions">
-                {game && screen === 'game' && slot !== 'auto' && (
-                  <button className="btn" onClick={() => setMsg(save(slot) ? `Saved to ${label(slot)}.` : 'Saving failed: your browser blocked storage.')}>
+                {world && screen === 'game' && slot !== 'auto' && (
+                  <button className="btn" onClick={() => setMsg(save(slot) ? `Saved to ${label(slot)}.` : 'Saving failed: storage is blocked.')}>
                     Save here
                   </button>
                 )}
@@ -78,7 +78,7 @@ export function Saves() {
         })}
       </ul>
       <p className="muted" role="status">
-        {msg || 'Saves live in this browser. The game also autosaves after every quarter.'}
+        {msg || 'Saves stay on this computer. The game also autosaves when you start.'}
       </p>
     </Shell>
   );
@@ -86,12 +86,9 @@ export function Saves() {
 
 export function Help() {
   const keys: [string, string][] = [
-    ['↑ / ↓', 'Raise or lower the rate by 0.25'],
-    ['1 – 4', 'Choose your statement'],
-    ['F', 'Cycle currency purchases (none, 2%, 5% of GDP)'],
-    ['Enter', 'Seal the decision / next quarter'],
-    ['W', 'War Room'],
-    ['D', 'Data Room'],
+    ['N', 'New Story game (from the title screen)'],
+    ['F', 'New Free-for-all game (from the title screen)'],
+    ['C', 'Continue from the autosave (from the title screen)'],
     ['X', 'Codex'],
     ['S', 'Save and load'],
     ['M', 'Sound on or off'],

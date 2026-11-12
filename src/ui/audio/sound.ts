@@ -57,7 +57,7 @@ export const sound = {
   },
   /** A page turning to the next quarter. */
   next: () => tone(300, 0.3, 'sine', 0.06, 0, 600),
-  /** Quiet ambient hum for the committee room. */
+  /** Quiet ambient hum for the war room. */
   startAmbient: () => {
     const a = audio();
     if (!a || !master || drone) return;

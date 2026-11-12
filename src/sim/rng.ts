@@ -6,7 +6,7 @@
  *
  * The generator is "mulberry32": tiny, fast and good enough for a game.
  * Its whole internal state is one 32-bit integer, which we store inside the
- * economy state so saving a game is trivial.
+ * world state so saving a game is trivial.
  */
 
 export class Rng {

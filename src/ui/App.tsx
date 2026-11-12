@@ -1,16 +1,10 @@
 import { useEffect } from 'react';
+import { dateLabel } from '../sim/world';
 import { readSave } from '../save/storage';
-import { GUIDANCE, WarRoom } from './screens/WarRoom';
-import { DataRoom } from './screens/DataRoom';
-import { Intro } from './screens/Intro';
 import { Codex, Help, Saves } from './screens/Overlays';
-import { Reaction } from './screens/Reaction';
-import { Report } from './screens/Report';
 import { Title } from './screens/Title';
-import { quarterLabel, useGame } from './store';
+import { useGame } from './store';
 import './screens/screens.css';
-
-const FX_STEPS = [0, 2, 5];
 
 function useShortcuts() {
   useEffect(() => {
@@ -29,94 +23,75 @@ function useShortcuts() {
       }
       if (g.overlay) return;
       if (g.screen === 'title') {
-        if (k === 'n') g.go('intro');
-        if (k === 'c' && readSave('auto')?.decisions.length) g.load('auto');
+        if (k === 'n') g.startGame('story');
+        if (k === 'f') g.startGame('freeForAll');
+        if (k === 'c' && readSave('auto')) g.load('auto');
         return;
       }
-      if (g.screen === 'intro' && k === 'enter') return g.startGame();
-      if (g.screen !== 'game') return;
       if (k === 's') return g.setOverlay('saves');
-      if (g.phase === 'reaction') {
-        if (k === 'enter') {
-          e.preventDefault();
-          g.continueQuarter();
-        }
-        return;
-      }
-      if (k === 'w') return g.setView('war');
-      if (k === 'd') return g.setView('data');
-      if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        return g.bumpRate(1);
-      }
-      if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        return g.bumpRate(-1);
-      }
-      if (['1', '2', '3', '4'].includes(k)) return g.setGuidance(GUIDANCE[Number(k) - 1].id);
-      if (k === 'f') return g.setFx(FX_STEPS[(FX_STEPS.indexOf(g.draft.fxPurchases) + 1) % FX_STEPS.length]);
-      if (k === 'enter' && el.tagName !== 'BUTTON') {
-        e.preventDefault();
-        g.seal();
-      }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 }
 
-function GameHeader() {
-  const { game, view, setView, setOverlay, muted, toggleMute } = useGame();
-  const s = game!;
+/** Stand-in for the map screen until Stage C. Shows that starting, saving and loading work. */
+function Placeholder() {
+  const { world, go, setOverlay, muted, toggleMute } = useGame();
+  const w = world!;
+  const stages: [string, boolean][] = [
+    ['Stage 0: clean-up and Mac app shell', true],
+    ['Stage A: Europe 1936 map data, countries, the daily clock', false],
+    ['Stage B: land combat, supply and battle reports', false],
+    ['Stage C: the map table screen', false],
+  ];
   return (
-    <header className="game-head">
-      <div className="hl">
-        <span className="rec" aria-hidden="true" />
-        Meeting {Math.min(s.t + 1, s.settings.quarters)} of {s.settings.quarters} · {quarterLabel(s.t)}
-      </div>
-      <div className="hc">
-        <small>Kestrian National Bank</small>
-        Monetary Policy Committee
-      </div>
-      <nav className="hr" aria-label="Screens">
-        <button className={`navb ${view === 'war' ? 'on' : ''}`} onClick={() => setView('war')} aria-pressed={view === 'war'}>
-          War Room <kbd>W</kbd>
-        </button>
-        <button className={`navb ${view === 'data' ? 'on' : ''}`} onClick={() => setView('data')} aria-pressed={view === 'data'}>
-          Data Room <kbd>D</kbd>
-        </button>
-        <button className="navb" onClick={() => setOverlay('codex')}>
-          Codex <kbd>X</kbd>
-        </button>
-        <button className="navb" onClick={() => setOverlay('saves')}>
-          Save <kbd>S</kbd>
-        </button>
-        <button className="navb" onClick={toggleMute} aria-pressed={!muted} aria-label={muted ? 'Sound is off' : 'Sound is on'}>
-          {muted ? 'Sound off' : 'Sound on'} <kbd>M</kbd>
-        </button>
-        <button className="navb" onClick={() => setOverlay('help')} aria-label="Keyboard shortcuts">
-          ?
-        </button>
-      </nav>
-    </header>
+    <div className="shell">
+      <header className="shell-head">
+        <div className="brand">Black Swan · {w.mode === 'story' ? 'Story' : 'Free-for-all'} · {dateLabel(w)}</div>
+        <nav aria-label="Menu">
+          <button className="btn" onClick={() => setOverlay('codex')}>
+            Codex <kbd>X</kbd>
+          </button>
+          <button className="btn" onClick={() => setOverlay('saves')}>
+            Save <kbd>S</kbd>
+          </button>
+          <button className="btn" onClick={toggleMute} aria-pressed={!muted} aria-label={muted ? 'Sound is off' : 'Sound is on'}>
+            {muted ? 'Sound off' : 'Sound on'} <kbd>M</kbd>
+          </button>
+          <button className="btn" onClick={() => go('title')}>
+            Main menu
+          </button>
+        </nav>
+      </header>
+      <main className="shell-body">
+        <div className="glass shell-card rise">
+          <h2>The map table is being built</h2>
+          <p className="muted">
+            This is the empty shell of the war game. Starting a game, saving, loading, the codex and sound already work. The map
+            arrives in Stage C.
+          </p>
+          <ol>
+            {stages.map(([name, done]) => (
+              <li key={name} className={done ? 'done' : undefined}>
+                {name}
+                {done ? ' (done)' : ''}
+              </li>
+            ))}
+          </ol>
+        </div>
+      </main>
+    </div>
   );
 }
 
 export function App() {
   useShortcuts();
-  const { screen, view, phase, overlay } = useGame();
+  const { screen, overlay } = useGame();
   return (
     <>
       {screen === 'title' && <Title />}
-      {screen === 'intro' && <Intro />}
-      {screen === 'game' && (
-        <div className="game">
-          <GameHeader />
-          {view === 'war' ? <WarRoom /> : <DataRoom />}
-          {phase === 'reaction' && <Reaction />}
-        </div>
-      )}
-      {screen === 'report' && <Report />}
+      {screen === 'game' && <Placeholder />}
       {overlay === 'codex' && <Codex />}
       {overlay === 'saves' && <Saves />}
       {overlay === 'help' && <Help />}

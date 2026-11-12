@@ -254,7 +254,7 @@ export const useGame = create<Store>((set, get) => {
       if (moving) {
         const enemy = next.units.filter((u) => u.at === province && atWar(next, u.owner, world.player!)).length;
         const adjacent = next.units.some((u) => ids.includes(u.id) && u.path.length === 1 && u.path[0] === province);
-        notice = `${plural(moving, 'division')} ${enemy && adjacent ? 'ordered to attack' : 'marching to'} ${p.name}${enemy && !adjacent ? `, where ${plural(enemy, 'enemy division')} ${enemy === 1 ? 'was' : 'were'} last seen` : ''}.${moving + already < ids.length ? ' The others have no way there.' : ''}`;
+        notice = `${plural(moving, 'division')} ${enemy && adjacent ? 'ordered to attack' : 'marching to'} ${p.name}.${moving + already < ids.length ? ' The others have no way there.' : ''}`;
         if (!get().muted) sound.click();
       } else if (already) notice = `Already in ${p.name}.`;
       else if (holder !== world.player && !atWar(world, world.player, holder)) notice = `${p.name} belongs to ${holder}, which is neutral. Divisions may only enter your own land or a country you are at war with.`;

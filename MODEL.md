@@ -16,6 +16,23 @@ add factories, research and air power.
 5. Divisions rest, dig in or go hungry.
 6. Countries that have lost too much surrender.
 
+## A day with a player (`src/sim/game.ts`)
+
+`advance(world, playerOrders)` is one day of a game you play yourself: your orders, plus the
+test AI's orders for every other country that is at war, then `step`. Countries at peace do
+nothing yet. Orders for divisions that are not yours are dropped.
+
+`applyOrders(world, orders)` carries out orders without a day passing, so the map can show a
+march the moment you order it, even while paused. `step(applyOrders(w, orders))` gives exactly
+the same world as `step(w, orders)`.
+
+## What you can see (`src/sim/intel.ts`)
+
+You always see the map and who holds each province. You see foreign divisions only in
+provinces you control, provinces where your divisions stand, and the neighbours of both. For
+now what you see is exact; estimates that can be wrong arrive with air reconnaissance in
+Stage G.
+
 ## Divisions
 
 | Division | Attack | Defence | Speed (km a day) |
@@ -64,6 +81,16 @@ Worked example: 8 infantry attack 8 infantry on plains, nobody dug in. Attackers
 8 x 10 = 80, so each defender loses 80 / 8 x 0.5 = 5 organisation a day. Defenders deal
 8 x 15 = 120, so each attacker loses 7.5 a day. The attackers break first, after about 12 days.
 That is why an attack needs more than equal numbers.
+
+**Outlook.** `outlook()` gives the estimate shown in the sidebar. It uses the same line-up as
+the real battle, without the luck:
+
+    days attackers last = (average organisation - 10) / (defenders' damage / attackers fighting x 0.5)
+    days defenders last = average organisation / (attackers' damage / defenders fighting x 0.5)
+
+It favours whichever side lasts longer, and says "too close to call" within 15%. In the worked
+example above that is (100 - 10) / 7.5 = 12 days for the attackers against 100 / 5 = 20 for
+the defenders.
 
 **Battle reports.** When a battle ends, a report records who won, the losses and up to three
 causes, biggest first (for example "attacking into mountains", "the attackers were short of

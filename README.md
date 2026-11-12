@@ -4,8 +4,10 @@ A grand-strategy game set in Europe from 1936. You lead a real country through t
 the war that followed, and face what its leaders faced: armies, factories, money, allies and
 public support. It is built to teach the history and the economics as you play.
 
-> **Status: Stage 0 of the war game.** This stage is the cleaned-up shell and the Mac app set-up: title screen, save slots,
-> codex and sound work; the map and the war arrive in the next stages.
+> **Status: Stage A of the war game.** The engine now has the real map of Europe on
+> 1 January 1936 (183 provinces, 31 countries), a daily clock, starting armies and divisions
+> that can march. The app shows a plain preview of the map. Battles arrive in Stage B and the
+> Map table screen in Stage C.
 
 The earlier central bank game is kept, complete and playable, on the branch
 [`central-bank-v0.2`](../../tree/central-bank-v0.2).
@@ -18,6 +20,7 @@ You need [Node.js](https://nodejs.org) 20 or newer. Then, in this folder:
 npm install          # once
 npm run dev          # opens the game in your browser
 npm test             # run the unit tests
+npm run build:map    # rebuild the 1936 map from Natural Earth data (rarely needed)
 ```
 
 ## Running it as a Mac app
@@ -56,23 +59,43 @@ Apple Developer account.
 
 ```text
 src/sim/          the game engine: pure TypeScript, no UI, fully testable
-  world.ts        the world state (Stage 0: date, mode and seed only)
+  world.ts        newWorld() and step(world, orders): one day at a time
+  map.ts          the provinces, distances, marching speeds and route finding
+  countries.ts    the 31 countries of 1936 and their starting armies
+  types.ts        the shapes of all engine data
   rng.ts          seeded random numbers (same seed = same game)
-src/save/         save slots (whole game state as JSON)
+src/content/map/  the 1936 map data (built by scripts/build-map.mjs)
 src/content/      the codex
+src/save/         save slots (whole game state as JSON)
 src/ui/           React screens, charts, widgets, sound and the War Room theme
 src-tauri/        the Mac app wrapper (Tauri); you rarely need to touch this
+scripts/          build-map.mjs turns modern map data into 1936 provinces
 tests/            unit tests
 CHANGELOG.md      what each stage added
 ```
 
 The rule that keeps this clean: nothing in `src/sim/` may import from the user interface.
 
+## The map and its known gaps
+
+The map is built from [Natural Earth](https://www.naturalearthdata.com) data, which is in the
+public domain. That data shows today's regions, so `scripts/build-map.mjs` hands each region to
+the country that held it in 1936 and merges regions into provinces. Borders that ran through
+the middle of a modern region are therefore approximate:
+
+- The Free City of Danzig is shown as part of Poland.
+- The Polish-Soviet and Polish-German borders follow modern regional lines, so they are a few
+  dozen kilometres off in places.
+- Finnish Karelia (around Viipuri) is shown as Soviet.
+- The Italian territories around Trieste, Zara and the Dodecanese are shown as Yugoslav or
+  Greek, except Istria.
+- Spanish Morocco is shown as part of French Morocco.
+- Terrain is a first pass and army sizes are rough; both get tuned in later stages.
+
 ## Plan
 
-Design document and stages: see CHANGELOG.md for what is done. Next is Stage A (Europe 1936
-map data, countries and the daily clock), then B (land combat and supply), C (the map table
-screen), D (production and war finance), E (research and politics), F (diplomacy and AI),
+See CHANGELOG.md for what is done. Next is Stage B (land combat and supply), then C (the map
+table screen), D (production and war finance), E (research and politics), F (diplomacy and AI),
 G (navy and air), H (Story mode) and I (polish).
 
 ## History and symbols

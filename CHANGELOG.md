@@ -1,5 +1,23 @@
 # Changelog
 
+## War game, Stage 0: clean-up and Mac app shell (2026-11-12)
+
+Black Swan is now a grand-strategy game set in Europe from 1936. The central bank game is kept
+on the branch `central-bank-v0.2`.
+
+- Removed the central bank engine, its screens, tests, bots and documents (about 2,900 lines).
+- Kept and tidied what the war game reuses: seeded random numbers, charts and widgets, sound,
+  the War Room theme, the title screen, the codex, save slots and keyboard help.
+- New world outline in `src/sim/world.ts` (mode, seed, date) and saves that store the whole
+  game state.
+- Title screen with Story and Free-for-all; a placeholder game screen until the map exists.
+- Codex restarted with 18 terms for the war game (military, political and economic).
+- Added Tauri: `npm run app` opens the game as a Mac app, `npm run app:build` makes the .app.
+- 9 unit tests.
+
+Not yet checked: the Mac app itself. It can only be built on a Mac, so the first
+`npm run app` on a MacBook is the real test.
+
 ## Stage 2: first playable version (2026-11-11)
 
 - Run `npm run dev` to play. A title screen, an appointment letter where you pick the target

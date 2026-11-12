@@ -75,9 +75,6 @@ kbd {
 }
 .tag { font: 600 11px var(--f-cond); letter-spacing: 0.14em; text-transform: uppercase; padding: 1px 6px; border: 1px solid; }
 .tag.first { color: var(--gold); border-color: rgba(255, 196, 107, 0.4); }
-.tag.hike { color: var(--hot); border-color: rgba(255, 106, 61, 0.5); }
-.tag.hold { color: var(--ice); border-color: rgba(156, 200, 255, 0.4); }
-.tag.cut { color: var(--ok); border-color: rgba(94, 230, 176, 0.45); }
 .up { color: var(--hot); }
 .down { color: var(--ok); }
 

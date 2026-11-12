@@ -1,4 +1,4 @@
-/** Small shared pieces: glossary tooltips, animated numbers, portraits, the credibility gauge. */
+/** Small shared pieces: glossary tooltips, animated numbers, a gauge and a meter. */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { termById } from '../../content/glossary';
 
@@ -84,30 +84,8 @@ export function Ticker({ value, decimals = 1, suffix = '' }: { value: number; de
   );
 }
 
-// ---------- Stylised portraits (original, geometric) ----------
-const FACES: Record<string, { skin: string; hair: string; glasses: boolean; hairPath: string }> = {
-  brandt: { skin: '#c9b8a6', hair: '#2a2a2a', glasses: false, hairPath: 'M10 13 Q23 2 36 13 L36 16 Q23 10 10 16Z' },
-  rehm: { skin: '#d8c0a8', hair: '#6b4a2e', glasses: true, hairPath: 'M11 14 Q23 4 35 14 L35 15 Q23 11 11 15Z' },
-  peyer: { skin: '#b98f6e', hair: '#1d1a17', glasses: false, hairPath: 'M9 18 Q10 4 23 4 Q36 4 37 18 L33 13 Q23 8 13 13Z' },
-  sollberger: { skin: '#e2c9b0', hair: '#b9b2a6', glasses: false, hairPath: 'M10 15 Q23 3 36 15 Q23 9 10 15Z' },
-  arnaud: { skin: '#cfa98a', hair: '#7a2e1f', glasses: true, hairPath: 'M9 20 Q9 4 23 4 Q37 4 37 20 L34 12 Q23 7 12 12Z' },
-};
-
-export function Portrait({ id, size = 46 }: { id: string; size?: number }) {
-  const f = FACES[id];
-  if (!f) return null;
-  return (
-    <svg viewBox="0 0 46 46" width={size} height={size} aria-hidden="true">
-      <path d="M6 46 Q8 33 23 32 Q38 33 40 46Z" fill="#24324d" />
-      <ellipse cx="23" cy="19" rx="9" ry="11" fill={f.skin} />
-      <path d={f.hairPath} fill={f.hair} />
-      {f.glasses && <path d="M15 19h6M25 19h6M21 19h4" stroke="#0b0f18" strokeWidth="1.2" fill="none" />}
-    </svg>
-  );
-}
-
-// ---------- Credibility gauge ----------
-export function Gauge({ value, delta }: { value: number; delta: number }) {
+// ---------- Half-circle gauge (0 to 100) ----------
+export function Gauge({ value, delta, label }: { value: number; delta: number; label: string }) {
   const cx = 75;
   const cy = 82;
   const r = 58;
@@ -117,14 +95,14 @@ export function Gauge({ value, delta }: { value: number; delta: number }) {
   const v = Math.max(0.001, Math.min(1, value / 100));
   const color = value < 30 ? 'var(--hot)' : value < 50 ? 'var(--gold)' : 'var(--ice)';
   return (
-    <svg viewBox="0 0 150 106" width="150" height="106" role="img" aria-label={`Credibility ${Math.round(value)} out of 100`}>
+    <svg viewBox="0 0 150 106" width="150" height="106" role="img" aria-label={`${label} ${Math.round(value)} out of 100`}>
       <path d={arc(0, 1)} stroke="rgba(156,200,255,.12)" strokeWidth="10" fill="none" />
       <path d={arc(0, v)} stroke={color} strokeWidth="10" fill="none" style={{ transition: 'all .8s' }} />
       <text x={cx} y={cy - 6} textAnchor="middle" style={{ font: "500 34px 'Barlow Condensed'", fill: '#fff' }}>
         {Math.round(value)}
       </text>
       <text x={cx} y={cy + 16} textAnchor="middle" style={{ font: "500 11px 'Barlow Condensed'", letterSpacing: '.2em', fill: 'var(--dim)' }}>
-        CREDIBILITY {delta >= 0.5 ? `▲${delta.toFixed(0)}` : delta <= -0.5 ? `▼${(-delta).toFixed(0)}` : '–'}
+        {label.toUpperCase()} {delta >= 0.5 ? `▲${delta.toFixed(0)}` : delta <= -0.5 ? `▼${(-delta).toFixed(0)}` : '–'}
       </text>
     </svg>
   );

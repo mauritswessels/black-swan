@@ -5,6 +5,7 @@ import { findRoute, PROVINCES, provinceByName, routeDays } from '../src/sim/map'
 import type { Order, World } from '../src/sim/types';
 import { dateLabel, newWorld, step } from '../src/sim/world';
 
+const at = (w: World, id: number) => w.units.find((u) => u.id === id)!;
 const run = (w: World, days: number): World => {
   for (let d = 0; d < days; d++) w = step(w);
   return w;
@@ -50,39 +51,51 @@ describe('movement', () => {
     const berlin = provinceByName('Berlin').id;
     const unit = w.units.find((u) => u.owner === 'France' && u.type === 'infantry')!;
     // Put the division in Paris so the test does not depend on the shuffle.
-    const start: World = { ...w, units: w.units.map((u) => (u.id === unit.id ? { ...u, at: paris } : u)) };
+    // France and Germany are at war (divisions may not cross a neutral border), and the German
+    // army is taken off the map so that nothing stands in the way.
+    const units = w.units.filter((u) => u.owner !== 'Germany').map((u) => (u.id === unit.id ? { ...u, at: paris } : u));
+    const start: World = { ...w, units, wars: ['France|Germany'] };
     return { start, paris, berlin, id: unit.id };
   };
 
   it('marches a French division from Paris to Berlin in the expected number of days', () => {
     const { start, paris, berlin, id } = setup();
-    const expected = routeDays(paris, findRoute(paris, berlin, 'infantry')!, 'infantry');
+    // The quickest way that stays inside France and Germany (Belgium and Luxembourg are neutral).
+    const allowed = (p: number) => ['France', 'Germany'].includes(PROVINCES[p].owner);
+    const expected = routeDays(paris, findRoute(paris, berlin, 'infantry', allowed)!, 'infantry');
     let w = step(start, [{ type: 'move', unit: id, to: berlin }]);
     let days = 1;
-    while (w.units[id].at !== berlin && days < 200) {
+    while (at(w, id).at !== berlin && days < 200) {
       w = step(w);
       days++;
     }
-    expect(w.units[id].at).toBe(berlin);
+    expect(at(w, id).at).toBe(berlin);
     expect(days).toBe(Math.ceil(expected - 1e-9));
-    expect(w.units[id].path).toEqual([]);
+    expect(at(w, id).path).toEqual([]);
+    expect(w.controller[berlin]).toBe('France');
   });
 
   it('leaves every other unit where it was', () => {
     const { start, berlin, id } = setup();
     const w = run(step(start, [{ type: 'move', unit: id, to: berlin }]), 30);
-    for (const u of w.units) if (u.id !== id) expect(u.at).toBe(start.units[u.id].at);
+    for (const u of w.units) if (u.id !== id) expect(u.at).toBe(at(start, u.id).at);
   });
 
   it('stops when told to halt, and ignores impossible orders', () => {
     const { start, paris, berlin, id } = setup();
     let w = step(start, [{ type: 'move', unit: id, to: berlin }]);
     w = step(w, [{ type: 'halt', unit: id }]);
-    const where = w.units[id].at;
+    const where = at(w, id).at;
     w = run(w, 10);
-    expect(w.units[id].at).toBe(where);
+    expect(at(w, id).at).toBe(where);
     const orders: Order[] = [{ type: 'move', unit: id, to: provinceByName('London').id }, { type: 'move', unit: 99999, to: paris }];
-    expect(step(w, orders).units[id].path).toEqual([]);
+    expect(at(step(w, orders), id).path).toEqual([]);
+  });
+
+  it('will not march into a country it is not at war with', () => {
+    const { start, id } = setup();
+    const madrid = provinceByName('Madrid').id;
+    expect(at(step(start, [{ type: 'move', unit: id, to: madrid }]), id).path).toEqual([]);
   });
 
   it('does not change the world it was given', () => {

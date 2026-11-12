@@ -33,9 +33,10 @@ export function daysToEnter(from: number, to: number, type: UnitType): number {
 /**
  * The quickest route between two provinces for this kind of unit, as a list of provinces to
  * walk through (not including the start). Returns null if there is no way by land.
+ * `canEnter` says which provinces the unit is allowed into (its own land and its enemies').
  * This is Dijkstra's algorithm: always extend the cheapest route found so far.
  */
-export function findRoute(from: number, to: number, type: UnitType): number[] | null {
+export function findRoute(from: number, to: number, type: UnitType, canEnter?: (province: number) => boolean): number[] | null {
   if (from === to) return [];
   const days = new Array<number>(PROVINCES.length).fill(Infinity);
   const prev = new Array<number>(PROVINCES.length).fill(-1);
@@ -48,6 +49,7 @@ export function findRoute(from: number, to: number, type: UnitType): number[] | 
     if (here === to) break;
     done[here] = true;
     for (const next of PROVINCES[here].neighbours) {
+      if (canEnter && !canEnter(next)) continue;
       const d = days[here] + daysToEnter(here, next, type);
       if (d < days[next]) {
         days[next] = d;

@@ -4,10 +4,10 @@ A grand-strategy game set in Europe from 1936. You lead a real country through t
 the war that followed, and face what its leaders faced: armies, factories, money, allies and
 public support. It is built to teach the history and the economics as you play.
 
-> **Status: Stage A of the war game.** The engine now has the real map of Europe on
-> 1 January 1936 (183 provinces, 31 countries), a daily clock, starting armies and divisions
-> that can march. The app shows a plain preview of the map. Battles arrive in Stage B and the
-> Map table screen in Stage C.
+> **Status: Stage B of the war game.** Divisions now fight battles, need supply, retreat,
+> get surrounded and surrender, and every battle ends with a report that says why it went the
+> way it did. You cannot give orders yourself yet (the Map table screen is Stage C), but you
+> can watch two AI countries fight a test war on the plain map.
 
 The earlier central bank game is kept, complete and playable, on the branch
 [`central-bank-v0.2`](../../tree/central-bank-v0.2).
@@ -20,8 +20,12 @@ You need [Node.js](https://nodejs.org) 20 or newer. Then, in this folder:
 npm install          # once
 npm run dev          # opens the game in your browser
 npm test             # run the unit tests
+npm run balance      # run 200 AI against AI wars and write docs/balance-stage-b.md
 npm run build:map    # rebuild the 1936 map from Natural Earth data (rarely needed)
 ```
+
+The rules and every number behind them are in [MODEL.md](MODEL.md). The latest balance report
+is [docs/balance-stage-b.md](docs/balance-stage-b.md).
 
 ## Running it as a Mac app
 
@@ -72,6 +76,11 @@ Apple Developer account.
 ```text
 src/sim/          the game engine: pure TypeScript, no UI, fully testable
   world.ts        newWorld() and step(world, orders): one day at a time
+  combat.ts       battles: daily rounds, retreat, surrender and battle reports
+  supply.ts       depots, links home and how many divisions a province can feed
+  war.ts          who is at war with whom
+  ai.ts           a simple army commander for AI countries
+  testwar.ts      AI against AI test wars, used by the balance report and the app
   map.ts          the provinces, distances, marching speeds and route finding
   countries.ts    the 31 countries of 1936 and their starting armies
   types.ts        the shapes of all engine data

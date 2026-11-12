@@ -1,5 +1,33 @@
 # Changelog
 
+## War game, Stage B: land battles, supply and battle reports (2026-11-12)
+
+- **Battles.** Ordering a division into a province held by enemy divisions starts a battle,
+  fought one round a day. Terrain, digging in, supply and a little luck decide the damage.
+  Infantry defends better than it attacks, armour breaks through on open ground and artillery
+  wears down dug-in defenders. Only 8 divisions a side fight at once; attacking from more
+  directions lets more join in.
+- **Retreat and surrender.** A division at zero organisation falls back. If it is surrounded,
+  it surrenders. Provinces change hands when the attackers walk in.
+- **Supply.** Each province can feed a limited number of divisions and needs a link, through
+  your own land, back to a depot. Short supply caps organisation; a cut-off division wastes
+  away.
+- **Battle reports.** Every finished battle records who won, the losses and up to three
+  causes, biggest first, such as "attacking into mountains" or "the attackers had the numbers".
+- **War and peace** exist as plain orders (the diplomacy around them is Stage F). Divisions can
+  no longer cross neutral countries. A country surrenders when enemies hold 60% of its victory
+  points.
+- **A simple AI commander** and `npm run balance`, which runs 200 AI against AI wars and writes
+  [docs/balance-stage-b.md](docs/balance-stage-b.md).
+- **Watch a test war** in the app: pick a war, press Start and follow the front, the battle
+  markers and the reports on the plain map.
+- Starting armies now stand mostly in the homeland, with small garrisons overseas.
+- New file [MODEL.md](MODEL.md) with every rule and number. Six new codex terms.
+- 46 unit tests.
+- Saves from Stage A no longer load (the game state has new parts).
+
+Not in this stage: giving orders yourself (Stage C), air power, rivers, manpower and peace terms.
+
 ## One-command update (2026-11-12)
 
 - `npm run update` pulls the newest code from GitHub, installs new libraries and opens the Mac

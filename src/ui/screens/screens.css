@@ -30,7 +30,7 @@
 .shell-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--edge); flex-wrap: wrap; }
 .shell-head .brand { font: 500 15px var(--f-cond); letter-spacing: 0.3em; text-transform: uppercase; color: var(--white); }
 .shell-head nav { display: flex; gap: 8px; flex-wrap: wrap; }
-.shell-body { display: grid; place-items: center; padding: 24px 0; }
+.shell-body { display: grid; justify-items: center; align-content: start; padding: 24px 0; }
 .shell-card { width: min(1040px, 100%); }
 .shell-card h2 { font: 400 34px/1.1 var(--f-cond); letter-spacing: 0.04em; color: var(--white); margin: 0 0 10px; }
 .map-preview { margin: 14px 0 0; }
@@ -39,3 +39,14 @@
 .map-preview path.on, .map-preview path:focus-visible { stroke: var(--gold); stroke-width: 2; }
 .map-preview figcaption { margin-top: 8px; min-height: 1.5em; color: var(--txt); font-size: 14px; }
 .map-preview figcaption b { color: var(--white); font-weight: 500; }
+.map-marks text { font: 600 11px var(--f-cond); fill: var(--white); paint-order: stroke; stroke: #060a12; stroke-width: 3px; pointer-events: none; }
+.map-marks text.battle { fill: var(--gold); font-size: 13px; }
+.map-marks .battle-ring { fill: rgba(255, 106, 61, 0.25); stroke: var(--hot); stroke-width: 1.5; pointer-events: none; }
+.test-war { margin-top: 18px; }
+.test-war .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin: 12px 0; }
+.test-war select { background: rgba(0, 0, 0, 0.3); border: 1px solid var(--edge-strong); color: var(--txt); font: 15px var(--f-body); padding: 6px 8px; border-radius: 2px; }
+.war-status { margin: 12px 0 0; color: var(--txt); }
+.war-status b { color: var(--white); font-weight: 500; }
+.reports { margin: 0; padding-left: 28px; display: grid; gap: 10px; font-size: 14px; }
+.reports b { color: var(--white); font-weight: 500; }
+.muted-inline { color: var(--dim); }

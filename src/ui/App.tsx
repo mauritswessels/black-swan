@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { dateLabel } from '../sim/world';
 import { readSave } from '../save/storage';
 import { MapPreview } from './components/MapPreview';
+import { TestWar } from './screens/TestWar';
 import { Codex, Help, Saves } from './screens/Overlays';
 import { Title } from './screens/Title';
 import { useGame } from './store';
@@ -63,11 +64,12 @@ function Placeholder() {
         <div className="glass shell-card rise">
           <h2>Europe, {dateLabel(w)}</h2>
           <p className="muted">
-            Stage A: the real 1936 borders, provinces and starting armies now exist in the engine. This plain preview stands in for the
-            Map table screen, which arrives in Stage C. Battles come in Stage B.
+            Stage B: divisions now fight, need supply and can be surrounded. The Map table screen, where you give the orders yourself,
+            arrives in Stage C. Until then you can watch two AI countries fight a test war below.
           </p>
           <MapPreview world={w} />
         </div>
+        <TestWar />
       </main>
     </div>
   );

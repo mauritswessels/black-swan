@@ -34,6 +34,100 @@ export interface Country {
   tag: string;
   /** Divisions at the start: [infantry, armour, artillery]. Rough peacetime figures for 1936. */
   startArmy: [number, number, number];
+  /** Factories, people and raw materials at the start (see countries.ts). */
+  industry: Industry;
+}
+
+/** A country's economy on 1 January 1936, in rough figures scaled for play. */
+export interface Industry {
+  civ: number;
+  mil: number;
+  /** Millions of people. */
+  population: number;
+  /** Units of steel and oil produced a month. One military factory needs one steel. */
+  steel: number;
+  oil: number;
+}
+
+export type FactoryKind = 'civ' | 'mil';
+
+/** One production line: military factories all making equipment for one kind of division. */
+export interface Line {
+  factories: number;
+  /** 0.5 to 1. Rises the longer the line runs; new factories start at 0.5. */
+  efficiency: number;
+}
+
+/** One month of a country's economy, kept for the charts. */
+export interface MonthRecord {
+  day: number;
+  /** Per cent a year. */
+  inflation: number;
+  priceLevel: number;
+  /** Debt as a share of a year's output (1 = 100%). */
+  debtRatio: number;
+  treasury: number;
+  /** Income minus spending for the month. */
+  balance: number;
+  stability: number;
+  printed: number;
+  borrowed: number;
+  realGDP: number;
+  shortage: number;
+}
+
+/** What made up last month's inflation, in points. They add up to the inflation rate. */
+export interface InflationCauses {
+  carry: number;
+  expectations: number;
+  printing: number;
+  credit: number;
+  growth: number;
+  shortage: number;
+}
+
+/** Everything that changes in one country's economy. Money is in millions at current prices. */
+export interface Economy {
+  treasury: number;
+  debt: number;
+  /** Average interest rate on the debt, per cent a year. */
+  debtRate: number;
+  /** The money supply. */
+  money: number;
+  /** Prices compared with January 1936 = 100. */
+  priceLevel: number;
+  /** Per cent a year. */
+  inflation: number;
+  /** The inflation people expect, per cent a year. */
+  expected: number;
+  /** Share of output taken in tax, 0.1 to 0.6. */
+  taxRate: number;
+  /** Share of any shortfall you try to cover by selling bonds, 0 to 1. The rest is printed. */
+  bondShare: number;
+  rationing: boolean;
+  /** Buy missing steel and oil abroad. */
+  imports: boolean;
+  /** 0 to 4: see CONSCRIPTION in economy.ts. */
+  conscription: number;
+  /** 0 to 100. */
+  stability: number;
+  /** Men available to recruit, in thousands. */
+  manpower: number;
+  /** Finished equipment waiting for a division, in division-sets, by type. */
+  stock: Record<UnitType, number>;
+  lines: Record<UnitType, Line>;
+  /** Civilian factories set aside for construction. They only leave consumer goods while there is something to build. */
+  constructionFactories: number;
+  construction: { kind: FactoryKind; province: number; done: number }[];
+  training: { type: UnitType; daysLeft: number }[];
+  /** Running totals for the current month. */
+  printedThisMonth: number;
+  borrowedThisMonth: number;
+  balanceThisMonth: number;
+  moneyAtMonthStart: number;
+  causes: InflationCauses;
+  /** The last 120 months, oldest first. */
+  history: MonthRecord[];
 }
 
 export interface Unit {
@@ -145,6 +239,10 @@ export interface World {
   nextBattleId: number;
   /** The most recent battle reports, oldest first (the last 60 are kept). */
   reports: BattleReport[];
+  /** Each country's economy, by country name. */
+  economies: Record<string, Economy>;
+  /** Factories standing in each province, by province id. Whoever controls the province uses them. */
+  factories: { civ: number[]; mil: number[] };
 }
 
 /** What a player or an AI can tell its units to do. */
@@ -153,4 +251,18 @@ export type Order =
   | { type: 'halt'; unit: number }
   /** Stage B has no diplomacy: war and peace simply happen. Stage F adds the rules around them. */
   | { type: 'declareWar'; by: string; on: string }
-  | { type: 'makePeace'; a: string; b: string };
+  | { type: 'makePeace'; a: string; b: string }
+  // The economy (Stage D). `country` is the country giving the order.
+  | { type: 'setTax'; country: string; rate: number }
+  | { type: 'setBondShare'; country: string; share: number }
+  | { type: 'setRationing'; country: string; on: boolean }
+  | { type: 'setImports'; country: string; on: boolean }
+  | { type: 'setConscription'; country: string; level: number }
+  /** Put this many military factories on the line for one kind of division. */
+  | { type: 'setLine'; country: string; unit: UnitType; factories: number }
+  /** Set aside this many civilian factories for construction. */
+  | { type: 'setConstruction'; country: string; factories: number }
+  | { type: 'build'; country: string; kind: FactoryKind; province: number }
+  | { type: 'cancelBuild'; country: string; index: number }
+  /** Form a new division from finished equipment and recruits. */
+  | { type: 'raise'; country: string; unit: UnitType };

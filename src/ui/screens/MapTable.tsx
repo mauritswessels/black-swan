@@ -1,11 +1,13 @@
 /** The Map table: the main game screen. The map fills the window; bars and the sidebar sit over it. */
 import { useEffect, useState } from 'react';
 import { countryByName } from '../../sim/countries';
+import { economyView, MEN_PER_DIVISION } from '../../sim/economy';
 import { enemiesOf } from '../../sim/war';
 import { dateLabel } from '../../sim/world';
 import { MapView } from '../map/MapView';
 import { TERRAIN_COLOUR } from '../map/colours';
-import { SPEED_MS, useGame, type MapMode } from '../store';
+import { SPEED_MS, useGame, type MapMode, type Selection } from '../store';
+import { money } from './EconomyPanels';
 import { Sidebar } from './Sidebar';
 import './maptable.css';
 
@@ -13,10 +15,10 @@ const GOVERNMENT = { democracy: 'Democracy', authoritarian: 'Authoritarian gover
 const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 
 /** Panels from the design that arrive in later stages, shown greyed out so the layout is already the final one. */
-const RAIL: { label: string; stage: string; d: string }[] = [
-  { label: 'Production', stage: 'D', d: 'M3 21V10l6 4v-4l6 4V4h6v17z' },
+const RAIL: { label: string; stage: string; d: string; open?: Selection; key?: string }[] = [
+  { label: 'Production', stage: 'D', d: 'M3 21V10l6 4v-4l6 4V4h6v17z', open: { kind: 'production' }, key: 'P' },
   { label: 'Research', stage: 'E', d: 'M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3' },
-  { label: 'Economy', stage: 'D', d: 'M2 20h20M5 20V11M10 20V5M15 20v-7M20 20V8' },
+  { label: 'Economy', stage: 'D', d: 'M2 20h20M5 20V11M10 20V5M15 20v-7M20 20V8', open: { kind: 'economy' }, key: 'E' },
   { label: 'Diplomacy', stage: 'F', d: 'M3 12h18M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18M12 3c-5 5-5 13 0 18M12 3c5 5 5 13 0 18' },
   { label: 'Plan', stage: 'E', d: 'M5 21V4h12l-3 4 3 4H5' },
 ];
@@ -37,14 +39,24 @@ function TopBar() {
   const enemies = me ? enemiesOf(w, me) : [];
   const myBattles = w.battles.filter((b) => me && (b.attackers.includes(me) || b.defenders.includes(me))).length;
   const supply = avg(mine.map((u) => u.supply)) * 100;
-  const stats: { label: string; value: string; warn?: boolean }[] = [
-    { label: 'Divisions', value: String(mine.length) },
-    { label: 'Strength', value: `${Math.round(avg(mine.map((u) => u.strength)))}%` },
-    { label: 'Organisation', value: `${Math.round(avg(mine.map((u) => u.organisation)))}%` },
-    { label: 'Supply', value: `${Math.round(supply)}%`, warn: supply < 80 },
-    { label: 'Provinces', value: String(w.controller.filter((c) => c === me).length) },
-    { label: 'Battles', value: String(myBattles), warn: myBattles > 0 },
+  const e = me ? w.economies[me] : undefined;
+  const v = me && e ? economyView(w, me) : undefined;
+  const stats: { label: string; value: string; warn?: boolean; why?: string; open?: Selection }[] = [
+    { label: 'Divisions', value: String(mine.length), why: `Average strength ${Math.round(avg(mine.map((u) => u.strength)))}%, organisation ${Math.round(avg(mine.map((u) => u.organisation)))}%` },
+    { label: 'Supply', value: `${Math.round(supply)}%`, warn: supply < 80, why: 'Average supply reaching your divisions' },
+    { label: 'Battles', value: String(myBattles), warn: myBattles > 0, open: { kind: 'reports' }, why: 'Battles your divisions are fighting now' },
   ];
+  if (e && v) {
+    const b = v.budget.balance;
+    stats.push(
+      { label: 'Treasury', value: money(e.treasury), warn: e.treasury <= 0 && b < 0, open: { kind: 'economy' }, why: `${b >= 0 ? 'Surplus' : 'Shortfall'} of ${money(Math.abs(b))} a month. Debt is ${Math.round(v.debtRatio * 100)}% of a year's output.` },
+      { label: 'Balance', value: `${b >= 0 ? '+' : ''}${money(b)}`, warn: b < 0, open: { kind: 'economy' }, why: `Income ${money(v.budget.revenue)} a month, spending ${money(v.budget.spending)}` },
+      { label: 'Inflation', value: `${e.inflation.toFixed(1)}%`, warn: e.inflation > 10, open: { kind: 'economy' }, why: `Prices are ${Math.round(e.priceLevel - 100)}% above January 1936. People expect ${e.expected.toFixed(1)}% a year.` },
+      { label: 'Stability', value: String(Math.round(e.stability)), warn: e.stability < 50, open: { kind: 'economy' }, why: `Heading for ${Math.round(v.stabilityTarget)}. Below 50, strikes slow the factories.` },
+      { label: 'Factories', value: `${Math.floor(v.civ + 1e-9)} + ${Math.floor(v.mil + 1e-9)}`, warn: v.shortage > 0 || v.milFree > 0, open: { kind: 'production' }, why: `Civilian + military.${v.milFree ? ` ${v.milFree} military idle.` : ''}${v.shortage > 0 ? ` Shortage of consumer goods: ${Math.round(v.shortage * 100)}%.` : ''}` },
+      { label: 'Manpower', value: `${Math.round(e.manpower)}k`, warn: e.manpower < MEN_PER_DIVISION, open: { kind: 'production' }, why: `Thousands of men available: enough for ${Math.floor(e.manpower / MEN_PER_DIVISION)} new divisions` },
+    );
+  }
   return (
     <header className="mt-top">
       <button className="mt-country-btn" onClick={() => me && select({ kind: 'country', name: me })}>
@@ -53,14 +65,19 @@ function TopBar() {
           {me ? GOVERNMENT[countryByName(me).government] : 'Watching'} · {enemies.length ? `at war with ${enemies.join(', ')}` : 'at peace'}
         </small>
       </button>
-      <dl className="mt-stats">
+      <ul className="mt-stats">
         {stats.map((s) => (
-          <div key={s.label}>
-            <dt>{s.label}</dt>
-            <dd className={s.warn ? 'warn' : ''}>{s.value}</dd>
-          </div>
+          <li key={s.label}>
+            <button onClick={() => s.open && select(s.open)} disabled={!s.open} title={s.why} aria-label={`${s.label}: ${s.value}${s.warn ? ' (needs attention)' : ''}. ${s.why ?? ''}`}>
+              <span>{s.label}</span>
+              <b className={s.warn ? 'warn' : ''}>
+                {s.warn ? '! ' : ''}
+                {s.value}
+              </b>
+            </button>
+          </li>
         ))}
-      </dl>
+      </ul>
       <div className="mt-clock">
         <div className="mt-date" role="status" aria-live="off">
           <span>{dateLabel(w)}</span>
@@ -93,12 +110,19 @@ function Rail() {
   const muted = useGame((s) => s.muted);
   return (
     <nav className="mt-rail" aria-label="Panels">
-      {RAIL.map((r) => (
-        <button key={r.label} disabled title={`Arrives in Stage ${r.stage}`} aria-label={`${r.label}: arrives in Stage ${r.stage}`}>
-          <Icon d={r.d} />
-          <span>{r.label}</span>
-        </button>
-      ))}
+      {RAIL.map((r) =>
+        r.open ? (
+          <button key={r.label} onClick={() => select(r.open!)} title={`${r.label} (${r.key})`}>
+            <Icon d={r.d} />
+            <span>{r.label}</span>
+          </button>
+        ) : (
+          <button key={r.label} disabled title={`Arrives in Stage ${r.stage}`} aria-label={`${r.label}: arrives in Stage ${r.stage}`}>
+            <Icon d={r.d} />
+            <span>{r.label}</span>
+          </button>
+        ),
+      )}
       <button onClick={() => select({ kind: 'reports' })} title="Battle reports (R)">
         <Icon d="M5 5l14 14M19 5L5 19M4 8l4-4M20 8l-4-4" />
         <span>Battles</span>

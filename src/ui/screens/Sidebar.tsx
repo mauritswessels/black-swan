@@ -4,12 +4,14 @@ import { DIG_IN_PER_DAY, outlook, outlookAt, type Outlook } from '../../sim/comb
 import { COUNTRIES, countryByName } from '../../sim/countries';
 import { visibleProvinces } from '../../sim/intel';
 import { daysToEnter, PROVINCES, routeDays } from '../../sim/map';
+import { economyView, OIL, STEEL, tallies } from '../../sim/economy';
 import { DEPOTS, infrastructure, linkedProvinces, supplyCapacity } from '../../sim/supply';
 import type { BattleReport, Unit, World } from '../../sim/types';
 import { atWar, enemiesOf } from '../../sim/war';
 import { dateLabel } from '../../sim/world';
 import { TERRAIN_NOTE } from '../map/colours';
 import { useGame, type Selection } from '../store';
+import { EconomyPanel, ProductionPanel } from './EconomyPanels';
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 const list = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}` : xs[0] ?? '');
@@ -24,7 +26,7 @@ function types(units: Unit[]): string {
   return (['infantry', 'armour', 'artillery'] as const).filter((t) => n[t]).map((t) => `${n[t]} ${t}`).join(', ');
 }
 
-function Row({ label, value, bar, warn }: { label: string; value: ReactNode; bar?: number; warn?: boolean }) {
+export function Row({ label, value, bar, warn }: { label: string; value: ReactNode; bar?: number; warn?: boolean }) {
   return (
     <div className="sb-row">
       <div>
@@ -40,10 +42,10 @@ function Row({ label, value, bar, warn }: { label: string; value: ReactNode; bar
   );
 }
 
-function Frame({ kicker, title, sub, children }: { kicker: string; title: string; sub?: ReactNode; children: ReactNode }) {
+export function Frame({ kicker, title, sub, wide, children }: { kicker: string; title: string; sub?: ReactNode; wide?: boolean; children: ReactNode }) {
   const select = useGame((s) => s.select);
   return (
-    <aside className="sb" aria-label="Details">
+    <aside className={`sb${wide ? ' wide' : ''}`} aria-label="Details">
       <div className="sb-head">
         <span className="sb-kicker">{kicker}</span>
         <button className="mt-icon" onClick={() => select(null)} aria-label="Close sidebar">
@@ -59,7 +61,7 @@ function Frame({ kicker, title, sub, children }: { kicker: string; title: string
   );
 }
 
-function Link({ to, province, children }: { to: Selection; province?: number; children: ReactNode }) {
+export function Link({ to, province, children }: { to: Selection; province?: number; children: ReactNode }) {
   const select = useGame((s) => s.select);
   const focusOn = useGame((s) => s.focusOn);
   return (
@@ -223,6 +225,14 @@ function Province({ w, id }: { w: World; id: number }) {
   const depot = (DEPOTS[holder] ?? []).includes(id);
   const linked = me && holder === me ? linkedProvinces(w.controller, me)[id] : null;
   const battle = w.battles.find((b) => b.province === id);
+  const civ = w.factories.civ[id];
+  const mil = w.factories.mil[id];
+  const canBuild = !!me && holder === me && p.owner === me && !w.capitulated.includes(me);
+  const queued = me && w.economies[me] ? w.economies[me].construction.filter((c) => c.province === id).length : 0;
+  const build = (kind: 'civ' | 'mil') => {
+    useGame.getState().economy({ type: 'build', kind, province: id });
+    useGame.getState().select({ kind: 'production' });
+  };
   return (
     <Frame kicker="Province" title={p.name} sub={`${p.city && p.city !== p.name ? `${p.city} · ` : ''}${holder}${p.capital ? ' · capital' : ''}${holder !== p.owner ? ` · taken from ${p.owner}` : ''}`}>
       <div className="sb-rows">
@@ -230,10 +240,27 @@ function Province({ w, id }: { w: World; id: number }) {
         <Row label="Infrastructure" value={`${infra} of 5`} bar={infra * 20} />
         <Row label="Feeds" value={`${plural(supplyCapacity(id), 'division')}${seen || holder === me ? `, ${here.length} here` : ''}`} />
         <Row label="Victory points" value={p.victoryPoints} />
+        <Row label="Factories" value={civ + mil ? `${civ} civilian, ${mil} military` : 'None'} />
+        {(STEEL[id] > 0 || OIL[id] > 0) && <Row label="Raw materials a month" value={[STEEL[id] > 0 ? `${STEEL[id].toFixed(1)} steel` : '', OIL[id] > 0 ? `${OIL[id].toFixed(1)} oil` : ''].filter(Boolean).join(', ')} />}
         {depot && <Row label="Supply depot" value={`for ${holder}`} />}
         {linked === false && <Row label="Supply" value="Cut off from your depots" />}
       </div>
       <p className="sb-note">{TERRAIN_NOTE[p.terrain]}</p>
+      {holder !== p.owner && civ + mil > 0 && <p className="sb-fine">Occupied: its factories work at 30% for {holder}, and half its steel and oil is taken.</p>}
+      {canBuild && (
+        <>
+          <h3>Build here</h3>
+          <div className="sb-actions">
+            <button className="sb-btn" onClick={() => build('mil')}>
+              Military factory
+            </button>
+            <button className="sb-btn" onClick={() => build('civ')}>
+              Civilian factory
+            </button>
+            <Link to={{ kind: 'production' }}>Production: the building queue{queued ? ` (${queued} here)` : ''}</Link>
+          </div>
+        </>
+      )}
       {battle && (
         <div className="sb-actions">
           <Link to={{ kind: 'battle', id: battle.id }}>Battle in progress: see the outlook</Link>
@@ -329,6 +356,8 @@ function CountryView({ w, name }: { w: World; name: string }) {
   const enemies = enemiesOf(w, name);
   const capital = home.find((p) => p.capital);
   const war = !!me && atWar(w, me, name);
+  const industry = gone ? undefined : tallies(w).get(name);
+  const economy = name === me && !gone && w.economies[name] ? economyView(w, name, industry) : undefined;
   return (
     <Frame kicker={name === me ? 'Your country' : 'Country'} title={name} sub={`${GOVERNMENT[c.government]}${capital ? ` · capital ${capital.city}` : ''}`}>
       {gone ? (
@@ -341,6 +370,8 @@ function CountryView({ w, name }: { w: World; name: string }) {
             <Row label={name === me ? 'Army' : 'Army you can see'} value={visible.length ? `${plural(visible.length, 'division')} (${types(visible)})` : 'None in sight'} />
             {name !== me && <Row label="Army in 1936" value={plural(c.startArmy[0] + c.startArmy[1] + c.startArmy[2], 'division')} />}
             <Row label="Provinces held" value={held} />
+            {industry && <Row label="Factories" value={`${Math.floor(industry.civ + 1e-9)} civilian, ${Math.floor(industry.mil + 1e-9)} military`} />}
+            {name === me && economy && <Row label="Output a month" value={`${Math.round(economy.nominalGDP)}m`} />}
             <Row label="Home victory points lost" value={`${vpLost} of ${vpHome}`} bar={vpHome ? (vpLost / vpHome) * 100 : 0} warn />
           </div>
           <p className="sb-note">A country surrenders when its enemies hold 60% of its home victory points ({Math.ceil(vpHome * 0.6)} for {name}).</p>
@@ -363,6 +394,12 @@ function CountryView({ w, name }: { w: World; name: string }) {
             </p>
           )}
         </>
+      )}
+      {name === me && !gone && (
+        <div className="sb-actions">
+          <Link to={{ kind: 'economy' }}>Economy: budget, taxes, debt and inflation</Link>
+          <Link to={{ kind: 'production' }}>Production: factories, divisions and manpower</Link>
+        </div>
       )}
       {capital && (
         <div className="sb-actions">
@@ -478,5 +515,9 @@ export function Sidebar() {
       return <ReportView w={w} id={sel.id} />;
     case 'reports':
       return <Reports w={w} />;
+    case 'economy':
+      return w.player ? <EconomyPanel w={w} me={w.player} /> : null;
+    case 'production':
+      return w.player ? <ProductionPanel w={w} me={w.player} /> : null;
   }
 }

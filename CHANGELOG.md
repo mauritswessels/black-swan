@@ -1,5 +1,40 @@
 # Changelog
 
+## War game, Stage C: the Map table screen, the first playable version (2026-11-12)
+
+- **The Map table.** The map now fills the window in the "glowing map table" look: glowing
+  coasts and borders, country names, capitals and cities. Scroll or pinch to zoom, drag to
+  move. Top bar with your army's numbers, the date, pause and five speeds; a rail of panels on
+  the left (those for later stages are greyed out); a news ticker along the bottom.
+- **Choose your country.** Story offers the six major powers; Free-for-all offers every country
+  with an army. (The two modes play the same until Story mode arrives in Stage H.)
+- **Give orders.** Click one of your counters to select its divisions, shift-click to add
+  another, then right-click a province to march there. If enemy divisions stand in it, that is
+  an attack. Orders can be given while paused and show on the map at once.
+- **A sidebar for everything you click:** your divisions (strength, organisation, supply,
+  current order), a province, a foreign army, a country, a battle in progress and a finished
+  battle with its reasons.
+- **Outlook.** Before and during a battle the sidebar estimates how long each side can keep
+  going and lists what is helping or hurting (terrain, digging in, supply, directions).
+- **War and peace by hand.** Open a country and declare war or make peace. The test AI leads
+  every country you are at war with. Diplomacy with rules comes in Stage F.
+- **Fog of war.** You see foreign divisions only on and next to your own land and troops.
+- **Map modes:** political, terrain, supply (overcrowded and cut-off provinces stand out) and
+  diplomacy, each with a key.
+- **Pause when attacked** (on by default) stops the clock when an enemy attacks one of your
+  provinces. The game autosaves on the first of each month.
+- **Keyboard:** Space, 1 to 5, full stop for one day, Tab through your armies, G then type a
+  destination, H to halt, arrows and plus/minus for the map. Press ? for the list.
+- Engine: `advance()`, `applyOrders()`, `visibleStacks()` and `outlook()`, all pure TypeScript
+  with tests. 55 unit tests, including a bot that plays France against Germany twice from the
+  same seed and gets the same war.
+- Removed the plain map preview and "watch a test war" panel; the Map table replaces them.
+- Saves from Stage B no longer load (a save now records which country you lead).
+
+Not in this stage: production, money and manpower (Stage D), so losses are never replaced
+beyond a slow trickle; AI countries starting wars of their own (Stage F); navy and air
+(Stage G). Leaders' names and history cards come with Story mode (Stage H).
+
 ## War game, Stage B: land battles, supply and battle reports (2026-11-12)
 
 - **Battles.** Ordering a division into a province held by enemy divisions starts a battle,

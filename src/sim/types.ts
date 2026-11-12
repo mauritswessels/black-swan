@@ -30,6 +30,8 @@ export interface Country {
   government: Government;
   /** One of the six countries you can play in Story mode. */
   major: boolean;
+  /** A three-letter code for map counters, e.g. FRA. */
+  tag: string;
   /** Divisions at the start: [infantry, armour, artillery]. Rough peacetime figures for 1936. */
   startArmy: [number, number, number];
 }
@@ -122,6 +124,8 @@ export interface BattleReport {
 /** Everything that changes during a game. */
 export interface World {
   mode: Mode;
+  /** The country the player leads, or null when the AI leads every country. */
+  player: string | null;
   seed: number;
   /** State of the seeded random-number generator (see rng.ts). */
   rng: number;

@@ -117,6 +117,81 @@ export function retreatTarget(d: Pick<Draft, 'controller'>, u: Unit, capital: nu
 
 const CAPITAL_OF = new Map(PROVINCES.filter((p) => p.capital).map((p) => [p.owner, p.id]));
 
+/** Who actually fights today, and how hard each side hits before luck. */
+function lineUp(attackers: Unit[], defenders: Unit[], province: number) {
+  const directions = new Set(attackers.map((u) => u.at)).size;
+  const front = line(attackers, ATTACK_WIDTH + ATTACK_WIDTH_PER_EXTRA_DIRECTION * (directions - 1));
+  const holding = line(defenders, DEFENCE_WIDTH);
+  const guns = front.filter((u) => u.type === 'artillery').length;
+  const digInKept = Math.max(0, 1 - ARTILLERY_VS_DIG_IN * guns);
+  const attackEach = front.map((u) => attackPower(u, province));
+  const attackSum = attackEach.reduce((a, b) => a + b, 0);
+  const defenceSum = holding.reduce((a, u) => a + defencePower(u, digInKept), 0);
+  return { directions, front, holding, digInKept, attackEach, attackSum, defenceSum };
+}
+
+/** How a fight for a province looks today, for the battle sidebar and for planning an attack. */
+export interface Outlook {
+  /** Divisions on each side, and how many of them fit into the fight at once. */
+  attackers: number;
+  defenders: number;
+  attackersFighting: number;
+  defendersFighting: number;
+  directions: number;
+  /** Damage each side deals per day, before luck. */
+  attack: number;
+  defence: number;
+  /** Days until the side's fighting divisions run out of organisation at today's rate. */
+  attackersLast: number;
+  defendersLast: number;
+  /** The multipliers at work (1 = no effect). */
+  terrain: number;
+  dugIn: number;
+  attackerSupply: number;
+  defenderSupply: number;
+  /** Who breaks first at this rate. 'even' when it is within 15%. */
+  favours: 'attacker' | 'defender' | 'even';
+}
+
+/**
+ * The outlook if `attackers` attack `defenders` in `province` today. It uses the same line-up
+ * as the real battle, without the luck, and it cannot know about reinforcements.
+ */
+export function outlook(attackers: Unit[], defenders: Unit[], province: number): Outlook | null {
+  if (!attackers.length || !defenders.length) return null;
+  const { directions, front, holding, digInKept, attackSum, defenceSum } = lineUp(attackers, defenders, province);
+  const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
+  // A division gives up when its organisation is gone (attackers a little earlier).
+  const days = (units: Unit[], damage: number, floor: number) => (damage > 0 ? Math.max(0, avg(units.map((u) => u.organisation)) - floor) / ((damage / units.length) * ORG_PER_DAMAGE) : Infinity);
+  const attackersLast = days(front, defenceSum, ATTACK_BREAK_OFF);
+  const defendersLast = days(holding, attackSum, 0);
+  const ratio = attackersLast / Math.max(0.01, defendersLast);
+  return {
+    attackers: attackers.length,
+    defenders: defenders.length,
+    attackersFighting: front.length,
+    defendersFighting: holding.length,
+    directions,
+    attack: attackSum,
+    defence: defenceSum,
+    attackersLast,
+    defendersLast,
+    terrain: TERRAIN_ATTACK[PROVINCES[province].terrain],
+    dugIn: avg(holding.map((u) => 1 + (digInFactor(u) - 1) * digInKept)),
+    attackerSupply: avg(front.map((u) => supplyFactor(u.supply))),
+    defenderSupply: avg(holding.map((u) => supplyFactor(u.supply))),
+    favours: ratio > 1.15 ? 'attacker' : ratio < 1 / 1.15 ? 'defender' : 'even',
+  };
+}
+
+/** The outlook for a battle being fought now, or for the units already ordered into a province. */
+export function outlookAt(w: Pick<World, 'units' | 'wars'>, province: number): Outlook | null {
+  const here = w.units.filter((u) => u.at === province);
+  const attackers = w.units.filter((u) => u.path[0] === province && here.some((e) => atWar(w, u.owner, e.owner)));
+  const defenders = here.filter((u) => attackers.some((a) => atWar(w, a.owner, u.owner)));
+  return outlook(attackers, defenders, province);
+}
+
 /** Fight one day of every battle. Returns the ids of the units that took part today. */
 export function fightBattles(d: Draft, rng: Rng): Set<number> {
   const busy = new Set<number>();
@@ -162,15 +237,7 @@ export function fightBattles(d: Draft, rng: Rng): Set<number> {
     battle.attackers = union2(battle.attackers, byCount(attackers));
     battle.defenders = union2(battle.defenders, byCount(defenders));
 
-    const directions = new Set(attackers.map((u) => u.at)).size;
-    const front = line(attackers, ATTACK_WIDTH + ATTACK_WIDTH_PER_EXTRA_DIRECTION * (directions - 1));
-    const holding = line(defenders, DEFENCE_WIDTH);
-    const guns = front.filter((u) => u.type === 'artillery').length;
-    const digInKept = Math.max(0, 1 - ARTILLERY_VS_DIG_IN * guns);
-
-    const attackEach = front.map((u) => attackPower(u, province));
-    const attackSum = attackEach.reduce((a, b) => a + b, 0);
-    const defenceSum = holding.reduce((a, u) => a + defencePower(u, digInKept), 0);
+    const { directions, front, holding, digInKept, attackEach, attackSum, defenceSum } = lineUp(attackers, defenders, province);
     const attackDamage = attackSum * (0.9 + 0.2 * rng.next());
     const defenceDamage = defenceSum * (0.9 + 0.2 * rng.next());
 

@@ -3,6 +3,7 @@
 // Use `npm run update -- --browser` to open it in the browser instead,
 // or `npm run update -- --no-start` to only update.
 import { spawnSync } from 'node:child_process';
+import { existsSync } from 'node:fs';
 
 const args = process.argv.slice(2);
 const npm = process.platform === 'win32' ? 'npm.cmd' : 'npm';
@@ -51,8 +52,16 @@ if (before === after) {
   run('git', ['log', '--oneline', '--no-merges', `${before}..${after}`]);
 }
 
-say('Installing libraries');
-if (!run(npm, ['install', '--no-fund', '--no-audit']).ok) stop('npm install failed. The message above says why.');
+// `npm ci` installs exactly what package-lock.json lists and never edits that file,
+// so the next update does not trip over a changed lock file.
+const lockChanged =
+  before !== after && run('git', ['diff', '--quiet', before, after, '--', 'package-lock.json'], { quiet: true }).ok === false;
+if (lockChanged || !existsSync('node_modules')) {
+  say('Installing libraries');
+  if (!run(npm, ['ci', '--no-fund', '--no-audit']).ok) stop('installing libraries failed. The message above says why.');
+} else {
+  say('Libraries are unchanged');
+}
 
 if (args.includes('--no-start')) {
   say('Done. Start the game with `npm run app` or `npm run dev`.');

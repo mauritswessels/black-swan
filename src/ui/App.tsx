@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { dateLabel } from '../sim/world';
 import { readSave } from '../save/storage';
+import { MapPreview } from './components/MapPreview';
 import { Codex, Help, Saves } from './screens/Overlays';
 import { Title } from './screens/Title';
 import { useGame } from './store';
@@ -35,16 +36,10 @@ function useShortcuts() {
   }, []);
 }
 
-/** Stand-in for the map screen until Stage C. Shows that starting, saving and loading work. */
+/** Stand-in for the map screen until Stage C. */
 function Placeholder() {
   const { world, go, setOverlay, muted, toggleMute } = useGame();
   const w = world!;
-  const stages: [string, boolean][] = [
-    ['Stage 0: clean-up and Mac app shell', true],
-    ['Stage A: Europe 1936 map data, countries, the daily clock', false],
-    ['Stage B: land combat, supply and battle reports', false],
-    ['Stage C: the map table screen', false],
-  ];
   return (
     <div className="shell">
       <header className="shell-head">
@@ -66,19 +61,12 @@ function Placeholder() {
       </header>
       <main className="shell-body">
         <div className="glass shell-card rise">
-          <h2>The map table is being built</h2>
+          <h2>Europe, {dateLabel(w)}</h2>
           <p className="muted">
-            This is the empty shell of the war game. Starting a game, saving, loading, the codex and sound already work. The map
-            arrives in Stage C.
+            Stage A: the real 1936 borders, provinces and starting armies now exist in the engine. This plain preview stands in for the
+            Map table screen, which arrives in Stage C. Battles come in Stage B.
           </p>
-          <ol>
-            {stages.map(([name, done]) => (
-              <li key={name} className={done ? 'done' : undefined}>
-                {name}
-                {done ? ' (done)' : ''}
-              </li>
-            ))}
-          </ol>
+          <MapPreview world={w} />
         </div>
       </main>
     </div>

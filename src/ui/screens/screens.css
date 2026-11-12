@@ -31,7 +31,11 @@
 .shell-head .brand { font: 500 15px var(--f-cond); letter-spacing: 0.3em; text-transform: uppercase; color: var(--white); }
 .shell-head nav { display: flex; gap: 8px; flex-wrap: wrap; }
 .shell-body { display: grid; place-items: center; padding: 24px 0; }
-.shell-card { max-width: 640px; }
+.shell-card { width: min(1040px, 100%); }
 .shell-card h2 { font: 400 34px/1.1 var(--f-cond); letter-spacing: 0.04em; color: var(--white); margin: 0 0 10px; }
-.shell-card ol { margin: 12px 0 0; padding-left: 22px; display: grid; gap: 6px; }
-.shell-card li.done { color: var(--ok); }
+.map-preview { margin: 14px 0 0; }
+.map-preview svg { display: block; width: 100%; height: auto; background: #060a12; border: 1px solid var(--edge); }
+.map-preview path { stroke: rgba(156, 200, 255, 0.45); stroke-width: 0.6; outline: none; }
+.map-preview path.on, .map-preview path:focus-visible { stroke: var(--gold); stroke-width: 2; }
+.map-preview figcaption { margin-top: 8px; min-height: 1.5em; color: var(--txt); font-size: 14px; }
+.map-preview figcaption b { color: var(--white); font-weight: 500; }

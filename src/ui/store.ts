@@ -3,7 +3,8 @@
  * engine (src/sim); it never does game maths itself.
  */
 import { create } from 'zustand';
-import { dateLabel, newWorld, type Mode, type World } from '../sim/world';
+import type { Mode, World } from '../sim/types';
+import { dateLabel, newWorld } from '../sim/world';
 import { readSave, writeSave, type Slot } from '../save/storage';
 import { sound } from './audio/sound';
 

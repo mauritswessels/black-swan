@@ -1,5 +1,24 @@
 # Changelog
 
+## War game, Stage A: the 1936 map, countries and marching armies (2026-11-12)
+
+- The map of Europe, North Africa and the Near East on 1 January 1936: 183 provinces in
+  31 countries, built from public-domain Natural Earth data by `npm run build:map`. It shows
+  the borders of the time: Germany with Silesia, Pomerania and East Prussia, Poland reaching
+  east to Wilno and Lwów, an independent Austria and Czechoslovakia, French North Africa and
+  Italian Libya. Known gaps are listed in the README.
+- Each province has a historical name, terrain, neighbours, victory points and, where it has
+  one, a main city.
+- The engine: `step(world, orders)` moves the world on one day. Divisions follow move and halt
+  orders along the quickest route, at speeds set by their type and the terrain.
+- Starting armies for every country (rough figures until Stage B).
+- The app shows a plain preview of the map. Point at a province to see its name, owner,
+  terrain and divisions.
+- 25 unit tests, including a French division marching from Paris to Berlin.
+- The Mac app (`npm run app`) was confirmed working on a MacBook after Stage 0.
+
+Not in this stage: battles, supply, control of provinces changing hands, sea zones.
+
 ## War game, Stage 0: clean-up and Mac app shell (2026-11-12)
 
 Black Swan is now a grand-strategy game set in Europe from 1936. The central bank game is kept

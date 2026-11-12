@@ -1,5 +1,10 @@
 # Changelog
 
+## One-command update (2026-11-12)
+
+- `npm run update` pulls the newest code from GitHub, installs new libraries and opens the Mac
+  app. It stops with a plain message if you have unsaved edits or no connection.
+
 ## War game, Stage A: the 1936 map, countries and marching armies (2026-11-12)
 
 - The map of Europe, North Africa and the Near East on 1 January 1936: 183 provinces in

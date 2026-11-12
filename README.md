@@ -40,6 +40,18 @@ npm run app          # opens Black Swan in its own window (first run takes a few
 npm run app:build    # builds Black Swan.app and a .dmg
 ```
 
+### Getting the newest version
+
+After a pull request is merged on GitHub, one command brings your Mac up to date and opens the
+app:
+
+```bash
+npm run update       # pull the newest code, install new libraries, open the app
+```
+
+Add `-- --browser` to open it in the browser instead, or `-- --no-start` to only update. If you
+have edited files yourself, it stops and tells you how to keep or discard them first.
+
 The built app is at `src-tauri/target/release/bundle/macos/Black Swan.app`. Drag it to
 Applications. The first time, right-click it and choose Open, because it is not signed with an
 Apple Developer account.
@@ -69,7 +81,8 @@ src/content/      the codex
 src/save/         save slots (whole game state as JSON)
 src/ui/           React screens, charts, widgets, sound and the War Room theme
 src-tauri/        the Mac app wrapper (Tauri); you rarely need to touch this
-scripts/          build-map.mjs turns modern map data into 1936 provinces
+scripts/          build-map.mjs turns modern map data into 1936 provinces;
+                  update.mjs is `npm run update`
 tests/            unit tests
 CHANGELOG.md      what each stage added
 ```

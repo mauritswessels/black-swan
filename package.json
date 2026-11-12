@@ -15,7 +15,8 @@
     "tauri": "tauri",
     "app": "tauri dev",
     "app:build": "tauri build",
-    "build:map": "node scripts/build-map.mjs"
+    "build:map": "node scripts/build-map.mjs",
+    "update": "node scripts/update.mjs"
   },
   "engines": {
     "node": ">=20"

@@ -4,8 +4,7 @@ A grand-strategy game set in Europe from 1936. You lead a real country through t
 the war that followed, and face what its leaders faced: armies, factories, money, allies and
 public support. It is built to teach the history and the economics as you play.
 
-> **Status: Stage 0 of the war game.** The project has pivoted from the earlier central bank
-> game. This stage is the cleaned-up shell and the Mac app set-up: title screen, save slots,
+> **Status: Stage 0 of the war game.** This stage is the cleaned-up shell and the Mac app set-up: title screen, save slots,
 > codex and sound work; the map and the war arrive in the next stages.
 
 The earlier central bank game is kept, complete and playable, on the branch

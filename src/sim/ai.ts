@@ -17,6 +17,7 @@
  */
 import { ATTACK_WIDTH, ATTACK_WIDTH_PER_EXTRA_DIRECTION, attackPower, defencePower, DEFENCE_WIDTH } from './combat';
 import { daysToEnter, findRoute, PROVINCES } from './map';
+import { combatEdges } from './mods';
 import { supplyCapacity } from './supply';
 import type { Order, Unit, World } from './types';
 import { canEnter, enemiesOf } from './war';
@@ -38,6 +39,7 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
   const orders: Order[] = [];
   const mine = w.units.filter((u) => u.owner === country);
   if (!mine.length) return [];
+  const edges = combatEdges(w.economies);
 
   const at = new Map<number, Unit[]>();
   for (const u of w.units) {
@@ -77,7 +79,7 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
   }
 
   /** The defenders of a target that fit in the line, strongest first. */
-  const lineOf = (t: number) => enemyAt(t).map((u) => defencePower(u)).sort((a, b) => b - a).slice(0, DEFENCE_WIDTH);
+  const lineOf = (t: number) => enemyAt(t).map((u) => defencePower(u, 1, edges.defence(u, t))).sort((a, b) => b - a).slice(0, DEFENCE_WIDTH);
   const defenceOf = (t: number) => lineOf(t).reduce((a, b) => a + b, 0);
   const value = (t: number) => PROVINCES[t].victoryPoints;
 
@@ -122,7 +124,7 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
     // down at a rate set by its hitting power, and reserves take over from tired divisions.
     const directions = new Set(all.map((u) => u.at)).size;
     const width = ATTACK_WIDTH + ATTACK_WIDTH_PER_EXTRA_DIRECTION * (directions - 1);
-    const power = all.map((u) => attackPower(u, t)).sort((a, b) => b - a).slice(0, width).reduce((a, b) => a + b, 0);
+    const power = all.map((u) => attackPower(u, t, edges.attack(u))).sort((a, b) => b - a).slice(0, width).reduce((a, b) => a + b, 0);
     const ourStamina = all.reduce((a, u) => a + Math.max(0, u.organisation - 10), 0);
     const theirStamina = enemyAt(t).reduce((a, u) => a + u.organisation, 0) + 1;
     const odds = (power * ourStamina) / (defence * theirStamina);

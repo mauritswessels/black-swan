@@ -4,7 +4,7 @@
  */
 import type { ReactNode } from 'react';
 import {
-  BUILD_COST, BUILDERS_PER_PROJECT, cannotRaise, CONSCRIPTION, economyView, FACTORY_COST, KIT_COST, MEN_PER_DIVISION, musterPoint, TAX_MAX, TAX_MIN, TAX_STABILITY, TRAINING_DAYS, UNIT_TYPES, UPKEEP, WAR_UPKEEP,
+  BUILD_COST, BUILDERS_PER_PROJECT, cannotRaise, CONSCRIPTION, conscriptionBlocked, economyView, FACTORY_COST, KIT_COST, MEN_PER_DIVISION, musterPoint, TAX_MAX, TAX_MIN, TAX_STABILITY, TRAINING_DAYS, UNIT_TYPES, UPKEEP, WAR_UPKEEP,
   type EconomyView, type Reason,
 } from '../../sim/economy';
 import { PROVINCES } from '../../sim/map';
@@ -126,6 +126,7 @@ export function EconomyPanel({ w, me }: { w: World; me: string }) {
     [`Army upkeep${v.atWar ? ` (at war: x${WAR_UPKEEP})` : ''}`, -b.upkeep],
     ['Military factories', -b.military],
     ['Construction', -b.construction],
+    ['National plan', -b.plan],
     ['Imports of steel and oil', -b.imports],
     ['Interest on the debt', -b.interest],
   ];
@@ -161,7 +162,7 @@ export function EconomyPanel({ w, me }: { w: World; me: string }) {
       </h3>
       <input id="tax" className="sb-range" type="range" min={TAX_MIN * 100} max={TAX_MAX * 100} step={1} value={Math.round(e.taxRate * 100)} onChange={(ev) => order({ type: 'setTax', rate: Number(ev.target.value) / 100 })} aria-valuetext={`${Math.round(e.taxRate * 100)} per cent`} />
       <p className="sb-fine">
-        Each point brings in about {money(taxPoint)} a month. Above 25% stability falls{e.taxRate > 0.25 ? ` (now ${signed(-TAX_STABILITY * 100 * (e.taxRate - 0.25), 0)})` : ''}; above 30% factories slow down{e.taxRate > 0.3 ? ` (now -${pct((1 - v.factors.tax) * 100, 1)})` : ''}. Higher taxes
+        Each point brings in about {money(taxPoint)} a month. Above {pct(v.taxThreshold * 100)} stability falls{e.taxRate > v.taxThreshold ? ` (now ${signed(-TAX_STABILITY * 100 * (e.taxRate - v.taxThreshold), 0)})` : ''}; above 30% factories slow down{e.taxRate > 0.3 ? ` (now -${pct((1 - v.factors.tax) * 100, 1)})` : ''}. Higher taxes
         also leave people less to spend, so the shops need fewer goods and prices rise less.
       </p>
 
@@ -177,7 +178,7 @@ export function EconomyPanel({ w, me }: { w: World; me: string }) {
         <span>Borrow it all</span>
       </div>
       <p className="sb-fine">
-        Lenders will buy up to {money(v.bondCapacity)} of bonds a month (confidence {pct(v.confidence * 100)}). Bonds nobody buys are paid for with printed money anyway. Bonds cost interest for years; printing costs nothing now and shows up
+        Lenders will buy up to {money(v.bondCapacity)} of bonds a month (confidence {pct(v.confidence * 100)}{v.atWar ? `, war support ${signed((v.patriotism - 1) * 100, 0)}%` : ''}). Bonds nobody buys are paid for with printed money anyway. Bonds cost interest for years; printing costs nothing now and shows up
         as inflation a few months later.
       </p>
       <Toggle on={e.rationing} onChange={(on) => order({ type: 'setRationing', on })}>
@@ -224,14 +225,15 @@ export function EconomyPanel({ w, me }: { w: World; me: string }) {
       </div>
       {v.stabilityReasons.length ? (
         <>
-          <p className="sb-note">Starting from 75, what is pulling it down:</p>
+          <p className="sb-note">Starting from 75, what moves it:</p>
           <Why items={v.stabilityReasons} />
         </>
       ) : (
-        <p className="sb-note">Nothing is pulling it down. It settles at 75.</p>
+        <p className="sb-note">Nothing is moving it. It settles at 75.</p>
       )}
-      <p className="sb-fine">Stability moves a fifth of the way to where it is heading each month. Below 50, strikes slow every factory{v.factors.stability < 1 ? ` (now -${pct((1 - v.factors.stability) * 100, 1)})` : ''}. War support, and what else moves stability, arrive in Stage E.</p>
+      <p className="sb-fine">Stability moves a fifth of the way to where it is heading each month. Below 50, strikes slow every factory{v.factors.stability < 1 ? ` (now -${pct((1 - v.factors.stability) * 100, 1)})` : ''}. War support is on the Home front panel.</p>
       <div className="sb-actions">
+        <Link to={{ kind: 'politics' }}>Home front: stability and war support</Link>
         <Link to={{ kind: 'production' }}>Production: factories, divisions and manpower</Link>
       </div>
     </Frame>
@@ -263,7 +265,7 @@ export function ProductionPanel({ w, me }: { w: World; me: string }) {
     const crew = w.controller[job.province] === me ? Math.min(BUILDERS_PER_PROJECT, builders) : 0;
     builders -= crew;
     const left = BUILD_COST[job.kind] - job.done;
-    return { ...job, crew, days: crew > 0 && v.outputFactor > 0 ? Math.ceil(left / (crew * v.outputFactor)) : null };
+    return { ...job, crew, days: crew > 0 && v.buildFactor > 0 ? Math.ceil(left / (crew * v.buildFactor)) : null };
   });
   return (
     <Frame wide kicker="Production" title="Factories and the army" sub={`${civ} civilian and ${mil} military factories · ${men(e.manpower)} available`}>
@@ -278,7 +280,7 @@ export function ProductionPanel({ w, me }: { w: World; me: string }) {
         <p className="sb-note warn">Shortage of {pct(v.shortage * 100)}: too few factories make goods for the shops. Prices rise and stability falls. Build fewer things at once, ration, or raise taxes so people buy less.</p>
       ) : (
         <p className="sb-fine">
-          This is the <Term id="guns-or-butter">guns or butter</Term> choice: every factory that builds or arms is one that does not fill the shops. You can take about {Math.max(0, Math.floor(v.civ - v.goodsNeed / CONSCRIPTION[e.conscription].output))} away before shortages
+          This is the <Term id="guns-or-butter">guns or butter</Term> choice: every factory that builds or arms is one that does not fill the shops. You can take about {Math.max(0, Math.floor(v.civ - v.goodsNeed / v.factors.conscription))} away before shortages
           start.
         </p>
       )}
@@ -377,17 +379,21 @@ export function ProductionPanel({ w, me }: { w: World; me: string }) {
         <Row label="Available to recruit" value={`${men(e.manpower)} (${Math.floor(e.manpower / MEN_PER_DIVISION)} divisions)`} />
       </div>
       <div className="sb-laws" role="radiogroup" aria-label="Conscription law">
-        {CONSCRIPTION.map((law, i) => (
-          <button key={law.name} role="radio" aria-checked={e.conscription === i} className={e.conscription === i ? 'on' : ''} onClick={() => order({ type: 'setConscription', level: i })}>
-            <b>{law.name}</b>
-            <span>
-              {pct(law.share * 100, 1)} of the people can serve{law.output < 1 ? ` · factories -${pct((1 - law.output) * 100)}` : ''}
-            </span>
-          </button>
-        ))}
+        {CONSCRIPTION.map((law, i) => {
+          const blocked = conscriptionBlocked(e, me, i);
+          return (
+            <button key={law.name} role="radio" aria-checked={e.conscription === i} aria-disabled={!!blocked} className={`${e.conscription === i ? 'on' : ''}${blocked ? ' blocked' : ''}`} onClick={() => !blocked && order({ type: 'setConscription', level: i })}>
+              <b>{law.name}</b>
+              <span>
+                {pct(law.share * 100, 1)} of the people can serve{law.output < 1 ? ` · factories -${pct((1 - law.output) * 100 * (1 + v.mods.conscriptionDrag))}` : ''}
+                {blocked ? ` · ${blocked} (now ${Math.round(e.warSupport)})` : ''}
+              </span>
+            </button>
+          );
+        })}
       </div>
       <p className="sb-fine">
-        A wider <Term id="conscription">conscription</Term> law calls up more men at once but takes workers out of the factories. Each step up costs 2 stability on the day, and the two widest laws cost more for as long as they last.
+        A wider <Term id="conscription">conscription</Term> law calls up more men at once but takes workers out of the factories. Each step up costs 2 stability on the day, and the two widest laws cost more for as long as they last. The wider laws need the public behind them: see <Term id="war-support">war support</Term> on the Home front panel.
       </p>
 
       <h3>Steel and oil</h3>
@@ -406,7 +412,7 @@ export function ProductionPanel({ w, me }: { w: World; me: string }) {
           : v.steel.ratio < 1 || v.oil.ratio < 1
             ? `Without imports the lines run at ${pct(v.steel.ratio * 100)} speed${v.oil.ratio < 1 ? `, the armour line at ${pct(v.steel.ratio * v.oil.ratio * 100)}, and your armoured divisions go short of fuel` : ''}.`
             : 'You have all you need at home.'}{' '}
-        Military factories need steel; armour needs oil. What you do not use is sold abroad at half price{v.budget.exports > 0 ? ` (${money(v.budget.exports)} a month)` : ''}. From Stage G imports come by sea and can be sunk.
+        Military factories need steel; armour needs oil. What you do not use is sold abroad at {pct(Math.min(1, 0.5 + v.mods.exportShare) * 100)} of the world price{v.budget.exports > 0 ? ` (${money(v.budget.exports)} a month)` : ''}. From Stage G imports come by sea and can be sunk.
       </p>
       <div className="sb-actions">
         <Link to={{ kind: 'economy' }}>Economy: budget, taxes, debt and inflation</Link>

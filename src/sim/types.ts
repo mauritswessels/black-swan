@@ -58,7 +58,7 @@ export interface Line {
   efficiency: number;
 }
 
-/** One month of a country's economy, kept for the charts. */
+/** One month of a country's economy and home front, kept for the charts. */
 export interface MonthRecord {
   day: number;
   /** Per cent a year. */
@@ -74,6 +74,26 @@ export interface MonthRecord {
   borrowed: number;
   realGDP: number;
   shortage: number;
+  warSupport: number;
+}
+
+/** What a country knows and what its research teams are working on (see research.ts). */
+export interface ResearchState {
+  /** One entry per research team: the id of the technology it is working on, or null. */
+  slots: (string | null)[];
+  /** Days of work done on unfinished technologies, by id. Kept when a team moves on. */
+  progress: Record<string, number>;
+  /** Ids of finished technologies. */
+  done: string[];
+}
+
+/** A country's national plans (see plans.ts). */
+export interface PlanState {
+  /** The plan under way, or null. */
+  active: string | null;
+  daysDone: number;
+  /** Ids of finished plans. */
+  done: string[];
 }
 
 /** What made up last month's inflation, in points. They add up to the inflation rate. */
@@ -86,7 +106,7 @@ export interface InflationCauses {
   shortage: number;
 }
 
-/** Everything that changes in one country's economy. Money is in millions at current prices. */
+/** Everything that changes inside one country: its economy, its home front, its research and its plans. Money is in millions at current prices. */
 export interface Economy {
   treasury: number;
   debt: number;
@@ -111,6 +131,18 @@ export interface Economy {
   conscription: number;
   /** 0 to 100. */
   stability: number;
+  /** How willing people are to fight and to make sacrifices, 0 to 100. */
+  warSupport: number;
+  /** The public's mood from recent battles, -15 to 15. Each battle won adds 2, each lost takes 2; it fades by a fifth a month. */
+  mood: number;
+  /** War weariness, 0 to 20. Rises half a point for each month at war and falls a point for each month of peace. */
+  weariness: number;
+  /** Months in a row with stability under 20. At three the government falls. */
+  crisisMonths: number;
+  /** How many governments have fallen since the start of the game. */
+  governmentsFallen: number;
+  research: ResearchState;
+  plan: PlanState;
   /** Men available to recruit, in thousands. */
   manpower: number;
   /** Finished equipment waiting for a division, in division-sets, by type. */
@@ -188,6 +220,9 @@ export interface BattleTally {
   /** Share of the attackers' hitting power that came from armour and from artillery. */
   armourShare: number;
   artilleryShare: number;
+  /** How much research, plans and forts multiplied each side's hitting power (1 = not at all). */
+  attackerEdge: number;
+  defenderEdge: number;
 }
 
 /** One reason for how a battle ended, e.g. "attacking into mountains". */
@@ -233,6 +268,8 @@ export interface World {
   controller: string[];
   /** Pairs of countries at war, each written "A|B" with the names in alphabetical order. */
   wars: string[];
+  /** Who declared each war, by the same "A|B" key. */
+  declaredBy: Record<string, string>;
   /** Countries that have surrendered. */
   capitulated: string[];
   battles: Battle[];
@@ -265,4 +302,10 @@ export type Order =
   | { type: 'build'; country: string; kind: FactoryKind; province: number }
   | { type: 'cancelBuild'; country: string; index: number }
   /** Form a new division from finished equipment and recruits. */
-  | { type: 'raise'; country: string; unit: UnitType };
+  | { type: 'raise'; country: string; unit: UnitType }
+  // Research and national plans (Stage E).
+  /** Put a research team (0 or 1) on a technology, or stand it down with null. */
+  | { type: 'setResearch'; country: string; slot: number; tech: string | null }
+  | { type: 'startPlan'; country: string; plan: string }
+  /** Give up the plan under way. The work done on it is lost. */
+  | { type: 'cancelPlan'; country: string };

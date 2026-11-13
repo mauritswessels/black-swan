@@ -14,14 +14,16 @@ import './maptable.css';
 const GOVERNMENT = { democracy: 'Democracy', authoritarian: 'Authoritarian government', fascist: 'Fascist dictatorship', communist: 'Communist dictatorship' };
 const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 
-/** Panels from the design that arrive in later stages, shown greyed out so the layout is already the final one. */
+/** The panels on the rail. Those from the design that arrive in later stages are greyed out, so the layout is already the final one. */
 const RAIL: { label: string; stage: string; d: string; open?: Selection; key?: string }[] = [
   { label: 'Production', stage: 'D', d: 'M3 21V10l6 4v-4l6 4V4h6v17z', open: { kind: 'production' }, key: 'P' },
-  { label: 'Research', stage: 'E', d: 'M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3' },
+  { label: 'Research', stage: 'E', d: 'M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3', open: { kind: 'research' }, key: 'T' },
   { label: 'Economy', stage: 'D', d: 'M2 20h20M5 20V11M10 20V5M15 20v-7M20 20V8', open: { kind: 'economy' }, key: 'E' },
   { label: 'Diplomacy', stage: 'F', d: 'M3 12h18M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18M12 3c-5 5-5 13 0 18M12 3c5 5 5 13 0 18' },
-  { label: 'Plan', stage: 'E', d: 'M5 21V4h12l-3 4 3 4H5' },
+  { label: 'Plan', stage: 'E', d: 'M5 21V4h12l-3 4 3 4H5', open: { kind: 'plans' }, key: 'N' },
+  { label: 'Home', stage: 'E', d: 'M4 20v-7a8 8 0 0 1 16 0v7M4 20h16M9 20v-5h6v5M12 5V3', open: { kind: 'politics' }, key: 'W' },
 ];
+const RAIL_TITLE: Record<string, string> = { Plan: 'National plan', Home: 'Home front: stability and war support' };
 const CODEX = 'M5 4h14v16H7a2 2 0 0 1-2-2zM5 18a2 2 0 0 1 2-2h12';
 const Icon = ({ d }: { d: string }) => (
   <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round">
@@ -52,7 +54,8 @@ function TopBar() {
       { label: 'Treasury', value: money(e.treasury), warn: e.treasury <= 0 && b < 0, open: { kind: 'economy' }, why: `${b >= 0 ? 'Surplus' : 'Shortfall'} of ${money(Math.abs(b))} a month. Debt is ${Math.round(v.debtRatio * 100)}% of a year's output.` },
       { label: 'Balance', value: `${b >= 0 ? '+' : ''}${money(b)}`, warn: b < 0, open: { kind: 'economy' }, why: `Income ${money(v.budget.revenue)} a month, spending ${money(v.budget.spending)}` },
       { label: 'Inflation', value: `${e.inflation.toFixed(1)}%`, warn: e.inflation > 10, open: { kind: 'economy' }, why: `Prices are ${Math.round(e.priceLevel - 100)}% above January 1936. People expect ${e.expected.toFixed(1)}% a year.` },
-      { label: 'Stability', value: String(Math.round(e.stability)), warn: e.stability < 50, open: { kind: 'economy' }, why: `Heading for ${Math.round(v.stabilityTarget)}. Below 50, strikes slow the factories.` },
+      { label: 'Stability', value: String(Math.round(e.stability)), warn: e.stability < 50, open: { kind: 'politics' }, why: `Heading for ${Math.round(v.stabilityTarget)}. Below 50, strikes slow the factories.` },
+      { label: 'War support', value: String(Math.round(e.warSupport)), warn: v.atWar && e.warSupport < 40, open: { kind: 'politics' }, why: `Heading for ${Math.round(v.warSupportTarget)}. It decides how far conscription and wartime taxes can go.` },
       { label: 'Factories', value: `${Math.floor(v.civ + 1e-9)} + ${Math.floor(v.mil + 1e-9)}`, warn: v.shortage > 0 || v.milFree > 0, open: { kind: 'production' }, why: `Civilian + military.${v.milFree ? ` ${v.milFree} military idle.` : ''}${v.shortage > 0 ? ` Shortage of consumer goods: ${Math.round(v.shortage * 100)}%.` : ''}` },
       { label: 'Manpower', value: `${Math.round(e.manpower)}k`, warn: e.manpower < MEN_PER_DIVISION, open: { kind: 'production' }, why: `Thousands of men available: enough for ${Math.floor(e.manpower / MEN_PER_DIVISION)} new divisions` },
     );
@@ -108,11 +111,19 @@ function TopBar() {
 function Rail() {
   const { setOverlay, go, toggleMute, select } = useGame.getState();
   const muted = useGame((s) => s.muted);
+  // A gold dot on a panel that is waiting for a decision: an idle research team, or no plan under way.
+  const e = useGame((s) => (s.world?.player && !s.world.capitulated.includes(s.world.player) ? s.world.economies[s.world.player] : undefined));
+  const alerts: Record<string, string> = {};
+  if (e) {
+    const idle = e.research.slots.filter((x) => !x).length;
+    if (idle) alerts.Research = idle === 1 ? 'a research team is idle' : `${idle} research teams are idle`;
+    if (!e.plan.active) alerts.Plan = 'no plan is under way';
+  }
   return (
     <nav className="mt-rail" aria-label="Panels">
       {RAIL.map((r) =>
         r.open ? (
-          <button key={r.label} onClick={() => select(r.open!)} title={`${r.label} (${r.key})`}>
+          <button key={r.label} onClick={() => select(r.open!)} title={`${RAIL_TITLE[r.label] ?? r.label} (${r.key})`} className={alerts[r.label] ? 'alert' : ''} aria-label={`${RAIL_TITLE[r.label] ?? r.label}${alerts[r.label] ? `: ${alerts[r.label]}` : ''}`}>
             <Icon d={r.d} />
             <span>{r.label}</span>
           </button>

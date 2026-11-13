@@ -1,8 +1,9 @@
 /**
  * Bot playtests: AI against AI test wars, to check the balance of land combat, supply and
- * production, and finance playtests, to check what each way of paying for a war costs.
+ * production; finance playtests, to check what each way of paying for a war costs; and four
+ * years of AI peace, to check research, national plans and the home front.
  *
- *   npm run balance            200 wars and 24 finance runs, writes docs/balance-stage-d.md
+ *   npm run balance            200 wars, 24 finance runs and one peace run, writes docs/balance-stage-e.md
  *   npm run balance -- 40      a quicker run with fewer wars
  *
  * Every war uses the real 1936 map and starting armies, with both sides led by the simple AI
@@ -10,6 +11,10 @@
  */
 import fs from 'node:fs';
 import { COUNTRIES } from '../src/sim/countries';
+import { economyView } from '../src/sim/economy';
+import { advance } from '../src/sim/game';
+import { planById } from '../src/sim/plans';
+import { newWorld } from '../src/sim/world';
 import { POLICIES, runFinance } from '../src/sim/testeconomy';
 import { runWar, SCENARIOS, type WarResult } from '../src/sim/testwar';
 
@@ -46,7 +51,19 @@ for (const c of COUNTRIES.filter((k) => k.major)) {
   }
 }
 
-const report = `# Balance report, Stage D: ${all.length} AI against AI wars and ${financeRows.length} finance playtests
+// Four years of peace with every country led by the AI: what did each major power research and plan?
+let peace = newWorld('freeForAll', 'balance-peace');
+for (let d = 0; d < 365 * 4 + 1; d++) peace = advance(peace);
+const peaceRows: string[] = [];
+for (const c of COUNTRIES.filter((k) => k.major)) {
+  const e = peace.economies[c.name];
+  const v = economyView(peace, c.name);
+  const start = c.startArmy[0] + c.startArmy[1] + c.startArmy[2];
+  peaceRows.push(`| ${c.name} | ${start} to ${peace.units.filter((u) => u.owner === c.name).length} | ${c.industry.civ} + ${c.industry.mil} to ${Math.floor(v.civ + 1e-9)} + ${Math.floor(v.mil + 1e-9)} | ${e.research.done.length} of 16 | ${e.plan.done.length} | ${e.plan.done.filter((id) => planById(id)?.country).map((id) => planById(id)!.name).join(', ') || 'none'} | ${Math.round(e.stability)} | ${Math.round(e.warSupport)} | ${Math.round(v.debtRatio * 100)}% |`);
+  console.log(peaceRows[peaceRows.length - 1]);
+}
+
+const report = `# Balance report, Stage E: ${all.length} AI against AI wars, ${financeRows.length} finance playtests and four years of peace
 
 Made by \`npm run balance\`. Do not edit the tables by hand; run the command again instead.
 
@@ -54,8 +71,8 @@ Made by \`npm run balance\`. Do not edit the tables by hand; run the command aga
 
 Each war starts on 1 January 1936 with the real map and each country's starting army and
 economy. The first country declares war on the second on day 1. Both are led by the same simple
-army AI and the same AI finance minister, which raises new divisions, refills damaged ones and
-pays for it all. A war ends when one side surrenders (enemies hold 60% of its home victory
+army AI and the same AI finance minister, which raises new divisions, refills damaged ones,
+picks research and national plans, and pays for it all. A war ends when one side surrenders (enemies hold 60% of its home victory
 points) or after 2 years, which counts as a stalemate. Only the two countries fight.
 
 | War | Divisions at the start | First side wins | Second side wins | Stalemate | Average days to win | Divisions lost, first | Divisions lost, second | Battles | Attacks that succeed | What really happened |
@@ -68,7 +85,9 @@ during the war count against losses and the figure can be zero for a side that g
 ## Paying for a war
 
 Each major power is put at war for four years with a country it cannot reach, so nothing is
-lost in battle and the only difference between runs is how the war is paid for. Conscription is
+lost in battle and the only difference between runs is how the war is paid for. The other
+country declares the war, so the public supports it (war support starts near 65 in the
+democracies and 85 in the dictatorships, and wears down as the war drags on). Conscription is
 "extensive". The AI raises divisions and builds arms factories until the shortfall reaches 20%
 of output; the money policy is fixed:
 
@@ -77,12 +96,21 @@ ${POLICIES.map((p) => `- **${p.name}**: ${p.what.toLowerCase()}.`).join('\n')}
 | Country | Policy | Divisions | Military factories | Highest inflation | Prices after 4 years | Debt, % of a year's output | Lowest stability | Factory speed at the end | Share of shortfall printed |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 ${financeRows.join('\n')}
+
+## Four years of peace
+
+Every country is led by the AI from 1 January 1936 to 1 January 1940 and nobody declares war.
+The table shows what the six major powers did with their research teams and national plans.
+
+| Country | Divisions | Factories (civilian + military) | Technologies | Plans carried out | Its real programmes | Stability | War support | Debt, % of a year's output |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+${peaceRows.join('\n')}
 `;
 fs.mkdirSync('docs', { recursive: true });
-const file = 'docs/balance-stage-d.md';
+const file = 'docs/balance-stage-e.md';
 // Keep the hand-written notes below the tables when the numbers are refreshed.
 const marker = '\n## What the results say';
 const old = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
 const notes = old.includes(marker) ? old.slice(old.indexOf(marker)) : '';
 fs.writeFileSync(file, report + notes);
-console.log(`\n${all.length} wars and ${financeRows.length} finance runs in ${((Date.now() - t0) / 1000).toFixed(1)} s. Report written to ${file}`);
+console.log(`\n${all.length} wars, ${financeRows.length} finance runs and a peace run in ${((Date.now() - t0) / 1000).toFixed(1)} s. Report written to ${file}`);

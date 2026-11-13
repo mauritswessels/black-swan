@@ -11,6 +11,7 @@
  *              x terrain          (attackers only)
  *              x dig-in           (defenders only)
  *              x supply           (0.5 when cut off, up to 1.0)
+ *              x edge             (research, plans and forts: see mods.ts)
  *            x luck               (0.9 to 1.1, from the seeded generator)
  *
  * The damage is shared equally among the enemy divisions in the fight. It wears down
@@ -21,8 +22,9 @@
  * map data we do not have yet, so neither is in this formula for now.
  */
 import { distanceKm, PROVINCES } from './map';
+import { combatEdges, type Edges } from './mods';
 import { Rng } from './rng';
-import type { Battle, BattleReport, BattleTally, Cause, Terrain, Unit, UnitType, World } from './types';
+import type { Battle, BattleReport, BattleTally, Cause, Economy, Terrain, Unit, UnitType, World } from './types';
 import { atWar } from './war';
 
 export const STATS: Record<UnitType, { attack: number; defence: number }> = {
@@ -60,16 +62,16 @@ export const supplyFactor = (supply: number): number => 0.5 + 0.5 * supply;
 
 export const digInFactor = (u: Pick<Unit, 'dugIn'>): number => 1 + DIG_IN_PER_DAY * Math.min(DIG_IN_MAX_DAYS, u.dugIn);
 
-/** A division's hitting power when attacking into a province, before luck. */
-export function attackPower(u: Unit, target: number): number {
+/** A division's hitting power when attacking into a province, before luck. `edge` is what its country's research adds (1 = nothing). */
+export function attackPower(u: Unit, target: number, edge = 1): number {
   const terrain = PROVINCES[target].terrain;
   const rough = u.type === 'armour' && ARMOUR_ROUGH.includes(terrain) ? ARMOUR_ROUGH_FACTOR : 1;
-  return STATS[u.type].attack * (u.strength / 100) * TERRAIN_ATTACK[terrain] * rough * supplyFactor(u.supply);
+  return STATS[u.type].attack * (u.strength / 100) * TERRAIN_ATTACK[terrain] * rough * supplyFactor(u.supply) * edge;
 }
 
 /** A division's hitting power when defending, before luck. `digInKept` is the share of dig-in left after enemy artillery. */
-export function defencePower(u: Unit, digInKept = 1): number {
-  return STATS[u.type].defence * (u.strength / 100) * (1 + (digInFactor(u) - 1) * digInKept) * supplyFactor(u.supply);
+export function defencePower(u: Unit, digInKept = 1, edge = 1): number {
+  return STATS[u.type].defence * (u.strength / 100) * (1 + (digInFactor(u) - 1) * digInKept) * supplyFactor(u.supply) * edge;
 }
 
 /** The world as step() is changing it. Battles edit this in place. */
@@ -81,9 +83,11 @@ export interface Draft {
   battles: Battle[];
   nextBattleId: number;
   reports: BattleReport[];
+  /** What research, plans and forts add to each division's hitting power. Missing means nothing. */
+  edges?: Edges;
 }
 
-const emptyTally = (): BattleTally => ({ days: 0, attackerCount: 0, defenderCount: 0, terrain: 0, attackerSupply: 0, defenderSupply: 0, dugIn: 0, directions: 0, armourShare: 0, artilleryShare: 0 });
+const emptyTally = (): BattleTally => ({ days: 0, attackerCount: 0, defenderCount: 0, terrain: 0, attackerSupply: 0, defenderSupply: 0, dugIn: 0, directions: 0, armourShare: 0, artilleryShare: 0, attackerEdge: 0, defenderEdge: 0 });
 
 /** The best-organised divisions go into the line first. */
 const line = (units: Unit[], width: number): Unit[] => [...units].sort((a, b) => b.organisation - a.organisation || a.id - b.id).slice(0, width);
@@ -118,16 +122,19 @@ export function retreatTarget(d: Pick<Draft, 'controller'>, u: Unit, capital: nu
 const CAPITAL_OF = new Map(PROVINCES.filter((p) => p.capital).map((p) => [p.owner, p.id]));
 
 /** Who actually fights today, and how hard each side hits before luck. */
-function lineUp(attackers: Unit[], defenders: Unit[], province: number) {
+function lineUp(attackers: Unit[], defenders: Unit[], province: number, edges?: Edges) {
   const directions = new Set(attackers.map((u) => u.at)).size;
   const front = line(attackers, ATTACK_WIDTH + ATTACK_WIDTH_PER_EXTRA_DIRECTION * (directions - 1));
   const holding = line(defenders, DEFENCE_WIDTH);
   const guns = front.filter((u) => u.type === 'artillery').length;
   const digInKept = Math.max(0, 1 - ARTILLERY_VS_DIG_IN * guns);
-  const attackEach = front.map((u) => attackPower(u, province));
+  const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 1);
+  const attackEach = front.map((u) => attackPower(u, province, edges?.attack(u)));
   const attackSum = attackEach.reduce((a, b) => a + b, 0);
-  const defenceSum = holding.reduce((a, u) => a + defencePower(u, digInKept), 0);
-  return { directions, front, holding, digInKept, attackEach, attackSum, defenceSum };
+  const defenceSum = holding.reduce((a, u) => a + defencePower(u, digInKept, edges?.defence(u, province)), 0);
+  const attackerEdge = mean(front.map((u) => edges?.attack(u) ?? 1));
+  const defenderEdge = mean(holding.map((u) => edges?.defence(u, province) ?? 1));
+  return { directions, front, holding, digInKept, attackEach, attackSum, defenceSum, attackerEdge, defenderEdge };
 }
 
 /** How a fight for a province looks today, for the battle sidebar and for planning an attack. */
@@ -149,6 +156,9 @@ export interface Outlook {
   dugIn: number;
   attackerSupply: number;
   defenderSupply: number;
+  /** What research, plans and forts add to each side's hitting power. */
+  attackerEdge: number;
+  defenderEdge: number;
   /** Who breaks first at this rate. 'even' when it is within 15%. */
   favours: 'attacker' | 'defender' | 'even';
 }
@@ -157,9 +167,9 @@ export interface Outlook {
  * The outlook if `attackers` attack `defenders` in `province` today. It uses the same line-up
  * as the real battle, without the luck, and it cannot know about reinforcements.
  */
-export function outlook(attackers: Unit[], defenders: Unit[], province: number): Outlook | null {
+export function outlook(attackers: Unit[], defenders: Unit[], province: number, edges?: Edges): Outlook | null {
   if (!attackers.length || !defenders.length) return null;
-  const { directions, front, holding, digInKept, attackSum, defenceSum } = lineUp(attackers, defenders, province);
+  const { directions, front, holding, digInKept, attackSum, defenceSum, attackerEdge, defenderEdge } = lineUp(attackers, defenders, province, edges);
   const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
   // A division gives up when its organisation is gone (attackers a little earlier).
   const days = (units: Unit[], damage: number, floor: number) => (damage > 0 ? Math.max(0, avg(units.map((u) => u.organisation)) - floor) / ((damage / units.length) * ORG_PER_DAMAGE) : Infinity);
@@ -180,16 +190,18 @@ export function outlook(attackers: Unit[], defenders: Unit[], province: number):
     dugIn: avg(holding.map((u) => 1 + (digInFactor(u) - 1) * digInKept)),
     attackerSupply: avg(front.map((u) => supplyFactor(u.supply))),
     defenderSupply: avg(holding.map((u) => supplyFactor(u.supply))),
+    attackerEdge,
+    defenderEdge,
     favours: ratio > 1.15 ? 'attacker' : ratio < 1 / 1.15 ? 'defender' : 'even',
   };
 }
 
 /** The outlook for a battle being fought now, or for the units already ordered into a province. */
-export function outlookAt(w: Pick<World, 'units' | 'wars'>, province: number): Outlook | null {
+export function outlookAt(w: Pick<World, 'units' | 'wars'> & { economies?: Record<string, Economy> }, province: number): Outlook | null {
   const here = w.units.filter((u) => u.at === province);
   const attackers = w.units.filter((u) => u.path[0] === province && here.some((e) => atWar(w, u.owner, e.owner)));
   const defenders = here.filter((u) => attackers.some((a) => atWar(w, a.owner, u.owner)));
-  return outlook(attackers, defenders, province);
+  return outlook(attackers, defenders, province, w.economies && combatEdges(w.economies));
 }
 
 /** Fight one day of every battle. Returns the ids of the units that took part today. */
@@ -237,7 +249,7 @@ export function fightBattles(d: Draft, rng: Rng): Set<number> {
     battle.attackers = union2(battle.attackers, byCount(attackers));
     battle.defenders = union2(battle.defenders, byCount(defenders));
 
-    const { directions, front, holding, digInKept, attackEach, attackSum, defenceSum } = lineUp(attackers, defenders, province);
+    const { directions, front, holding, digInKept, attackEach, attackSum, defenceSum, attackerEdge, defenderEdge } = lineUp(attackers, defenders, province, d.edges);
     const attackDamage = attackSum * (0.9 + 0.2 * rng.next());
     const defenceDamage = defenceSum * (0.9 + 0.2 * rng.next());
 
@@ -269,6 +281,8 @@ export function fightBattles(d: Draft, rng: Rng): Set<number> {
     t.defenderSupply += avg(holding.map((u) => supplyFactor(u.supply)));
     t.dugIn += avg(holding.map((u) => 1 + (digInFactor(u) - 1) * digInKept));
     t.directions += directions;
+    t.attackerEdge += attackerEdge;
+    t.defenderEdge += defenderEdge;
     const share = (type: UnitType) => (attackSum > 0 ? front.reduce((a, u, i) => a + (u.type === type ? attackEach[i] : 0), 0) / attackSum : 0);
     t.armourShare += share('armour');
     t.artilleryShare += share('artillery');
@@ -349,6 +363,8 @@ export function explain(b: Battle, winner: 'attacker' | 'defender'): Cause[] {
   const directions = t.directions / n;
   const armour = t.armourShare / n;
   const artillery = t.artilleryShare / n;
+  // How much better armed and fortified the defenders were than the attackers (1 = the same).
+  const edge = (t.defenderEdge || n) / (t.attackerEdge || n);
   const ratio = b.attackerUnits.length / Math.max(1, b.defenderUnits.length);
   const place = PROVINCES[b.province].terrain;
   const versus = `${b.attackerUnits.length} divisions against ${b.defenderUnits.length}`;
@@ -360,6 +376,7 @@ export function explain(b: Battle, winner: 'attacker' | 'defender'): Cause[] {
   if (winner === 'defender') {
     add(-Math.log(terrain), `attacking into ${place} (attackers hit ${pct(1 - terrain)} less hard)`);
     add(Math.log(dugIn), `the defenders were dug in (+${pct(dugIn - 1)} defence)`);
+    add(Math.log(edge), `the defenders had better weapons or fortifications (${pct(edge - 1)} stronger)`);
     add(-Math.log(aSupply), `the attackers were short of supply (${pct(1 - aSupply)} weaker)`);
     add(Math.log(2 / Math.max(0.2, ratio)), ratio < 1 ? `the attackers were outnumbered (${versus})` : `too few attackers for an assault (${versus}; plan for about 2 to 1)`);
     add(0.05, 'defending is easier than attacking (infantry defends at 15 but attacks at 10)');
@@ -369,6 +386,7 @@ export function explain(b: Battle, winner: 'attacker' | 'defender'): Cause[] {
     add(armour * Math.log(STATS.armour.attack / STATS.infantry.attack) * (terrain === 1 ? 1.5 : 1), terrain === 1 ? 'armour broke through on open ground' : 'armour led the attack');
     add(artillery * Math.log(STATS.artillery.attack / STATS.infantry.attack) + (artillery > 0 ? 0.1 : 0), 'artillery broke up the dug-in positions');
     add(-Math.log(dSupply), `the defenders were short of supply (${pct(1 - dSupply)} weaker)`);
+    add(-Math.log(edge), `the attackers had better weapons (${pct(1 / edge - 1)} stronger)`);
     add(b.surrendered, `${b.surrendered} surrounded ${b.surrendered === 1 ? 'division' : 'divisions'} had nowhere to retreat and surrendered`);
     add(0.05, 'the attackers wore the defenders down');
   }

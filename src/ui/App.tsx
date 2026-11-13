@@ -55,6 +55,7 @@ function useShortcuts() {
       if (k === 't' && g.world?.player) return g.select({ kind: 'research' });
       if (k === 'n' && g.world?.player) return g.select({ kind: 'plans' });
       if (k === 'w' && g.world?.player) return g.select({ kind: 'politics' });
+      if (k === 'd' && g.world?.player) return g.select({ kind: 'diplomacy' });
       if (k === 'g' && g.selection?.kind === 'units') {
         e.preventDefault();
         g.setOrdering(true);

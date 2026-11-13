@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { quiet } from '../src/sim/agenda';
 import { aiOrders } from '../src/sim/ai';
 import { COUNTRIES } from '../src/sim/countries';
 import { BUILD_COST, CONSCRIPTION, economyView, KIT_COST, LINE_START, MEN_PER_DIVISION, NEW_DIVISION_ORGANISATION, tallies, TRAINING_DAYS, WAR_UPKEEP } from '../src/sim/economy';
@@ -354,7 +355,7 @@ describe('orders', () => {
 
 describe('AI countries at peace (bot playtest)', () => {
   it('four years of peace: nobody goes bankrupt, and the dictatorships rearm fastest', () => {
-    let w = newWorld('freeForAll', 'peace');
+    let w = quiet(newWorld('freeForAll', 'peace'));
     const size = (x: World, c: string) => x.units.filter((u) => u.owner === c).length;
     const start = w;
     for (let d = 0; d < 365 * 4; d++) w = advance(w);

@@ -108,6 +108,8 @@ export interface InflationCauses {
 
 /** Everything that changes inside one country: its economy, its home front, its research and its plans. Money is in millions at current prices. */
 export interface Economy {
+  /** The kind of government in power now. It starts as the country's 1936 government and can change when a government falls or a victor installs a new one. */
+  government: Government;
   treasury: number;
   debt: number;
   /** Average interest rate on the debt, per cent a year. */
@@ -266,6 +268,10 @@ export interface World {
   nextUnitId: number;
   /** Who controls each province right now, by province id. */
   controller: string[];
+  /** Whose land each province is, by province id. It starts as the 1936 owner and changes only by treaty or annexation. A province controlled by someone else is occupied. */
+  owner: string[];
+  /** Relations, pacts, world tension, causes for war and decisions waiting for the player (see diplomacy.ts). */
+  diplomacy: Diplomacy;
   /** Pairs of countries at war, each written "A|B" with the names in alphabetical order. */
   wars: string[];
   /** Who declared each war, by the same "A|B" key. */
@@ -282,13 +288,139 @@ export interface World {
   factories: { civ: number[]; mil: number[] };
 }
 
+export type PactKind = 'alliance' | 'guarantee' | 'nonAggression';
+
+/** An agreement between two countries. A guarantee runs one way: `a` promises to defend `b`. */
+export interface Pact {
+  kind: PactKind;
+  a: string;
+  b: string;
+  /** The day it was signed. */
+  since: number;
+}
+
+/** What an ultimatum asks for. */
+export type Demand =
+  /** The whole country joins the one making the demand. */
+  | { kind: 'annex' }
+  /** Hand over these provinces. `arms` also hands over border forts and arms works that are too small to show on the map: a third of the army and up to two military factories. */
+  | { kind: 'cede'; provinces: number[]; arms?: boolean }
+  /** Accept occupation without a fight. */
+  | { kind: 'submit' };
+
+export type PeaceTerms = 'white' | 'asHeld';
+
+/** An ultimatum that is waiting for answers. */
+export interface Ultimatum {
+  id: number;
+  by: string;
+  on: string;
+  demand: Demand;
+  /** The day it runs out. Whoever has not answered by then gets the default answer. */
+  deadline: number;
+  /** What each protector of the target has said: true = it will fight. */
+  stances: Record<string, boolean | null>;
+  /** The AI making the demand goes to war after a refusal only at these odds or better. */
+  warOdds: number;
+  /** The entry in the historical agenda this came from, if any. */
+  aim?: string;
+}
+
+/** A choice waiting for the player. If the deadline passes, `fallback` is taken. */
+export interface Decision {
+  id: number;
+  /** The country that has to decide (the player's). */
+  country: string;
+  kind: 'ultimatum' | 'backing' | 'honour' | 'proposal' | 'peace' | 'call' | 'event';
+  /** The country it comes from, or is about. */
+  from: string;
+  /** A second country involved, e.g. the one that was attacked. */
+  about?: string;
+  /** Which ultimatum, pact or terms this is about. */
+  ultimatum?: number;
+  pact?: PactKind;
+  terms?: PeaceTerms;
+  aim?: string;
+  title: string;
+  text: string;
+  options: { label: string; effect: string }[];
+  deadline: number;
+  fallback: number;
+}
+
+/** One line of diplomatic news. */
+export interface DipEvent {
+  id: number;
+  day: number;
+  kind: 'war' | 'peace' | 'pact' | 'crisis' | 'government' | 'info';
+  text: string;
+  /** The countries it involves, the one acting first. */
+  countries: string[];
+}
+
+/** Everything about relations between countries (see diplomacy.ts). */
+export interface Diplomacy {
+  /** How two countries regard each other, -100 to 100, by "A|B" key (names in alphabetical order). */
+  relations: Record<string, number>;
+  pacts: Pact[];
+  /** World tension, 0 to 100: how close Europe feels to a general war. */
+  tension: number;
+  /** How many times each country has broken the peace: ultimatums that were given in to, and wars it started. */
+  aggression: Record<string, number>;
+  /** Causes for war that run out: `by` may declare war on `on` until day `until`. */
+  causes: { by: string; on: string; until: number; why: string }[];
+  /** Cases for war being built. */
+  justifying: { by: string; on: string; daysLeft: number }[];
+  /** Truces after a peace, by "A|B" key: the day each one ends. */
+  truces: Record<string, number>;
+  /** Wars fought for a limited aim, by "A|B" key: the provinces the attacker wants. */
+  aims: Record<string, { by: string; provinces: number[] }>;
+  /** The day each war started, and wars that were joined to honour a pact, by "A|B" key. */
+  warStart: Record<string, number>;
+  honour: string[];
+  /** Countries that are gone, and who conquered or annexed each. */
+  conquered: Record<string, string>;
+  /** For each country that is gone: who had promised to defend it. They do not make peace with its conqueror lightly. */
+  owed: Record<string, string[]>;
+  /** Diplomatic missions under way, each written "from>to". */
+  missions: string[];
+  /** The historical agenda (agenda.ts): 'done', 'dropped', or the day to look at it again. */
+  agenda: Record<string, 'done' | 'dropped' | number>;
+  /** Proposals that were turned down, by "from>to:what": the day they may be made again. */
+  rebuffs: Record<string, number>;
+  ultimatums: Ultimatum[];
+  decisions: Decision[];
+  nextId: number;
+  /** The most recent diplomatic news, oldest first (the last 80 are kept). */
+  log: DipEvent[];
+}
+
 /** What a player or an AI can tell its units to do. */
 export type Order =
   | { type: 'move'; unit: number; to: number }
   | { type: 'halt'; unit: number }
-  /** Stage B has no diplomacy: war and peace simply happen. Stage F adds the rules around them. */
+  // Diplomacy (Stage F). `by` is the country giving the order.
   | { type: 'declareWar'; by: string; on: string }
+  /** Sign a white peace at once. Used by treaties and tests; players and AI countries use offerPeace. */
   | { type: 'makePeace'; a: string; b: string }
+  | { type: 'offerPeace'; by: string; to: string; terms: PeaceTerms }
+  /** Propose an alliance or a non-aggression pact. `agreed` is set by the historical agenda when both governments have already settled it. */
+  | { type: 'propose'; by: string; to: string; pact: 'alliance' | 'nonAggression'; agreed?: boolean }
+  | { type: 'guarantee'; by: string; on: string }
+  | { type: 'endPact'; by: string; other: string; pact: PactKind }
+  /** Start building a case for war. */
+  | { type: 'justify'; by: string; on: string }
+  /** Demand what you claim. Without `demand`, the country's standing claim is used. */
+  | { type: 'ultimatum'; by: string; on: string; demand?: Demand; warOdds?: number; aim?: string }
+  | { type: 'mission'; by: string; to: string; on: boolean }
+  /** Ask an ally to join your war against a country. */
+  | { type: 'callAlly'; by: string; ally: string; against: string }
+  /** Answer a decision that is waiting. */
+  | { type: 'decide'; by: string; id: number; option: number }
+  /** Decide the future of a country you have conquered. */
+  | { type: 'settle'; by: string; target: string; how: 'annex' | 'friendly' }
+  /** The AI's historical agenda: carry out an entry, or put it off. */
+  | { type: 'aim'; id: string; go: boolean }
   // The economy (Stage D). `country` is the country giving the order.
   | { type: 'setTax'; country: string; rate: number }
   | { type: 'setBondShare'; country: string; share: number }

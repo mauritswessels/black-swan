@@ -1,7 +1,7 @@
 /** The Map table: the main game screen. The map fills the window; bars and the sidebar sit over it. */
 import { useEffect, useState } from 'react';
-import { countryByName } from '../../sim/countries';
 import { economyView, MEN_PER_DIVISION } from '../../sim/economy';
+import { governmentOf } from '../../sim/diplomacy';
 import { enemiesOf } from '../../sim/war';
 import { dateLabel } from '../../sim/world';
 import { MapView } from '../map/MapView';
@@ -19,11 +19,11 @@ const RAIL: { label: string; stage: string; d: string; open?: Selection; key?: s
   { label: 'Production', stage: 'D', d: 'M3 21V10l6 4v-4l6 4V4h6v17z', open: { kind: 'production' }, key: 'P' },
   { label: 'Research', stage: 'E', d: 'M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3', open: { kind: 'research' }, key: 'T' },
   { label: 'Economy', stage: 'D', d: 'M2 20h20M5 20V11M10 20V5M15 20v-7M20 20V8', open: { kind: 'economy' }, key: 'E' },
-  { label: 'Diplomacy', stage: 'F', d: 'M3 12h18M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18M12 3c-5 5-5 13 0 18M12 3c5 5 5 13 0 18' },
+  { label: 'Diplomacy', stage: 'F', d: 'M3 12h18M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18M12 3c-5 5-5 13 0 18M12 3c5 5 5 13 0 18', open: { kind: 'diplomacy' }, key: 'D' },
   { label: 'Plan', stage: 'E', d: 'M5 21V4h12l-3 4 3 4H5', open: { kind: 'plans' }, key: 'N' },
   { label: 'Home', stage: 'E', d: 'M4 20v-7a8 8 0 0 1 16 0v7M4 20h16M9 20v-5h6v5M12 5V3', open: { kind: 'politics' }, key: 'W' },
 ];
-const RAIL_TITLE: Record<string, string> = { Plan: 'National plan', Home: 'Home front: stability and war support' };
+const RAIL_TITLE: Record<string, string> = { Plan: 'National plan', Home: 'Home front: stability and war support', Diplomacy: 'Diplomacy: allies, promises, war and peace' };
 const CODEX = 'M5 4h14v16H7a2 2 0 0 1-2-2zM5 18a2 2 0 0 1 2-2h12';
 const Icon = ({ d }: { d: string }) => (
   <svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" strokeLinecap="round">
@@ -57,6 +57,7 @@ function TopBar() {
       { label: 'Stability', value: String(Math.round(e.stability)), warn: e.stability < 50, open: { kind: 'politics' }, why: `Heading for ${Math.round(v.stabilityTarget)}. Below 50, strikes slow the factories.` },
       { label: 'War support', value: String(Math.round(e.warSupport)), warn: v.atWar && e.warSupport < 40, open: { kind: 'politics' }, why: `Heading for ${Math.round(v.warSupportTarget)}. It decides how far conscription and wartime taxes can go.` },
       { label: 'Factories', value: `${Math.floor(v.civ + 1e-9)} + ${Math.floor(v.mil + 1e-9)}`, warn: v.shortage > 0 || v.milFree > 0, open: { kind: 'production' }, why: `Civilian + military.${v.milFree ? ` ${v.milFree} military idle.` : ''}${v.shortage > 0 ? ` Shortage of consumer goods: ${Math.round(v.shortage * 100)}%.` : ''}` },
+      { label: 'Tension', value: String(Math.round(w.diplomacy.tension)), warn: w.diplomacy.decisions.some((d) => d.country === me), open: { kind: 'diplomacy' }, why: `World tension, 0 to 100: how close Europe feels to a general war.${w.diplomacy.decisions.some((d) => d.country === me) ? ' A decision is waiting for you.' : ''}` },
       { label: 'Manpower', value: `${Math.round(e.manpower)}k`, warn: e.manpower < MEN_PER_DIVISION, open: { kind: 'production' }, why: `Thousands of men available: enough for ${Math.floor(e.manpower / MEN_PER_DIVISION)} new divisions` },
     );
   }
@@ -65,7 +66,7 @@ function TopBar() {
       <button className="mt-country-btn" onClick={() => me && select({ kind: 'country', name: me })}>
         <span>{(me ?? 'Observer').toUpperCase()}</span>
         <small>
-          {me ? GOVERNMENT[countryByName(me).government] : 'Watching'} · {enemies.length ? `at war with ${enemies.join(', ')}` : 'at peace'}
+          {me ? GOVERNMENT[governmentOf(w, me)] : 'Watching'} · {enemies.length ? `at war with ${enemies.join(', ')}` : 'at peace'}
         </small>
       </button>
       <ul className="mt-stats">
@@ -119,6 +120,8 @@ function Rail() {
     if (idle) alerts.Research = idle === 1 ? 'a research team is idle' : `${idle} research teams are idle`;
     if (!e.plan.active) alerts.Plan = 'no plan is under way';
   }
+  const waiting = useGame((s) => (s.world?.player ? s.world.diplomacy.decisions.filter((d) => d.country === s.world!.player).length : 0));
+  if (waiting) alerts.Diplomacy = waiting === 1 ? 'a decision is waiting for you' : `${waiting} decisions are waiting for you`;
   return (
     <nav className="mt-rail" aria-label="Panels">
       {RAIL.map((r) =>
@@ -182,7 +185,7 @@ function Legend({ mode }: { mode: MapMode }) {
     <ul className="mt-legend" aria-label="Map key">
       {mode === 'terrain' && (Object.keys(TERRAIN_COLOUR) as (keyof typeof TERRAIN_COLOUR)[]).map((t) => key(TERRAIN_COLOUR[t], t))}
       {mode === 'supply' && [key('rgb(40,58,88)', 'feeds few divisions'), key('rgb(98,128,162)', 'feeds many'), key('rgb(158,126,74)', 'overcrowded'), key('', 'cut off from your depots', 'hatch-cut')]}
-      {mode === 'diplomacy' && [key('rgb(60,94,156)', 'you'), key('', 'at war with you', 'hatch-war'), key('rgb(39,45,60)', 'neutral')]}
+      {mode === 'diplomacy' && [key('rgb(60,94,156)', 'you'), key('rgb(58,128,104)', 'your allies'), key('rgb(96,104,66)', 'you guarantee it'), key('', 'at war with you', 'hatch-war'), key('rgb(104,62,84)', 'hostile (relations under -25)'), key('rgb(39,45,60)', 'others')]}
     </ul>
   );
 }
@@ -233,7 +236,7 @@ function Ticker() {
           ))
         ) : (
           <span className="mt-quiet">
-            {w.wars.length ? 'No news since you opened this game. ' : 'Europe is at peace. '}Click a country's name, or one of its provinces, to open its details and declare war. Then select your divisions and right-click where they should go.
+            {w.wars.length ? 'No news since you opened this game. ' : 'Europe is at peace. '}Press D for Diplomacy, or click a country's name to see how it regards you and what you can do about it.
           </span>
         )}
       </div>
@@ -252,7 +255,7 @@ function Defeat() {
   return (
     <div className="mt-defeat" role="alertdialog" aria-label="Your country has surrendered">
       <h2>{w.player} has surrendered</h2>
-      <p>Your enemies hold more than 60% of your home victory points. Read the battle reports to see where it went wrong, then try again.</p>
+      <p>{w.diplomacy.conquered[w.player ?? ''] ? `Your country is now in the hands of ${w.diplomacy.conquered[w.player ?? '']}.` : 'Your enemies hold your country.'} Read the battle reports and the diplomatic news to see where it went wrong, then try again.</p>
       <div className="sb-actions">
         <button className="btn primary" onClick={() => go('title')} autoFocus>
           Main menu

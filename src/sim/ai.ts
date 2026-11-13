@@ -9,17 +9,20 @@
  *      power and staying power to outlast the defenders (by the `boldness` margin, 1.3 by
  *      default);
  *   3. calls off attacks by divisions that are worn out;
- *   4. moves divisions out of provinces too crowded to supply, keeps a guard on each front province in proportion to the enemy next to it, and sends
- *      everything else towards the weakest valuable point of the enemy line.
+ *   4. moves divisions out of provinces too crowded to supply (back into the rear if the
+ *      front is full), keeps a guard on each front province in proportion to the enemy next
+ *      to it, and sends everything else towards the weakest valuable point of the enemy line.
  *
- * It has no memory: the orders depend only on the world as it is today. Stage F replaces this
- * with a fuller AI (grand strategy, fronts and economy).
+ * It has no memory: the orders depend only on the world as it is today. When and against whom
+ * a country goes to war is decided elsewhere (agenda.ts); this only fights the war. Allied land
+ * counts as friendly ground.
  */
 import { ATTACK_WIDTH, ATTACK_WIDTH_PER_EXTRA_DIRECTION, attackPower, defencePower, DEFENCE_WIDTH } from './combat';
 import { daysToEnter, findRoute, PROVINCES } from './map';
 import { combatEdges } from './mods';
 import { supplyCapacity } from './supply';
 import type { Order, Unit, World } from './types';
+import { allianceMap } from './diplomacy';
 import { canEnter, enemiesOf } from './war';
 
 export interface AiOptions {
@@ -51,12 +54,15 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
   const enemyAt = (p: number) => unitsAt(p).filter((u) => enemies.has(u.owner));
   const mineAt = (p: number) => unitsAt(p).filter((u) => u.owner === country);
   const isEnemyLand = (p: number) => enemies.has(w.controller[p]);
+  // Allied land is friendly ground: the army may stand on it, march through it and attack from it.
+  const allies = allianceMap(w.diplomacy).get(country);
+  const friendly = (p: number) => w.controller[p] === country || !!allies?.has(w.controller[p]);
 
   // Enemy provinces next to mine, and my provinces next to the enemy (the front).
   const targets = new Set<number>();
   const front = new Set<number>();
   for (const p of PROVINCES) {
-    if (w.controller[p.id] !== country) continue;
+    if (!friendly(p.id)) continue;
     for (const n of p.neighbours) {
       if (isEnemyLand(n)) {
         targets.add(n);
@@ -96,7 +102,7 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
     .map((t) => ({ t, defence: defenceOf(t), ongoing: w.battles.some((b) => b.province === t) }))
     .sort((a, b) => a.defence / value(a.t) - b.defence / value(b.t) || a.t - b.t);
   for (const { t, defence, ongoing } of scored) {
-    const around = PROVINCES[t].neighbours.filter((n) => w.controller[n] === country);
+    const around = PROVINCES[t].neighbours.filter(friendly);
     if (defence === 0) {
       // Undefended: one fast division is enough, unless someone is already on the way.
       if (mine.some((u) => u.path[u.path.length - 1] === t)) continue;
@@ -148,7 +154,7 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
   }
   const staging = scored
     .filter((s) => s.defence > 0)
-    .flatMap((s) => PROVINCES[s.t].neighbours.filter((n) => w.controller[n] === country))
+    .flatMap((s) => PROVINCES[s.t].neighbours.filter(friendly))
     .filter((n, i, a) => a.indexOf(n) === i);
   const frontList = [...front].sort((a, b) => a - b);
   for (const u of mine) {
@@ -164,7 +170,7 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
     }
     // Choose where to go: a staging province with room, else any front province with room.
     // A division in an overcrowded province may also step back to any neighbour with room.
-    const choices = [...staging.slice(0, 3), ...frontList, ...(crowded ? PROVINCES[here].neighbours.filter((n) => w.controller[n] === country) : [])];
+    const choices = [...staging.slice(0, 3), ...frontList, ...(crowded ? PROVINCES[here].neighbours.filter(friendly) : [])];
     let best = -1;
     let bestCost = Infinity;
     choices.forEach((p, i) => {
@@ -173,7 +179,7 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
       if (room <= 0) return;
       const mainEffort = i < 3;
       if (isFront && !mainEffort && !crowded) return; // do not shuffle sideways along the front for nothing
-      const route = findRoute(here, p, u.type, (q) => canEnter(w, country, q) && !isEnemyLand(q));
+      const route = findRoute(here, p, u.type, (q) => canEnter(w, country, q, allies) && !isEnemyLand(q));
       if (!route) return;
       let days = 0;
       let from = here;
@@ -187,6 +193,24 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
         best = p;
       }
     });
+    if (best < 0 && crowded) {
+      // Nowhere near has room: fall back through friendly land to the nearest province that does.
+      // A big army keeps its reserves in depth instead of starving in one overcrowded province.
+      const seen = new Set([here]);
+      let ring = [here];
+      while (best < 0 && ring.length) {
+        const next: number[] = [];
+        for (const q of ring) {
+          for (const n of PROVINCES[q].neighbours) {
+            if (seen.has(n) || !friendly(n)) continue;
+            seen.add(n);
+            next.push(n);
+            if (best < 0 && supplyCapacity(n) - (crowd.get(n) ?? 0) > 0) best = n;
+          }
+        }
+        ring = next;
+      }
+    }
     if (best >= 0) {
       crowd.set(best, (crowd.get(best) ?? 0) + 1);
       crowd.set(here, (crowd.get(here) ?? 1) - 1);

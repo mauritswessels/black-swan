@@ -256,7 +256,7 @@ export function ProductionPanel({ w, me }: { w: World; me: string }) {
   const order = useGame.getState().economy;
   const civ = Math.floor(v.civ + 1e-9);
   const mil = Math.floor(v.mil + 1e-9);
-  const home = musterPoint(w.controller, me);
+  const home = musterPoint(w.controller, me, w.owner);
   const slow = slowdowns(v);
   const p = e.priceLevel / 100;
   // How long each project in the queue will take with the builders it gets.

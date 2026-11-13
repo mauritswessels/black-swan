@@ -25,8 +25,8 @@ export function Setup() {
         <h1>Choose your country</h1>
         <p className="muted">
           {mode === 'story'
-            ? 'The history cards and chapters of Story mode arrive in Stage H. For now both modes play the same: an open map on which you command the army.'
-            : 'Any country with an army. The six major powers are listed first.'}
+            ? 'The other countries follow their real history unless you change it. You need a cause to declare war. The history cards and chapters arrive in Stage H.'
+            : 'Any country with an army. You may attack anyone without a cause, at a price. The six major powers are listed first.'}
         </p>
         <ul className="setup-list">
           {choices.map((c, i) => {

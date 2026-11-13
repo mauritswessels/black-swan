@@ -2,28 +2,33 @@
 
 This file lists the rules of each system as they are in the code right now. Maths is written
 in plain text. The numbers were tuned with `npm run balance` (see
-[docs/balance-stage-e.md](docs/balance-stage-e.md)) and will be tuned again as later stages
-add diplomacy and air power.
+[docs/balance-stage-f.md](docs/balance-stage-f.md)) and will be tuned again as later stages
+add the navy and air power.
 
 ## The day
 
 `step(world, orders)` moves the world on one day, always in this order:
 
-1. Orders are applied (move, halt, declare war, make peace, and everything about the economy).
-2. Every economy runs for a day: taxes and bills, production lines, construction, training,
+1. Orders are applied (move, halt, everything about the economy and everything about
+   diplomacy).
+2. Diplomacy runs: cases for war and truces count down, unanswered decisions take their
+   default, and on the last day of a month relations drift and tension falls.
+3. Every economy runs for a day: taxes and bills, production lines, construction, training,
    research and the national plan. On the last day of a month, inflation, stability and war
    support are worked out.
-3. Supply is worked out for every division.
-4. Every battle fights one round.
-5. Divisions march.
-6. Divisions rest, refill, dig in or go hungry.
-7. Countries that have lost too much surrender.
+4. Supply is worked out for every division.
+5. Every battle fights one round.
+6. Divisions march. Allies may cross each other's land; land taken back from an enemy
+   returns to the ally that owned it.
+7. Divisions rest, refill, dig in or go hungry.
+8. Countries that have lost too much surrender.
 
 ## A day with a player (`src/sim/game.ts`)
 
 `advance(world, playerOrders)` is one day of a game you play yourself: your orders, plus the
-test AI's orders for every other country that is at war, plus the AI finance minister's orders
-for every other country, then `step`. Countries at peace run their economies but make no moves.
+army AI's orders for every other country that is at war, the AI finance minister's orders and
+the AI foreign minister's orders (`agenda.ts`) for every other country, then `step`. The player
+cannot give the engine-only orders that force a peace or carry out an AI aim.
 Orders for divisions or economies that are not yours are dropped.
 
 `applyOrders(world, orders)` carries out orders without a day passing, so the map can show a
@@ -387,11 +392,99 @@ running and the budget can carry one, it starts its own real programmes first an
 general plans in an order that fits it (arms for the dictatorships, industry and public works
 for the democracies, the war economy for anyone at war).
 
-## Surrender
+## Diplomacy (`src/sim/diplomacy.ts`)
 
-A country surrenders when its enemies control 60% of the victory points of its home provinces.
-Its army leaves the map and, for now, the enemy holding most of it takes over everything it
-still controlled. Proper peace terms come in Stage F.
+**Relations** run from -100 to 100 and are the same in both directions. Each month a relation
+moves 2 points towards its resting point:
+
+    resting point = governments + history + treaties + claims + missions
+
+- Governments: two democracies +25, two fascist states +20, two communist +20, democracy and
+  fascist -30, democracy and communist -25, fascist and communist -45. An authoritarian state
+  is -5 with a democracy, +5 with a fascist state and -30 with a communist one.
+- History: fixed 1936 figures, such as Britain and France +35 or Poland and the Soviet Union -30.
+- Treaties: alliance +40, guarantee +20, non-aggression pact +15.
+- A claim on the other's land: -30. A diplomatic mission: +30, at a monthly cost of 0.2% of
+  a year's factory output.
+
+Events move a relation at once: a war without a cause costs 20 with everyone (30 with
+democracies, nothing with allies), a broken promise 15, a broken pact 25 to 40.
+
+**World tension** runs from 0 to 100. An ultimatum adds 5, a country giving in 10, a war on a
+small country 10, on a major power 20, a war without a cause 10 more, building a case 3, an
+annexation 5. It falls 0.5 a month. A democracy may guarantee a country from tension 25 and
+build a case for war from 50 (or at any time against a country that has already broken the
+peace). At 50 and above every AI government accepts a larger deficit and builds arms
+factories. In a country at peace, war support gains 0.2 points for every point of tension.
+
+**A cause for war** is one of: a claim (permanent), a case built by `justify` (45 days for
+fascist and communist states, 75 for authoritarian, 120 for democracies; it lasts a year), a
+refused ultimatum, or a promise to a country under attack. Story mode refuses a declaration
+without one. Free-for-all allows it at twice the stability cost.
+
+**An ultimatum** demands a claim: join us, hand over a province, or accept our troops. The
+target gives in only if both are true:
+
+    no protector stands firm, and
+    strength of the demander and its allies / strength of the target >= 1.5
+
+An AI protector stands firm when its war support is 50 or more, or world tension is 60 or
+more. A protector led by the player is asked. If the target gives in, protectors who looked
+away lose their treaty with it. If it refuses, the demander has a cause for war; an AI
+demander attacks when its odds reach the aim's threshold, and otherwise backs down, loses 5
+stability and looks again after 180 days.
+
+**Promises.** When a country is attacked, its allies and guarantors declare war on the
+attacker, unless they are already fighting another major power. The attacker's own allies are
+not obliged to join a war it started; it may ask them, and they weigh relations, tension and
+the odds. A guarantee that is honoured becomes an alliance. The player is asked each time, has
+7 days, and loses 10 stability and 15 points with every democracy for breaking a promise.
+
+**War score**, from the point of view of A against B:
+
+    score = 100 x (share of B's land points A holds - share of A's that B holds)
+          + 20 x (A's strength - B's strength) / (A's strength + B's strength)
+          + up to 15 for the gap in war support and war weariness
+          - 8 for each other major power A is fighting, + 8 for each B is fighting
+
+A country accepts a peace on the old borders when the score is against it, and a peace where
+each side keeps what it holds when it is badly against it. Two major powers never settle a
+plain stalemate; one of them has to be losing, or have war support below 25 after a year of
+war. A country that owes an ally its freedom will not make peace with the conqueror unless it
+is losing badly itself. Every peace starts a truce of 180 days.
+
+## The AI's plans (`src/sim/agenda.ts`)
+
+Each AI country has a list of dated aims taken from what really happened between 1936 and
+1941: a treaty to sign, an ultimatum to send or a war to start. Each day the AI looks at the
+aims whose date has come. An aim is carried out when its conditions hold: the government is
+still the kind that wanted it, earlier aims are done, the target is not protected by someone
+too strong, and for a war the odds are good enough:
+
+    odds = (own strength + allies already at war) / (target's strength + a share of its protectors')
+
+If the conditions do not hold, the AI looks again every 7 days, and drops the aim after three
+years. So with no player the AI repeats history to the day, and a player changes it by
+changing the conditions: a guarantee that is believed, a bigger army, a fallen government, an
+earlier war. The country the player leads has no agenda at all.
+
+Two rules are general rather than dated. The major democracies guarantee the countries an
+aggressor still claims once it has broken the peace three times (or once, when tension is 50
+or more). And every month each AI country at war asks whether peace would serve it better.
+
+## Surrender and occupation
+
+A country surrenders when its enemies control 60% of the victory points of its own land. Its
+army leaves the map and the enemy holding most of it occupies the rest of its homeland;
+occupied factories work at 30%. Countries it had conquered itself are restored, and land it
+took from others goes back. An attacker with a limited aim (eastern Poland, Bessarabia, the
+Karelian border) annexes only that. The occupier may then annex the country (its factories
+work fully and its people can be conscripted, at the price of tension and relations) or set up
+a friendly government (the country returns as an ally with a small army).
+
+When stability brings a government down, the kind of government changes: democracy to
+authoritarian, authoritarian to democracy, fascist or communist to authoritarian. An AI
+country's historical aims belong to the government that had them, so they end with it.
 
 ## Starting armies
 
@@ -401,7 +494,7 @@ garrisons overseas territories, one division each, the richest first.
 
 ## The test AI (`src/sim/ai.ts`)
 
-Used for AI against AI test wars until the real AI arrives in Stage F. Each day it walks into
+Leads the armies of every AI country at war. Each day it walks into
 undefended enemy provinces, attacks a defended one only if it expects to outlast the defenders
 by a margin of 1.3, pulls out divisions below 25 organisation, moves divisions out of
 overcrowded provinces and sends spare divisions towards the weakest valuable point in the

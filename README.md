@@ -4,13 +4,13 @@ A grand-strategy game set in Europe from 1936. You lead a real country through t
 the war that followed, and face what its leaders faced: armies, factories, money, allies and
 public support. It is built to teach the history and the economics as you play.
 
-> **Status: Stage E of the war game.** Pick a country, run its economy, its research and its
-> home front, and command its divisions on the Map table. Build factories, raise new
-> divisions, choose technologies and national plans, and decide how to pay for it all: taxes,
-> bonds or the printing press. Other countries arm themselves, but they do not start wars on
-> their own yet (Stage F).
+> **Status: Stage F of the war game.** Pick a country, run its economy, its research and its
+> home front, command its divisions on the Map table, and now deal with the rest of the world:
+> relations, alliances, guarantees, ultimatums, wars and peace. The other countries are led by
+> an AI that follows the real history of 1936 to 1941 unless what you do changes the situation.
+> The navy and air force come next (Stage G).
 
-## How to play (Stage E)
+## How to play (Stage F)
 
 1. Start a game and choose a country. The clock starts paused.
 2. Press **P** for Production. Your military factories are already making equipment. When a
@@ -22,18 +22,36 @@ public support. It is built to teach the history and the economics as you play.
    National plan and start one. A gold dot on the rail means a team is idle or no plan is
    running. Click any technology or plan to read what it does and what really happened.
 5. Press **W** for the Home front: stability and war support, and the reasons behind each.
-6. Click a country's name on the map (or any of its provinces, then the country button) and
-   press **Declare war**. Army upkeep triples, and you now have a shortfall to cover. If your
-   people do not want a war, declaring one costs stability.
-7. Click one of your counters, for example `FRA 4`, to select those divisions. Shift-click
+6. Press **D** for Diplomacy: world tension, your treaties, your wars, the causes for war you
+   hold, and the latest news of the world. Click any country there, or its name on the map, to
+   open it in the sidebar: how it sees you and why, its allies and protectors, and everything
+   you can do with it.
+7. From a country's sidebar you can send a diplomatic mission, propose an alliance or a
+   non-aggression pact, guarantee its independence, build a case for war, send an ultimatum
+   (if you have a claim on it), or declare war. Each button says why it is blocked when it is.
+8. When another country needs your answer (an ally is attacked, a country you protect gets an
+   ultimatum, someone offers peace), the clock stops and the question opens in the sidebar.
+   You have seven days; after that the answer shown as the default is given for you.
+9. Click one of your counters, for example `FRA 4`, to select those divisions. Shift-click
    adds another counter. Right-click a province to send them there (two-finger click on a
    trackpad). If enemy divisions are in it, they attack. The sidebar shows the **outlook**.
-8. Press Space to run the clock, and watch the treasury, inflation, stability and war
-   support as well as the front.
+10. To end a war, open the enemy's sidebar and offer peace: back to the old borders, or each
+    keeps what it holds. It shows the war score and whether they are likely to accept. A
+    country that loses 60% of its own land's victory points surrenders; you then choose to
+    occupy it, annex it or set up a friendly government.
+
+Tips for diplomacy: in Story mode you need a cause for war (a claim, a case you have built, a
+refused ultimatum, or a promise to keep). A democracy can only build a case against a country
+that has already broken the peace, or once world tension reaches 50, and can only hand out
+guarantees once tension reaches 25. That is why Britain and France were slow in the 1930s. A
+guarantee from a country that looks ready to fight makes the target refuse an ultimatum; a
+guarantee nobody believes does not. Every aggressive move raises world tension, and tension
+makes every other country arm faster.
 
 Tips for the war: an attack needs about 2 to 1. Attack from several provinces at once, bring
 artillery against dug-in defenders, and do not stack more divisions in a province than it can
-feed (see the Supply map mode).
+feed (see the Supply map mode). Allies may march through each other's land and use each
+other's depots.
 
 Tips for the money: there is no free way to pay. Taxes above 25% cost stability. Bonds are
 painless until the debt and its interest pile up. Printing is painless for about three months,
@@ -116,6 +134,7 @@ Apple Developer account.
 | T | Research: technologies and research teams |
 | N | National plan |
 | W | Home front: stability and war support |
+| D | Diplomacy: tension, treaties, wars and world news |
 | X | Codex |
 | S | Save and load (3 slots plus an autosave) |
 | M | Sound on or off |
@@ -131,6 +150,10 @@ src/sim/          the game engine: pure TypeScript, no UI, fully testable
   combat.ts       battles: daily rounds, retreat, surrender and battle reports
   supply.ts       depots, links home and how many divisions a province can feed
   war.ts          who is at war with whom
+  diplomacy.ts    relations, pacts, world tension, causes for war, ultimatums, peace,
+                  surrender and what happens to a conquered country
+  agenda.ts       what each AI country wants and when (the real timetable of 1936 to 1941),
+                  and the conditions that let the player change it
   economy.ts      factories, production lines, manpower, the budget, debt and inflation,
                   and the home front: stability and war support
   research.ts     the 16 technologies, research teams and how fast they work
@@ -139,7 +162,7 @@ src/sim/          the game engine: pure TypeScript, no UI, fully testable
   aiEconomy.ts    a simple finance minister for AI countries (it also picks research and plans)
   testeconomy.ts  finance playtests, used by the balance report
   ai.ts           a simple army commander for AI countries
-  game.ts         advance(): one day with a player, the AI leading the other side
+  game.ts         advance(): one day with a player, the AI leading every other country
   intel.ts        what a country can see (fog of war)
   testwar.ts      AI against AI test wars, used by the balance report
   map.ts          the provinces, distances, marching speeds and route finding
@@ -175,12 +198,15 @@ the middle of a modern region are therefore approximate:
 - The Italian territories around Trieste, Zara and the Dodecanese are shown as Yugoslav or
   Greek, except Istria.
 - Spanish Morocco is shown as part of French Morocco.
+- Because Danzig and the Sudetenland are not provinces of their own, Germany's demand on
+  Poland is Poznań, and Munich costs Czechoslovakia its forts, a fifth of its army and its
+  arms works rather than land.
 - Terrain is a first pass and army sizes are rough; both get tuned in later stages.
 
 ## Plan
 
-See CHANGELOG.md for what is done. Next is Stage F (diplomacy and AI), then G (navy and air),
-H (Story mode) and I (polish).
+See CHANGELOG.md for what is done. Next is Stage G (navy and air), then H (Story mode) and
+I (polish).
 
 ## History and symbols
 

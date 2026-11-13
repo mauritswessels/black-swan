@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { quiet } from '../src/sim/agenda';
 import { aiOrders } from '../src/sim/ai';
 import { attackPower, defencePower, STATS } from '../src/sim/combat';
 import { PROVINCES, provinceByName } from '../src/sim/map';
@@ -33,7 +34,7 @@ describe('the battlefield used in these tests', () => {
 
 describe('war and peace', () => {
   it('starts and ends wars by order', () => {
-    let w = step(newWorld('story', 'war'), [{ type: 'declareWar', by: 'Germany', on: 'Poland' }]);
+    let w = step(quiet(newWorld('story', 'war')), [{ type: 'declareWar', by: 'Germany', on: 'Poland' }]);
     expect(atWar(w, 'Poland', 'Germany')).toBe(true);
     expect(enemiesOf(w, 'Germany')).toEqual(['Poland']);
     w = step(w, [{ type: 'declareWar', by: 'Poland', on: 'Germany' }, { type: 'declareWar', by: 'Germany', on: 'Atlantis' }, { type: 'declareWar', by: 'Germany', on: 'Germany' }]);

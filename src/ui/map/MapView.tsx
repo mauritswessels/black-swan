@@ -7,6 +7,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { COUNTRIES, countryByName } from '../../sim/countries';
 import { visibleProvinces, visibleStacks, type Stack } from '../../sim/intel';
 import { PROVINCES } from '../../sim/map';
+import { allianceMap, allied, hasPact, relation } from '../../sim/diplomacy';
 import { linkedProvinces, supplyCapacity } from '../../sim/supply';
 import type { World } from '../../sim/types';
 import { atWar } from '../../sim/war';
@@ -28,9 +29,20 @@ const SMALL = new Set(COUNTRIES.filter((c) => PROVINCES.filter((p) => p.owner ==
 function fills(w: World, mode: MapMode): string[] {
   const me = w.player;
   if (mode === 'terrain') return PROVINCES.map((p) => TERRAIN_COLOUR[p.terrain]);
-  if (mode === 'diplomacy') return w.controller.map((c) => (c === me ? tint('#5b9bff', 0.6) : me && atWar(w, me, c) ? 'url(#hatch-war)' : tint('#8592a9', 0.22)));
+  if (mode === 'diplomacy') {
+    const dip = w.diplomacy;
+    return w.controller.map((c) => {
+      if (c === me) return tint('#5b9bff', 0.6);
+      if (!me) return tint('#8592a9', 0.22);
+      if (atWar(w, me, c)) return 'url(#hatch-war)';
+      if (allied(dip, me, c)) return tint('#5ee6b0', 0.5);
+      if (hasPact(dip, 'guarantee', me, c)) return tint('#c9c96b', 0.4);
+      if (relation(dip, me, c) < -25) return tint('#ff7fa8', 0.36);
+      return tint('#8592a9', 0.22);
+    });
+  }
   if (mode === 'supply' && me) {
-    const linked = linkedProvinces(w.controller, me);
+    const linked = linkedProvinces(w.controller, me, allianceMap(w.diplomacy).get(me));
     const count = new Array<number>(PROVINCES.length).fill(0);
     for (const u of w.units) count[u.at]++;
     return w.controller.map((c, p) => {
@@ -231,7 +243,7 @@ export function MapView() {
     e.preventDefault();
   };
 
-  const fill = useMemo(() => fills(world, mapMode), [world.controller, world.wars, mapMode, mapMode === 'supply' ? world.units : null]); // eslint-disable-line react-hooks/exhaustive-deps
+  const fill = useMemo(() => fills(world, mapMode), [world.controller, world.wars, mapMode, mapMode === 'supply' ? world.units : null, mapMode === 'diplomacy' ? world.diplomacy : null]); // eslint-disable-line react-hooks/exhaustive-deps
   const lines = useMemo(() => countryLines(world.controller), [world.controller]);
   const stacks = useMemo(() => visibleStacks(world, me), [world.units, world.controller, me]); // eslint-disable-line react-hooks/exhaustive-deps
   const seen = useMemo(() => visibleProvinces(world, me), [world.units, world.controller, me]); // eslint-disable-line react-hooks/exhaustive-deps

@@ -2,7 +2,8 @@
  * A simple finance minister for AI countries.
  *
  * Every day it forms new divisions from finished equipment. On the first of each month it
- * also reviews taxes, rationing, conscription, the production lines and construction. It
+ * also reviews taxes, rationing, conscription, the production lines, construction, research
+ * and the national plan. It
  * follows a few plain rules and looks only at its own country's books. Stage F replaces it
  * with a fuller AI.
  *
@@ -10,7 +11,9 @@
  * 1930s accepted large deficits to rearm, the democracies did not until war was close.
  */
 import { countryByName } from './countries';
-import { cannotRaise, CONSCRIPTION, economyView, MEN_PER_DIVISION, monthEnds, musterPoint, tallies, TAX_MIN, UNIT_TYPES, UPKEEP, WAR_UPKEEP, type Tally } from './economy';
+import { cannotRaise, conscriptionBlocked, CONSCRIPTION, economyView, MEN_PER_DIVISION, monthEnds, musterPoint, tallies, TAX_MIN, UNIT_TYPES, UPKEEP, WAR_UPKEEP, type Tally } from './economy';
+import { cannotStartPlan, plansFor } from './plans';
+import { cannotResearch, TECHS, yearAt, type Branch } from './research';
 import type { Government, Order, UnitType, World } from './types';
 
 /** The deficit a government accepts in peacetime, as a share of output. */
@@ -22,6 +25,14 @@ const PEACE_TAX_MAX = 0.35;
 const WAR_TAX_MAX = 0.45;
 /** The mix of military factories it aims for: mostly infantry, some guns, some tanks. */
 const LINE_MIX: Record<UnitType, number> = { infantry: 0.6, armour: 0.2, artillery: 0.2 };
+/** Which research branch comes first when two technologies are equally due. Countries that are arming put weapons first. */
+const BRANCH_ORDER: Record<'arming' | 'civil', Branch[]> = { arming: ['infantry', 'armour', 'industry', 'society'], civil: ['industry', 'society', 'infantry', 'armour'] };
+/** General plans in the order each kind of country takes them up, after its own real programmes. */
+const PLAN_ORDER: Record<'arming' | 'civil' | 'war', string[]> = {
+  arming: ['rearmament', 'staff', 'forts', 'reserve', 'training', 'industry', 'civil-defence', 'tax-reform', 'export-drive', 'public-works', 'sound-money'],
+  civil: ['industry', 'public-works', 'tax-reform', 'export-drive', 'sound-money', 'forts', 'civil-defence', 'rearmament', 'staff', 'training', 'reserve'],
+  war: ['war-economy', 'rearmament', 'reserve', 'forts', 'training', 'staff', 'civil-defence', 'tax-reform', 'industry'],
+};
 
 export function aiEconomyOrders(w: World, country: string, tally?: Tally): Order[] {
   const e = w.economies[country];
@@ -59,7 +70,7 @@ export function aiEconomyOrders(w: World, country: string, tally?: Tally): Order
   else if (e.rationing && !v.atWar && v.shortage === 0 && e.inflation < 5) orders.push({ type: 'setRationing', country, on: false });
 
   // Call up more men when the pool runs dry in wartime.
-  if (v.atWar && e.manpower < 3 * MEN_PER_DIVISION && e.conscription < CONSCRIPTION.length - 2) orders.push({ type: 'setConscription', country, level: e.conscription + 1 });
+  if (v.atWar && e.manpower < 3 * MEN_PER_DIVISION && e.conscription < CONSCRIPTION.length - 2 && !conscriptionBlocked(e, country, e.conscription + 1)) orders.push({ type: 'setConscription', country, level: e.conscription + 1 });
 
   // Put idle military factories to work on whichever line is furthest below the mix.
   if (v.milFree > 0) {
@@ -79,6 +90,26 @@ export function aiEconomyOrders(w: World, country: string, tally?: Tally): Order
   if (!e.construction.length && builders > 0 && v.budget.balance > -limit) {
     const at = musterPoint(w.controller, country);
     if (at !== null) orders.push({ type: 'build', country, kind: arming ? 'mil' : 'civ', province: at });
+  }
+
+  // Research: idle teams take the technology that is most due, weapons first for arming countries.
+  const year = yearAt(w.startDate, w.day);
+  const style = arming ? 'arming' : 'civil';
+  const busy = new Set(e.research.slots.filter((x): x is string => !!x));
+  const open = TECHS.filter((x) => !busy.has(x.id) && !cannotResearch(e.research, x)).sort((a, b) => a.year - b.year || BRANCH_ORDER[style].indexOf(a.branch) - BRANCH_ORDER[style].indexOf(b.branch));
+  e.research.slots.forEach((id, slot) => {
+    const next = id ? undefined : open.shift();
+    if (next) orders.push({ type: 'setResearch', country, slot, tech: next.id });
+  });
+
+  // National plan: its own real programmes first, then the general ones, while the budget can carry the cost.
+  if (!e.plan.active && v.budget.balance > -limit) {
+    const general = PLAN_ORDER[v.atWar ? 'war' : style];
+    const next = plansFor(country)
+      .filter((p) => (p.country || general.includes(p.id)) && !cannotStartPlan(e.plan, p, country, year, v.atWar))
+      .sort((a, b) => (a.country ? -1 : general.indexOf(a.id)) - (b.country ? -1 : general.indexOf(b.id)))
+      .find((p) => v.budget.balance - p.cost * v.nominalGDP > -limit * 1.5);
+    if (next) orders.push({ type: 'startPlan', country, plan: next.id });
   }
   return orders;
 }

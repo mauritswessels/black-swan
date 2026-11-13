@@ -1,5 +1,54 @@
 # Changelog
 
+## War game, Stage E: research, the home front and national plans (2026-11-13)
+
+- **Research** (key T, or the Research button on the rail). Sixteen technologies in four
+  branches: infantry, armour and artillery, industry, and economy and society. The major powers
+  have two research teams, everyone else one. Each technology has the year it really appeared,
+  and a team working ahead of that year is slower: speed = 1 / (1 + 0.5 x years ahead). Click a
+  technology to see what it gives, how long it will take and what really happened.
+- **War support**, the second meter of the home front, next to stability. It starts low in the
+  democracies (35) and higher in the dictatorships (55). Being attacked adds 30; starting a war
+  adds nothing, and costs a democracy 10. Lost provinces, defeats, a long war, inflation and
+  empty shops pull it down; victories and civil defence push it up.
+- **What war support decides.** The wider conscription laws need it (30, 55 and 75, less under
+  a dictatorship). In wartime people accept higher taxes before stability falls, up to 15
+  points more. War bonds sell better in a war people believe in. Below 40, a war costs
+  stability and divisions recover more slowly. Declaring a war your people do not want costs
+  stability on the day.
+- **Governments can fall.** Three months in a row with stability below 20 and the government
+  is replaced: stability returns to 45, but the national plan is abandoned and war support
+  drops by 10.
+- **National plans** (key N). One long programme at a time, 60 to 180 days, each paid for
+  monthly in the budget. Twelve are open to everyone (rearmament, industrial expansion, border
+  fortifications, public works, tax reform and more). Each major power also has two real
+  programmes of the 1930s, with a note on what really happened: shadow factories and the
+  Ministry of Supply, the Maginot extension and the nationalised arms industry, the Four Year
+  Plan and the Westwall, the autarky campaign and the Alpine Wall, the Third Five-Year Plan and
+  universal military duty, the Central Industrial Region and the National Defence Fund.
+- **The Home front panel** (key W, or click Stability or War support in the top bar): both
+  meters, every reason behind them in points, what war support currently allows, and a chart.
+- **Research and forts change battles.** The outlook lists each side's edge, and battle reports
+  name better weapons or fortifications when they decided the result.
+- **AI countries research and plan too.** Idle teams take the technology that is most due; the
+  dictatorships put weapons first and the democracies industry. Each country carries out its
+  own real programmes first.
+- A gold dot on the rail marks an idle research team or a missing plan. News lines report
+  finished research and plans, falling war support, a crisis and a fallen government.
+- 9 new codex entries (research, national plan, war weariness, the home front, autarky and
+  national income accounts among them, two marked as AP Macroeconomics), and fuller entries
+  for stability and war support.
+- Engine: `research.ts`, `plans.ts` and `mods.ts`, all pure TypeScript; the home front lives in
+  `economy.ts` beside the stability meter from Stage D. 110 unit tests (26 new), including a
+  bot playtest of four years of AI peace. `npm run balance` now writes
+  `docs/balance-stage-e.md`, with a new table of what each major power researched and planned.
+- Saves from Stage D no longer load (a save now holds research, plans and war support).
+
+Not in this stage: the navy and air research branches (Stage G, with the ships and aircraft);
+road building as a plan (the map has no roads to improve yet); a fallen government changing the
+kind of government, and democracies needing a cause for war (both need diplomacy, Stage F);
+history cards (Stage H).
+
 ## War game, Stage D: factories, manpower and paying for the war (2026-11-12)
 
 - **An economy for every country.** Civilian and military factories stand in provinces (most in

@@ -52,6 +52,9 @@ function useShortcuts() {
       if (k === 'r') return g.select({ kind: 'reports' });
       if (k === 'p' && g.world?.player) return g.select({ kind: 'production' });
       if (k === 'e' && g.world?.player) return g.select({ kind: 'economy' });
+      if (k === 't' && g.world?.player) return g.select({ kind: 'research' });
+      if (k === 'n' && g.world?.player) return g.select({ kind: 'plans' });
+      if (k === 'w' && g.world?.player) return g.select({ kind: 'politics' });
       if (k === 'g' && g.selection?.kind === 'units') {
         e.preventDefault();
         g.setOrdering(true);

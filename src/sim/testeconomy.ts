@@ -3,8 +3,8 @@
  * run by the AI finance minister but its money run by a fixed policy. Used by `npm run balance`
  * and by the tests to check that each way of paying for a war has its own price.
  *
- * The country is put at war with a far-away one and nobody marches, so the only thing that
- * differs between runs is the finance policy.
+ * A far-away country declares war on it and nobody marches, so the only thing that differs
+ * between runs is the finance policy.
  */
 import { aiEconomyOrders } from './aiEconomy';
 import { economyView } from './economy';
@@ -47,7 +47,9 @@ const FAR_AWAY = (country: string) => (country === 'Ireland' || country === 'Uni
 
 export function runFinance(country: string, policy: Policy, years = 4, seed = 'finance'): FinanceResult {
   let w = applyOrders(newWorld('freeForAll', seed), [
-    { type: 'declareWar', by: country, on: FAR_AWAY(country) },
+    // The far-away country declares, so this is a war the public supports: the runs compare
+    // ways of paying for a war, not what an unpopular war does to the home front.
+    { type: 'declareWar', by: FAR_AWAY(country), on: country },
     { type: 'setTax', country, rate: policy.taxRate },
     { type: 'setBondShare', country, share: policy.bondShare },
     { type: 'setRationing', country, on: policy.rationing },

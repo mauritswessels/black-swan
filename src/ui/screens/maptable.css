@@ -235,3 +235,31 @@
 @media (max-width: 1400px) { .mt-stats li:nth-child(-n + 3) { display: none; } }
 @media (max-width: 1180px) { .mt-stats li:nth-child(n + 8) { display: none; } .mt-country-btn { min-width: 150px; } }
 @media (max-width: 980px) { .mt-stats { display: none; } .mt-top { justify-content: space-between; } }
+
+/* ---------- research, national plan and home front panels (Stage E) ---------- */
+.mt-rail button.alert { position: relative; }
+.mt-rail button.alert::after { content: ''; position: absolute; right: 9px; top: 7px; width: 8px; height: 8px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 6px var(--gold); }
+.warn-text { color: var(--gold); font-weight: 600; font-size: 13.5px; }
+.sb-mini { height: 30px; padding: 0 10px; border: 1px solid rgba(156, 200, 255, 0.45); border-radius: 3px; background: none; color: #dce4f1; font: 500 13px var(--f-body); cursor: pointer; }
+.sb-mini:hover { background: rgba(156, 200, 255, 0.16); color: #fff; }
+.sb-branch { display: flex; flex-direction: column; gap: 6px; }
+.sb-branch.later { opacity: 0.55; }
+.sb-picks { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.sb-pick { width: 100%; display: grid; grid-template-columns: 18px 1fr auto; column-gap: 8px; row-gap: 2px; align-items: baseline; padding: 8px 10px; text-align: left; border: 1px solid rgba(156, 200, 255, 0.22); border-radius: 3px; background: rgba(156, 200, 255, 0.04); color: #dce4f1; cursor: pointer; font: 400 13px var(--f-body); }
+.sb-pick:hover { background: rgba(156, 200, 255, 0.16); }
+.sb-pick i { font-style: normal; color: #9cc8ff; text-align: center; }
+.sb-pick b { font-size: 14.5px; font-weight: 600; color: #fff; }
+.sb-pick em { font-style: normal; font: 600 13px var(--f-cond); letter-spacing: 0.06em; color: #a9b6cb; white-space: nowrap; }
+.sb-pick span { grid-column: 2 / 4; font-size: 12.5px; line-height: 1.4; color: #a9b6cb; }
+.sb-pick.known { border-color: rgba(143, 240, 200, 0.4); }
+.sb-pick.known i { color: #8ff0c8; }
+.sb-pick.working { border-color: var(--gold); background: rgba(255, 196, 107, 0.1); }
+.sb-pick.working i { color: var(--gold); }
+.sb-pick.locked b { color: #a9b6cb; }
+.sb-pick.locked { border-style: dashed; }
+.sb-prod > .sb-pick.working { grid-template-columns: 1fr; }
+.sb-prod > .sb-pick.working span { grid-column: 1; }
+.sb-effects { margin: 0; padding-left: 20px; font-size: 14.5px; line-height: 1.55; color: #fff; }
+.sb-laws button.blocked { cursor: not-allowed; border-style: dashed; }
+.sb-laws button.blocked b { color: #a9b6cb; }
+.sb-laws button.blocked:hover { background: none; }

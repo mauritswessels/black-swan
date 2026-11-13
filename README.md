@@ -4,12 +4,13 @@ A grand-strategy game set in Europe from 1936. You lead a real country through t
 the war that followed, and face what its leaders faced: armies, factories, money, allies and
 public support. It is built to teach the history and the economics as you play.
 
-> **Status: Stage D of the war game.** Pick a country, run its economy and command its
-> divisions on the Map table. Build factories, raise new divisions, and decide how to pay for
-> it all: taxes, bonds or the printing press. Other countries arm themselves, but they do not
-> start wars on their own yet (Stage F).
+> **Status: Stage E of the war game.** Pick a country, run its economy, its research and its
+> home front, and command its divisions on the Map table. Build factories, raise new
+> divisions, choose technologies and national plans, and decide how to pay for it all: taxes,
+> bonds or the printing press. Other countries arm themselves, but they do not start wars on
+> their own yet (Stage F).
 
-## How to play (Stage D)
+## How to play (Stage E)
 
 1. Start a game and choose a country. The clock starts paused.
 2. Press **P** for Production. Your military factories are already making equipment. When a
@@ -17,13 +18,18 @@ public support. It is built to teach the history and the economics as you play.
    build a military factory.
 3. Press **E** for the Economy. The budget shows what everything costs each month. The
    numbers in the top bar open the same panels.
-4. Click a country's name on the map (or any of its provinces, then the country button) and
-   press **Declare war**. Army upkeep triples, and you now have a shortfall to cover.
-5. Click one of your counters, for example `FRA 4`, to select those divisions. Shift-click
+4. Press **T** for Research and put each research team on a technology. Press **N** for the
+   National plan and start one. A gold dot on the rail means a team is idle or no plan is
+   running. Click any technology or plan to read what it does and what really happened.
+5. Press **W** for the Home front: stability and war support, and the reasons behind each.
+6. Click a country's name on the map (or any of its provinces, then the country button) and
+   press **Declare war**. Army upkeep triples, and you now have a shortfall to cover. If your
+   people do not want a war, declaring one costs stability.
+7. Click one of your counters, for example `FRA 4`, to select those divisions. Shift-click
    adds another counter. Right-click a province to send them there (two-finger click on a
    trackpad). If enemy divisions are in it, they attack. The sidebar shows the **outlook**.
-6. Press Space to run the clock, and watch the treasury, inflation and stability as well as
-   the front.
+8. Press Space to run the clock, and watch the treasury, inflation, stability and war
+   support as well as the front.
 
 Tips for the war: an attack needs about 2 to 1. Attack from several provinces at once, bring
 artillery against dug-in defenders, and do not stack more divisions in a province than it can
@@ -33,6 +39,11 @@ Tips for the money: there is no free way to pay. Taxes above 25% cost stability.
 painless until the debt and its interest pile up. Printing is painless for about three months,
 then prices take off, and once people expect inflation it is slow to stop. A mix, with
 rationing, usually hurts least. The sidebar tells you why each number is what it is.
+
+Tips for the home front: war support decides how wide a conscription law you can bring in and
+how much tax people will bear in wartime. A country that is attacked rallies; one that starts a
+war does not. Research what is due now rather than what is years ahead of its time, and
+remember that a national plan's real price is the other plans you are not running.
 
 The earlier central bank game is kept, complete and playable, on the branch
 [`central-bank-v0.2`](../../tree/central-bank-v0.2).
@@ -102,6 +113,9 @@ Apple Developer account.
 | R | Battle reports |
 | P | Production: factories, new divisions, manpower |
 | E | Economy: budget, taxes, debt and inflation |
+| T | Research: technologies and research teams |
+| N | National plan |
+| W | Home front: stability and war support |
 | X | Codex |
 | S | Save and load (3 slots plus an autosave) |
 | M | Sound on or off |
@@ -117,8 +131,12 @@ src/sim/          the game engine: pure TypeScript, no UI, fully testable
   combat.ts       battles: daily rounds, retreat, surrender and battle reports
   supply.ts       depots, links home and how many divisions a province can feed
   war.ts          who is at war with whom
-  economy.ts      factories, production lines, manpower, the budget, debt and inflation
-  aiEconomy.ts    a simple finance minister for AI countries
+  economy.ts      factories, production lines, manpower, the budget, debt and inflation,
+                  and the home front: stability and war support
+  research.ts     the 16 technologies, research teams and how fast they work
+  plans.ts        the 24 national plans
+  mods.ts         adds up what research and finished plans change
+  aiEconomy.ts    a simple finance minister for AI countries (it also picks research and plans)
   testeconomy.ts  finance playtests, used by the balance report
   ai.ts           a simple army commander for AI countries
   game.ts         advance(): one day with a player, the AI leading the other side
@@ -161,9 +179,8 @@ the middle of a modern region are therefore approximate:
 
 ## Plan
 
-See CHANGELOG.md for what is done. Next is Stage E (research and politics), then F (diplomacy
-and AI),
-G (navy and air), H (Story mode) and I (polish).
+See CHANGELOG.md for what is done. Next is Stage F (diplomacy and AI), then G (navy and air),
+H (Story mode) and I (polish).
 
 ## History and symbols
 

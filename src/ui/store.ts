@@ -5,6 +5,8 @@
 import { create } from 'zustand';
 import { advance } from '../sim/game';
 import { PROVINCES } from '../sim/map';
+import { planById } from '../sim/plans';
+import { techById } from '../sim/research';
 import type { EconomyOrder } from '../sim/economy';
 import type { Mode, Order, World } from '../sim/types';
 import { atWar } from '../sim/war';
@@ -25,7 +27,12 @@ export type Selection =
   | { kind: 'report'; id: number }
   | { kind: 'reports' }
   | { kind: 'economy' }
-  | { kind: 'production' };
+  | { kind: 'production' }
+  | { kind: 'research' }
+  | { kind: 'tech'; id: string }
+  | { kind: 'plans' }
+  | { kind: 'plan'; id: string }
+  | { kind: 'politics' };
 
 /** An economic order before the player's country is filled in. */
 export type EconomyAction = EconomyOrder extends infer O ? (O extends { country: string } ? Omit<O, 'country'> : never) : never;
@@ -163,7 +170,21 @@ function headlines(before: World, after: World): News[] {
       if (month.printed > 0.01 && (!earlier || earlier.printed <= 0.01)) add('The treasury is empty and bonds did not cover the bills: the central bank is printing money', 'bad', undefined, { kind: 'economy' });
       if (earlier && earlier.stability >= 50 && month.stability < 50) add('Strikes are spreading: stability has fallen below 50', 'bad', undefined, { kind: 'economy' });
       if (month.shortage > 0.02 && (!earlier || earlier.shortage <= 0.02)) add('Shops are running short of goods', 'bad', undefined, { kind: 'production' });
+      if (after.wars.some((k) => k.split('|').includes(me)) && earlier && earlier.warSupport >= 40 && month.warSupport < 40) add('War support has fallen below 40: people are turning against the war', 'bad', undefined, { kind: 'politics' });
+      if (earlier && earlier.stability >= 20 && month.stability < 20) add('Crisis: stability is below 20. Three months of this and the government falls', 'bad', undefined, { kind: 'politics' });
     }
+    // Research, national plans and the government itself.
+    for (const id of now.research.done) {
+      if (was.research.done.includes(id)) continue;
+      const tech = techById(id);
+      if (tech) add(`Research finished: ${tech.name}. A team is free`, 'good', undefined, { kind: 'research' });
+    }
+    for (const id of now.plan.done) {
+      if (was.plan.done.includes(id)) continue;
+      const plan = planById(id);
+      if (plan) add(`National plan carried out: ${plan.name}. Choose the next one`, 'good', undefined, { kind: 'plans' });
+    }
+    if (now.governmentsFallen > was.governmentsFallen) add('The government has fallen. A new one takes office, and the national plan is abandoned', 'bad', undefined, { kind: 'politics' });
   }
   return out;
 }

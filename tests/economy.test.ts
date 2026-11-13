@@ -291,7 +291,9 @@ describe('production lines and new divisions', () => {
 
 describe('manpower', () => {
   it('a wider conscription law calls up more men, slows the factories and costs stability', () => {
-    const w = france();
+    // Mass mobilisation needs the public behind it (Stage E), so this France has the war support for it.
+    const calm = france();
+    const w = { ...calm, economies: { ...calm.economies, France: { ...calm.economies.France, warSupport: 60 } } };
     const e = w.economies.France;
     const wide = give(w, { type: 'setConscription', country: 'France', level: 3 });
     const people = tallies(w).get('France')!.population;

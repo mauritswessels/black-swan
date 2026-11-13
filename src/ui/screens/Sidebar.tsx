@@ -1,6 +1,7 @@
 /** The details sidebar: opens for whatever you click on the map. All numbers come from the engine. */
 import { useRef, type ReactNode } from 'react';
 import { DIG_IN_PER_DAY, outlook, outlookAt, type Outlook } from '../../sim/combat';
+import { combatEdges } from '../../sim/mods';
 import { COUNTRIES, countryByName } from '../../sim/countries';
 import { visibleProvinces } from '../../sim/intel';
 import { daysToEnter, PROVINCES, routeDays } from '../../sim/map';
@@ -12,6 +13,7 @@ import { dateLabel } from '../../sim/world';
 import { TERRAIN_NOTE } from '../map/colours';
 import { useGame, type Selection } from '../store';
 import { EconomyPanel, ProductionPanel } from './EconomyPanels';
+import { HomeFrontPanel, PlansPanel, PlanView, ResearchPanel, TechView } from './HomePanels';
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 const list = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}` : xs[0] ?? '');
@@ -85,6 +87,8 @@ function OutlookBox({ o, mine }: { o: Outlook; mine: 'attacker' | 'defender' | n
   if (o.dugIn > 1.005) factors.push(`Defenders dug in: +${pct((o.dugIn - 1) * 100)} defence`);
   if (o.attackerSupply < 0.995) factors.push(`Attackers short of supply: ${pct((1 - o.attackerSupply) * 100)} weaker`);
   if (o.defenderSupply < 0.995) factors.push(`Defenders short of supply: ${pct((1 - o.defenderSupply) * 100)} weaker`);
+  if (o.attackerEdge > 1.005) factors.push(`Attackers' research: +${pct((o.attackerEdge - 1) * 100)} attack`);
+  if (o.defenderEdge > 1.005) factors.push(`Defenders' research and forts: +${pct((o.defenderEdge - 1) * 100)} defence`);
   if (o.directions > 1) factors.push(`Attack from ${o.directions} directions: room for ${o.attackersFighting} attackers at once`);
   if (o.attackers > o.attackersFighting) factors.push(`${plural(o.attackers - o.attackersFighting, 'attacking division')} waiting in reserve (only ${o.attackersFighting} fit in the fight)`);
   if (o.defenders > o.defendersFighting) factors.push(`${plural(o.defenders - o.defendersFighting, 'defending division')} in reserve`);
@@ -312,7 +316,7 @@ function ForeignStack({ w, province, owner }: { w: World; province: number; owne
   const c = countryByName(owner);
   // What it would look like if every division of yours next door attacked.
   const next = me ? w.units.filter((u) => u.owner === me && PROVINCES[province].neighbours.includes(u.at)) : [];
-  const o = enemy ? outlook(next.map((u) => ({ ...u, path: [province] })), units, province) : null;
+  const o = enemy ? outlook(next.map((u) => ({ ...u, path: [province] })), units, province, combatEdges(w.economies)) : null;
   if (!units.length) return <Frame kicker="Intelligence report" title="Nothing here now" sub={PROVINCES[province].name}>{null}</Frame>;
   return (
     <Frame kicker="Intelligence report" title={`${c.adjective} forces in ${PROVINCES[province].name}`} sub={enemy ? 'At war with you' : 'Neutral'}>
@@ -390,7 +394,7 @@ function CountryView({ w, name }: { w: World; name: string }) {
           )}
           {me && name !== me && (
             <p className="sb-fine">
-              For now war and peace are instant and nobody else joins in. Causes for war, public support, allies and peace terms arrive with diplomacy in Stage F.
+              For now war and peace are instant and nobody else joins in. Declaring war costs stability if your war support is under 50; the country you attack rallies. Causes for war, allies and peace terms arrive with diplomacy in Stage F.
             </p>
           )}
         </>
@@ -399,6 +403,9 @@ function CountryView({ w, name }: { w: World; name: string }) {
         <div className="sb-actions">
           <Link to={{ kind: 'economy' }}>Economy: budget, taxes, debt and inflation</Link>
           <Link to={{ kind: 'production' }}>Production: factories, divisions and manpower</Link>
+          <Link to={{ kind: 'research' }}>Research</Link>
+          <Link to={{ kind: 'plans' }}>National plan</Link>
+          <Link to={{ kind: 'politics' }}>Home front: stability and war support</Link>
         </div>
       )}
       {capital && (
@@ -519,5 +526,15 @@ export function Sidebar() {
       return w.player ? <EconomyPanel w={w} me={w.player} /> : null;
     case 'production':
       return w.player ? <ProductionPanel w={w} me={w.player} /> : null;
+    case 'research':
+      return w.player ? <ResearchPanel w={w} me={w.player} /> : null;
+    case 'tech':
+      return w.player ? <TechView w={w} me={w.player} id={sel.id} /> : null;
+    case 'plans':
+      return w.player ? <PlansPanel w={w} me={w.player} /> : null;
+    case 'plan':
+      return w.player ? <PlanView w={w} me={w.player} id={sel.id} /> : null;
+    case 'politics':
+      return w.player ? <HomeFrontPanel w={w} me={w.player} /> : null;
   }
 }

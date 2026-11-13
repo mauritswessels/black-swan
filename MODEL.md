@@ -2,16 +2,17 @@
 
 This file lists the rules of each system as they are in the code right now. Maths is written
 in plain text. The numbers were tuned with `npm run balance` (see
-[docs/balance-stage-d.md](docs/balance-stage-d.md)) and will be tuned again as later stages
-add research, diplomacy and air power.
+[docs/balance-stage-e.md](docs/balance-stage-e.md)) and will be tuned again as later stages
+add diplomacy and air power.
 
 ## The day
 
 `step(world, orders)` moves the world on one day, always in this order:
 
 1. Orders are applied (move, halt, declare war, make peace, and everything about the economy).
-2. Every economy runs for a day: taxes and bills, production lines, construction, training.
-   On the last day of a month, inflation and stability are worked out.
+2. Every economy runs for a day: taxes and bills, production lines, construction, training,
+   research and the national plan. On the last day of a month, inflation, stability and war
+   support are worked out.
 3. Supply is worked out for every division.
 4. Every battle fights one round.
 5. Divisions march.
@@ -98,6 +99,12 @@ the defenders.
 **Battle reports.** When a battle ends, a report records who won, the losses and up to three
 causes, biggest first (for example "attacking into mountains", "the attackers were short of
 supply", "3 surrounded divisions had nowhere to retreat and surrendered").
+
+**Research, plans and forts.** Each division's damage is also multiplied by its country's
+"edge": 1 plus whatever its technologies add for that type of division (for example +10%
+infantry defence), and for a defender on its own country's home soil, 1 plus its
+fortifications. The outlook shows the edge, and a battle report names it when it mattered.
+Each battle that ends moves the mood at home (see the home front below).
 
 Not in yet: air power (Stage G) and river crossings (the map has no rivers yet).
 
@@ -285,12 +292,83 @@ on volunteers, everyone else on limited conscription.
 
 ### Stability
 
-    target = 75 - taxes above 25% (1.2 a point) - inflation above 10% (0.5 a point, at most 30)
+    target = 75 - taxes above the threshold (1.2 a point) - inflation above 10% (0.5 a point, at most 30)
                 - 15 in hyperinflation - 5 in fast deflation - 40 x shortage - 5 for rationing
                 - 3 for each conscription law above "extensive"
+                - 0.5 x (40 - war support), at war with war support under 40
+                + 5, at war with war support of 70 or more
+                + whatever finished plans add
+
+    tax threshold = 25% + plans (tax reform: 3 points) + at war: 15 points x war support / 100
 
 Each month stability moves a fifth of the way to the target. Below 50, strikes slow the
-factories. War support, events and changes of government arrive in Stage E.
+factories. Declaring war costs stability on the day if war support is under 50: 0.4 for each
+point short in a democracy, 0.2 under an authoritarian government, 0.1 in a dictatorship.
+
+**The government falls** when stability has been below 20 at three month-ends in a row. The
+new government starts at 45 stability; the national plan under way is abandoned and war support
+drops by 10. (The kind of government does not change yet; that needs diplomacy, Stage F.)
+
+### War support
+
+How willing people are to fight and to make sacrifices, 0 to 100.
+
+    target = 35 in a democracy, 45 authoritarian, 55 fascist, 50 communist
+           + 30 if the country is at war and somebody else declared it
+           - 10 (democracy) or 5 (authoritarian) if every war it is in is one it started
+           + at peace: 2 for each other country at war (at most 10), and 8 if a neighbour is at war
+           - 60 x the share of home victory points in enemy hands
+           + the mood from recent battles (-15 to 15)
+           - war weariness (0 to 20)
+           - inflation above 10% (0.3 a point, at most 15) - 25 x shortage
+           - 5 for each conscription law above "extensive" in peacetime
+           + whatever finished plans add
+
+Each month it moves a fifth of the way to the target. A country that is attacked also gains 10
+on the day. **Mood:** each battle won adds 2 and each battle lost takes 2 away, within 15 either
+way, and the mood fades by a fifth a month. **War weariness** grows half a point for each month
+at war and falls a point for each month of peace.
+
+What it decides:
+
+- **Conscription.** The three widest laws need war support of 30, 55 and 75. Authoritarian
+  governments need 10 less and dictatorships 20 less.
+- **Taxes.** At war the tax threshold above rises with war support.
+- **Bonds.** At war, bond sales are multiplied by 0.7 + 0.6 x war support / 100.
+- **The army.** At war with war support under 40, divisions regain organisation more slowly:
+  x (0.7 + 0.3 x war support / 40).
+
+### Research (`src/sim/research.ts`)
+
+Four branches (infantry, armour and artillery, industry, economy and society) of four
+technologies each. The navy and air branches arrive in Stage G. The major powers have two
+research teams, other countries one; a team works on one technology at a time and a branch is
+taken in order. The four steps of a branch belong to 1936, 1938, 1940 and 1942 and need 200,
+280, 360 and 440 days of work. Ahead of its year a team is slower:
+
+    speed = 1 / (1 + 0.5 x years ahead)
+
+Work done is kept if a team moves to something else. The list, with every effect and a note on
+the real history, is in the file and in the Research panel.
+
+### National plans (`src/sim/plans.ts`)
+
+One plan runs at a time, for 60 to 180 days, and each can be carried out once. While it runs it
+costs a share of a month's output every month (0% to 6%), as a line in the budget. When it ends
+it gives new factories in the capital, equipment, money, or a lasting effect such as +10%
+defence on home soil. Twelve plans are open to every country; each major power also has two
+real programmes of the 1930s (for example Britain's shadow factories, France extending the
+Maginot Line and Poland's Central Industrial Region), some only from the year they began.
+Cancelling a plan loses the work done.
+
+### What research and plans change (`src/sim/mods.ts`)
+
+Every technology and finished plan carries a list of effects. A country's effects are added
+together (two +10% effects give +20%) and read by the rest of the engine: attack and defence by
+type of division, defence on home soil, how fast divisions recover, production line output and
+learning, construction speed, steel and oil needed, tax income, bond sales, the cost of
+rationing, the output lost to conscription, export prices, manpower, the goods people expect,
+the interest lenders ask for, the tax threshold, stability and war support.
 
 ### The AI finance minister (`src/sim/aiEconomy.ts`)
 
@@ -299,8 +377,15 @@ shortfall stays inside its limit: 2% of output for democracies at peace, 3% for 
 governments, 8% for the Soviet Union, 10% for the fascist dictatorships, and 20% for anyone at
 war. On the first of each month it also moves taxes two points towards its limit (at most 35% at
 peace, 45% at war), rations when shops run short, widens conscription when men run out in
-wartime, gives idle military factories a line (60% infantry, 20% artillery, 20% armour) and sets
-15% to 25% of its civilian factories to building. It borrows whatever it can and prints the rest.
+wartime (if war support allows), gives idle military factories a line (60% infantry, 20%
+artillery, 20% armour) and sets 15% to 25% of its civilian factories to building. It borrows
+whatever it can and prints the rest.
+
+It puts idle research teams on whichever technology is most due, weapons first for the
+dictatorships and for anyone at war, industry first for the rest. When no national plan is
+running and the budget can carry one, it starts its own real programmes first and then the
+general plans in an order that fits it (arms for the dictatorships, industry and public works
+for the democracies, the war economy for anyone at war).
 
 ## Surrender
 

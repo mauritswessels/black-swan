@@ -16,6 +16,6 @@ export function enemiesOf(w: Pick<World, 'wars'>, country: string): string[] {
   return out;
 }
 
-/** May a division of this country walk into this province? Only its own land or an enemy's. */
-export const canEnter = (w: Pick<World, 'wars' | 'controller'>, country: string, province: number): boolean =>
-  w.controller[province] === country || atWar(w, country, w.controller[province]);
+/** May a division of this country walk into this province? Only its own land, an enemy's, or an ally's (`friends`). */
+export const canEnter = (w: Pick<World, 'wars' | 'controller'>, country: string, province: number, friends?: Set<string>): boolean =>
+  w.controller[province] === country || atWar(w, country, w.controller[province]) || !!friends?.has(w.controller[province]);

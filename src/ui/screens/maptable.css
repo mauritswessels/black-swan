@@ -69,11 +69,11 @@
 .mt-country-btn:hover { background: rgba(156, 200, 255, 0.1); }
 .mt-country-btn span { font: 700 20px var(--f-cond); letter-spacing: 0.15em; color: #fff; }
 .mt-country-btn small { font-size: 12px; color: #a9b6cb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 320px; }
-.mt-stats { flex: 1; display: flex; gap: 6px; margin: 0; padding: 0; list-style: none; min-width: 0; overflow: hidden; }
-.mt-stats button { display: flex; flex-direction: column; align-items: flex-start; min-height: 44px; padding: 3px 8px; background: none; border: 1px solid transparent; border-radius: 3px; cursor: pointer; white-space: nowrap; }
+.mt-stats { flex: 1; display: flex; gap: 0; margin: 0; padding: 0; list-style: none; min-width: 0; overflow: hidden; }
+.mt-stats button { display: flex; flex-direction: column; align-items: flex-start; min-height: 44px; padding: 3px 7px; background: none; border: 1px solid transparent; border-radius: 3px; cursor: pointer; white-space: nowrap; }
 .mt-stats button:disabled { cursor: default; }
 .mt-stats button:hover:not(:disabled) { background: rgba(156, 200, 255, 0.1); border-color: rgba(156, 200, 255, 0.28); }
-.mt-stats span { font: 600 11px var(--f-cond); letter-spacing: 0.14em; text-transform: uppercase; color: #8fa0bb; }
+.mt-stats span { font: 600 11px var(--f-cond); letter-spacing: 0.1em; text-transform: uppercase; color: #8fa0bb; }
 .mt-stats b { font: 600 19px var(--f-cond); color: #fff; }
 .mt-stats b.warn { color: var(--gold); }
 .mt-clock { display: flex; align-items: center; gap: 10px; }
@@ -181,6 +181,9 @@
 
 /* ---------- economy and production panels ---------- */
 .sb.wide { width: 420px; }
+.sb-act { display: flex; flex-direction: column; gap: 4px; }
+.sb-act .sb-btn { width: 100%; }
+.sb-causes small { color: #8fa0bb; }
 .sb h3 label { cursor: pointer; }
 .sb-note.warn { color: var(--gold); }
 .sb-budget { width: 100%; border-collapse: collapse; font-size: 14px; }

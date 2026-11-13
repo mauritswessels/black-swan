@@ -8,9 +8,9 @@
  * with a fuller AI.
  *
  * How hard a country arms in peacetime depends on its government: the dictatorships of the
- * 1930s accepted large deficits to rearm, the democracies did not until war was close.
+ * 1930s accepted large deficits to rearm, the democracies did not until war was close (in the
+ * game: until world tension reaches 50).
  */
-import { countryByName } from './countries';
 import { cannotRaise, conscriptionBlocked, CONSCRIPTION, economyView, MEN_PER_DIVISION, monthEnds, musterPoint, tallies, TAX_MIN, UNIT_TYPES, UPKEEP, WAR_UPKEEP, type Tally } from './economy';
 import { cannotStartPlan, plansFor } from './plans';
 import { cannotResearch, TECHS, yearAt, type Branch } from './research';
@@ -18,6 +18,9 @@ import type { Government, Order, UnitType, World } from './types';
 
 /** The deficit a government accepts in peacetime, as a share of output. */
 const PEACE_DEFICIT: Record<Government, number> = { democracy: 0.02, authoritarian: 0.03, fascist: 0.1, communist: 0.08 };
+/** Once world tension reaches this, every government accepts at least the second number as its peacetime deficit and builds arms factories. */
+const ALARM_TENSION = 50;
+const ALARM_DEFICIT = 0.06;
 const WAR_DEFICIT = 0.1;
 /** At war it keeps forming divisions until the deficit reaches this share of output. */
 const WAR_ARMY_DEFICIT = 0.2;
@@ -40,12 +43,15 @@ export function aiEconomyOrders(w: World, country: string, tally?: Tally): Order
   const t = tally ?? tallies(w).get(country);
   if (!t) return [];
   const v = economyView(w, country, t);
-  const government = countryByName(country).government;
+  const government = e.government;
   const orders: Order[] = [];
-  const limit = (v.atWar ? WAR_DEFICIT : PEACE_DEFICIT[government]) * v.nominalGDP;
+  // When Europe looks close to war, even the cautious governments start to rearm.
+  const alarmed = w.diplomacy.tension >= ALARM_TENSION;
+  const peaceDeficit = Math.max(PEACE_DEFICIT[government], alarmed ? ALARM_DEFICIT : 0);
+  const limit = (v.atWar ? WAR_DEFICIT : peaceDeficit) * v.nominalGDP;
 
   // New divisions, as long as there are men for them and money to keep them.
-  const armyLimit = (v.atWar ? WAR_ARMY_DEFICIT : PEACE_DEFICIT[government]) * v.nominalGDP;
+  const armyLimit = (v.atWar ? WAR_ARMY_DEFICIT : peaceDeficit) * v.nominalGDP;
   let manpower = e.manpower;
   let balance = v.budget.balance;
   for (const k of UNIT_TYPES) {
@@ -84,11 +90,11 @@ export function aiEconomyOrders(w: World, country: string, tally?: Tally): Order
   }
 
   // Construction: arms factories for countries arming or fighting, civilian ones otherwise.
-  const arming = v.atWar || government === 'fascist' || government === 'communist';
+  const arming = v.atWar || alarmed || government === 'fascist' || government === 'communist';
   const builders = Math.max(v.civ >= 2 ? 1 : 0, Math.round((arming ? 0.25 : 0.15) * v.civ));
   if (builders !== e.constructionFactories) orders.push({ type: 'setConstruction', country, factories: builders });
   if (!e.construction.length && builders > 0 && v.budget.balance > -limit) {
-    const at = musterPoint(w.controller, country);
+    const at = musterPoint(w.controller, country, w.owner);
     if (at !== null) orders.push({ type: 'build', country, kind: arming ? 'mil' : 'civ', province: at });
   }
 

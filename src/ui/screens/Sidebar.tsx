@@ -6,6 +6,7 @@ import { COUNTRIES, countryByName } from '../../sim/countries';
 import { visibleProvinces } from '../../sim/intel';
 import { daysToEnter, PROVINCES, routeDays } from '../../sim/map';
 import { economyView, OIL, STEEL, tallies } from '../../sim/economy';
+import { allianceMap, governmentOf, SURRENDER_SHARE } from '../../sim/diplomacy';
 import { DEPOTS, infrastructure, linkedProvinces, supplyCapacity } from '../../sim/supply';
 import type { BattleReport, Unit, World } from '../../sim/types';
 import { atWar, enemiesOf } from '../../sim/war';
@@ -13,6 +14,7 @@ import { dateLabel } from '../../sim/world';
 import { TERRAIN_NOTE } from '../map/colours';
 import { useGame, type Selection } from '../store';
 import { EconomyPanel, ProductionPanel } from './EconomyPanels';
+import { CountryDiplomacy, DecisionView, DiplomacyPanel, Settlement } from './DiplomacyPanels';
 import { HomeFrontPanel, PlansPanel, PlanView, ResearchPanel, TechView } from './HomePanels';
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -227,18 +229,19 @@ function Province({ w, id }: { w: World; id: number }) {
   const others = [...new Set(here.filter((u) => u.owner !== me).map((u) => u.owner))];
   const infra = infrastructure(p);
   const depot = (DEPOTS[holder] ?? []).includes(id);
-  const linked = me && holder === me ? linkedProvinces(w.controller, me)[id] : null;
+  const linked = me && holder === me ? linkedProvinces(w.controller, me, allianceMap(w.diplomacy).get(me))[id] : null;
+  const owner = w.owner[id];
   const battle = w.battles.find((b) => b.province === id);
   const civ = w.factories.civ[id];
   const mil = w.factories.mil[id];
-  const canBuild = !!me && holder === me && p.owner === me && !w.capitulated.includes(me);
+  const canBuild = !!me && holder === me && w.owner[id] === me && !w.capitulated.includes(me);
   const queued = me && w.economies[me] ? w.economies[me].construction.filter((c) => c.province === id).length : 0;
   const build = (kind: 'civ' | 'mil') => {
     useGame.getState().economy({ type: 'build', kind, province: id });
     useGame.getState().select({ kind: 'production' });
   };
   return (
-    <Frame kicker="Province" title={p.name} sub={`${p.city && p.city !== p.name ? `${p.city} · ` : ''}${holder}${p.capital ? ' · capital' : ''}${holder !== p.owner ? ` · taken from ${p.owner}` : ''}`}>
+    <Frame kicker="Province" title={p.name} sub={`${p.city && p.city !== p.name ? `${p.city} · ` : ''}${holder}${p.capital && p.owner === owner ? ' · capital' : ''}${holder !== owner ? ` · occupied, belongs to ${owner}` : owner !== p.owner ? ` · ${p.owner} until annexed` : ''}`}>
       <div className="sb-rows">
         <Row label="Terrain" value={p.terrain} />
         <Row label="Infrastructure" value={`${infra} of 5`} bar={infra * 20} />
@@ -250,7 +253,7 @@ function Province({ w, id }: { w: World; id: number }) {
         {linked === false && <Row label="Supply" value="Cut off from your depots" />}
       </div>
       <p className="sb-note">{TERRAIN_NOTE[p.terrain]}</p>
-      {holder !== p.owner && civ + mil > 0 && <p className="sb-fine">Occupied: its factories work at 30% for {holder}, and half its steel and oil is taken.</p>}
+      {holder !== owner && civ + mil > 0 && <p className="sb-fine">Occupied: its factories work at 30% for {holder}, and half its steel and oil is taken.</p>}
       {canBuild && (
         <>
           <h3>Build here</h3>
@@ -296,6 +299,7 @@ function Province({ w, id }: { w: World; id: number }) {
       <h3>Country</h3>
       <div className="sb-actions">
         <Link to={{ kind: 'country', name: holder }}>{holder}: details and diplomacy</Link>
+        {owner !== holder && <Link to={{ kind: 'country', name: owner }}>{owner}, whose land this is</Link>}
       </div>
       <h3>Neighbouring provinces</h3>
       <div className="sb-chips">
@@ -319,7 +323,7 @@ function ForeignStack({ w, province, owner }: { w: World; province: number; owne
   const o = enemy ? outlook(next.map((u) => ({ ...u, path: [province] })), units, province, combatEdges(w.economies)) : null;
   if (!units.length) return <Frame kicker="Intelligence report" title="Nothing here now" sub={PROVINCES[province].name}>{null}</Frame>;
   return (
-    <Frame kicker="Intelligence report" title={`${c.adjective} forces in ${PROVINCES[province].name}`} sub={enemy ? 'At war with you' : 'Neutral'}>
+    <Frame kicker="Intelligence report" title={`${c.adjective} forces in ${PROVINCES[province].name}`} sub={enemy ? 'At war with you' : me && allianceMap(w.diplomacy).get(me)?.has(owner) ? 'Your ally' : 'Neutral'}>
       <div className="sb-rows">
         <Row label="Strength" value={plural(units.length, 'division')} />
         <Row label="Type" value={types(units)} />
@@ -345,27 +349,33 @@ function ForeignStack({ w, province, owner }: { w: World; province: number; owne
 }
 
 function CountryView({ w, name }: { w: World; name: string }) {
-  const { declareWar, makePeace } = useGame.getState();
   const c = COUNTRIES.find((k) => k.name === name);
   if (!c) return null;
   const me = w.player;
   const gone = w.capitulated.includes(name);
   const held = w.controller.filter((x) => x === name).length;
-  const home = PROVINCES.filter((p) => p.owner === name);
+  const home = PROVINCES.filter((p) => w.owner[p.id] === name);
   const vpHome = home.reduce((a, p) => a + p.victoryPoints, 0);
   const vpLost = home.filter((p) => w.controller[p.id] !== name).reduce((a, p) => a + p.victoryPoints, 0);
   const army = w.units.filter((u) => u.owner === name);
   const seen = me && me !== name ? visibleProvinces(w, me) : null;
   const visible = seen ? army.filter((u) => seen[u.at]) : army;
   const enemies = enemiesOf(w, name);
-  const capital = home.find((p) => p.capital);
+  const capital = PROVINCES.find((p) => p.capital && p.owner === name);
+  const conqueror = w.diplomacy.conquered[name];
   const war = !!me && atWar(w, me, name);
   const industry = gone ? undefined : tallies(w).get(name);
   const economy = name === me && !gone && w.economies[name] ? economyView(w, name, industry) : undefined;
   return (
-    <Frame kicker={name === me ? 'Your country' : 'Country'} title={name} sub={`${GOVERNMENT[c.government]}${capital ? ` · capital ${capital.city}` : ''}`}>
+    <Frame wide={!!me && name !== me} kicker={name === me ? 'Your country' : 'Country'} title={name} sub={`${GOVERNMENT[governmentOf(w, name)]}${capital ? ` · capital ${capital.city}` : ''}`}>
       {gone ? (
-        <p className="sb-note">{name} has surrendered. Its army has left the map and its land is occupied.</p>
+        <>
+          <p className="sb-note">
+            {home.length ? `${name} has surrendered${conqueror ? ` to ${conqueror}` : ''}. Its army has left the map and its land is occupied.` : `${name} has been annexed${conqueror ? ` by ${conqueror}` : ''}. It is no longer on the map.`} If {conqueror ?? 'its conqueror'} is ever
+            defeated, {name} is restored.
+          </p>
+          {me && <Settlement w={w} me={me} name={name} />}
+        </>
       ) : (
         <>
           <div className="sb-rows">
@@ -378,25 +388,8 @@ function CountryView({ w, name }: { w: World; name: string }) {
             {name === me && economy && <Row label="Output a month" value={`${Math.round(economy.nominalGDP)}m`} />}
             <Row label="Home victory points lost" value={`${vpLost} of ${vpHome}`} bar={vpHome ? (vpLost / vpHome) * 100 : 0} warn />
           </div>
-          <p className="sb-note">A country surrenders when its enemies hold 60% of its home victory points ({Math.ceil(vpHome * 0.6)} for {name}).</p>
-          {me && name !== me && !w.capitulated.includes(me) && (
-            <div className="sb-actions">
-              {war ? (
-                <button className="sb-btn" onClick={() => makePeace(name)}>
-                  Make peace
-                </button>
-              ) : (
-                <button className="sb-btn danger" onClick={() => declareWar(name)}>
-                  Declare war on {name}
-                </button>
-              )}
-            </div>
-          )}
-          {me && name !== me && (
-            <p className="sb-fine">
-              For now war and peace are instant and nobody else joins in. Declaring war costs stability if your war support is under 50; the country you attack rallies. Causes for war, allies and peace terms arrive with diplomacy in Stage F.
-            </p>
-          )}
+          <p className="sb-fine">A country surrenders when its enemies hold {SURRENDER_SHARE * 100}% of the victory points of its own land ({Math.ceil(vpHome * SURRENDER_SHARE)} for {name}).</p>
+          {me && name !== me && !w.capitulated.includes(me) && <CountryDiplomacy w={w} me={me} name={name} />}
         </>
       )}
       {name === me && !gone && (
@@ -406,6 +399,7 @@ function CountryView({ w, name }: { w: World; name: string }) {
           <Link to={{ kind: 'research' }}>Research</Link>
           <Link to={{ kind: 'plans' }}>National plan</Link>
           <Link to={{ kind: 'politics' }}>Home front: stability and war support</Link>
+          <Link to={{ kind: 'diplomacy' }}>Diplomacy: allies, promises, war and peace</Link>
         </div>
       )}
       {capital && (
@@ -536,5 +530,9 @@ export function Sidebar() {
       return w.player ? <PlanView w={w} me={w.player} id={sel.id} /> : null;
     case 'politics':
       return w.player ? <HomeFrontPanel w={w} me={w.player} /> : null;
+    case 'diplomacy':
+      return w.player ? <DiplomacyPanel w={w} me={w.player} /> : null;
+    case 'decision':
+      return <DecisionView w={w} id={sel.id} />;
   }
 }

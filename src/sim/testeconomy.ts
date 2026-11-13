@@ -6,6 +6,7 @@
  * A far-away country declares war on it and nobody marches, so the only thing that differs
  * between runs is the finance policy.
  */
+import { quiet } from './agenda';
 import { aiEconomyOrders } from './aiEconomy';
 import { economyView } from './economy';
 import type { Order, World } from './types';
@@ -46,7 +47,8 @@ export interface FinanceResult {
 const FAR_AWAY = (country: string) => (country === 'Ireland' || country === 'United Kingdom' ? 'Bulgaria' : 'Ireland');
 
 export function runFinance(country: string, policy: Policy, years = 4, seed = 'finance'): FinanceResult {
-  let w = applyOrders(newWorld('freeForAll', seed), [
+  // No alliances, guarantees or historical agenda, so nobody else joins in.
+  let w = applyOrders(quiet(newWorld('freeForAll', seed)), [
     // The far-away country declares, so this is a war the public supports: the runs compare
     // ways of paying for a war, not what an unpopular war does to the home front.
     { type: 'declareWar', by: FAR_AWAY(country), on: country },

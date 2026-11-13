@@ -7,19 +7,22 @@
  * world it is given; it returns a new one. The same world and the same orders always give the
  * same result, because all randomness comes from the seeded generator stored in the world.
  *
- * Each day, in order: orders, the economy with research and national plans (economy.ts), supply,
- * battles (combat.ts), marching, rest and attrition, and finally any surrenders. Divisions may only enter their own land or the land of a country
- * they are at war with.
+ * Each day, in order: orders (military, economic and diplomatic), the day's diplomacy
+ * (diplomacy.ts), the economy with research and national plans (economy.ts), supply, battles
+ * (combat.ts), marching, rest and attrition, and finally any surrenders. Divisions may only
+ * enter their own land, the land of an ally, or the land of a country they are at war with.
  */
 import { DIG_IN_MAX_DAYS, fightBattles, type Draft } from './combat';
 import { COUNTRIES } from './countries';
-import { cloneEconomies, giveEconomyOrder, isEconomyOrder, moraleOf, onBattleEnded, onWarDeclared, reinforce, runEconomies, startEconomies, startFactories } from './economy';
+import { carryOutAim } from './agenda';
+import { allianceMap, cloneDiplomacy, giveDiplomacyOrder, isDiplomacyOrder, onGovernmentFell, runDiplomacy, startDiplomacy, surrenders, type DipDraft } from './diplomacy';
+import { cloneEconomies, giveEconomyOrder, isEconomyOrder, monthEnds, moraleOf, onBattleEnded, reinforce, runEconomies, startEconomies, startFactories } from './economy';
 import { combatEdges, modsOf } from './mods';
 import { daysToEnter, findRoute, PROVINCES } from './map';
 import { Rng, seedFrom } from './rng';
 import { DEPOTS, linkedProvinces, supplyCapacity, supplyLevels } from './supply';
 import type { Mode, Order, Unit, UnitType, World } from './types';
-import { atWar, canEnter, enemiesOf, warKey } from './war';
+import { atWar, canEnter, enemiesOf } from './war';
 
 export type { Mode, World } from './types';
 
@@ -95,7 +98,7 @@ export function newWorld(mode: Mode, seedText: string, startDate = '1936-01-01',
   const controller = PROVINCES.map((p) => p.owner);
   const factories = startFactories();
   const economies = startEconomies({ controller, factories, units, wars: [] });
-  return { mode, player, seed, rng: rng.state, day: 0, startDate, units, nextUnitId: units.length, controller, wars: [], declaredBy: {}, capitulated: [], battles: [], nextBattleId: 0, reports: [], economies, factories };
+  return { mode, player, seed, rng: rng.state, day: 0, startDate, units, nextUnitId: units.length, controller, owner: [...controller], diplomacy: startDiplomacy(economies), wars: [], declaredBy: {}, capitulated: [], battles: [], nextBattleId: 0, reports: [], economies, factories };
 }
 
 /** Organisation regained per day of rest with full supply. */
@@ -103,30 +106,37 @@ export const ORG_RECOVERY = 3;
 /** Organisation lost per day while above what the division's supply can sustain, and strength lost per day once a cut-off division has none left. */
 export const ATTRITION_ORG = 3;
 export const ATTRITION_STRENGTH = 2;
-/** A country surrenders when enemies hold this share of its home victory points. */
-export const SURRENDER_SHARE = 0.6;
+export { SURRENDER_SHARE } from './diplomacy';
+
+/** A copy of the world that orders and diplomacy may change freely. */
+function draftOf(world: World): DipDraft {
+  return {
+    day: world.day, startDate: world.startDate, mode: world.mode, player: world.player,
+    units: world.units.map((u) => ({ ...u, path: [...u.path] })), nextUnitId: world.nextUnitId,
+    controller: [...world.controller], owner: [...world.owner], wars: [...world.wars], declaredBy: { ...world.declaredBy }, capitulated: [...world.capitulated],
+    economies: cloneEconomies(world.economies), factories: { civ: [...world.factories.civ], mil: [...world.factories.mil] }, diplomacy: cloneDiplomacy(world.diplomacy),
+  };
+}
 
 /** Carry out orders on a world that is being changed. Orders that make no sense are ignored. */
-function giveOrders(d: Pick<Draft, 'units' | 'controller' | 'wars'> & Pick<World, 'economies' | 'factories' | 'declaredBy' | 'day' | 'startDate'>, capitulated: string[], orders: Order[]): void {
-  const byId = new Map(d.units.map((u) => [u.id, u]));
+function giveOrders(d: DipDraft, orders: Order[]): void {
+  let units: Unit[] | null = null;
+  let byId = new Map<number, Unit>();
+  let friends: Map<string, Set<string>> | null = null;
   for (const order of orders) {
     if (isEconomyOrder(order)) {
-      giveEconomyOrder(d, capitulated, order);
+      giveEconomyOrder(d, d.capitulated, order);
       continue;
     }
-    if (order.type === 'declareWar' || order.type === 'makePeace') {
-      const [a, b] = order.type === 'declareWar' ? [order.by, order.on] : [order.a, order.b];
-      const key = warKey(a, b);
-      const known = (n: string) => COUNTRIES.some((c) => c.name === n) && !capitulated.includes(n);
-      if (order.type === 'makePeace') {
-        d.wars = d.wars.filter((k) => k !== key);
-        delete d.declaredBy[key];
-      } else if (a !== b && known(a) && known(b) && !d.wars.includes(key)) {
-        d.wars.push(key);
-        d.declaredBy[key] = a;
-        onWarDeclared(d.economies, a, b);
-      }
+    if (order.type === 'aim' || isDiplomacyOrder(order)) {
+      if (order.type === 'aim') carryOutAim(d, order.id, order.go);
+      else giveDiplomacyOrder(d, order);
+      friends = null; // pacts and wars may have changed
       continue;
+    }
+    if (units !== d.units) {
+      units = d.units;
+      byId = new Map(units.map((u) => [u.id, u]));
     }
     const u = byId.get(order.unit);
     if (!u) continue; // an order for a unit that no longer exists is ignored
@@ -134,8 +144,10 @@ function giveOrders(d: Pick<Draft, 'units' | 'controller' | 'wars'> & Pick<World
       u.path = [];
       u.progress = 0;
     } else {
-      const route = findRoute(u.at, order.to, u.type, (p) => canEnter(d, u.owner, p));
-      if (!route) continue; // no way by land, or it would cross a country it is not at war with: ignored
+      friends ??= allianceMap(d.diplomacy);
+      const mine = friends.get(u.owner);
+      const route = findRoute(u.at, order.to, u.type, (p) => canEnter(d, u.owner, p, mine));
+      if (!route) continue; // no way by land, or it would cross a country it is neither allied to nor at war with: ignored
       // Keep the progress already made if the new route starts the same way.
       if (route[0] !== u.path[0]) u.progress = 0;
       u.path = route;
@@ -143,45 +155,51 @@ function giveOrders(d: Pick<Draft, 'units' | 'controller' | 'wars'> & Pick<World
   }
 }
 
+const fromDraft = (world: World, d: DipDraft): World => ({
+  ...world, units: d.units, nextUnitId: d.nextUnitId, controller: d.controller, owner: d.owner, wars: d.wars, declaredBy: d.declaredBy, capitulated: d.capitulated, economies: d.economies, factories: d.factories, diplomacy: d.diplomacy,
+});
+
 /**
  * Give orders without letting a day pass, so that the map can show them while the game is
  * paused. step(applyOrders(w, orders)) gives the same world as step(w, orders).
  */
 export function applyOrders(world: World, orders: Order[]): World {
   if (!orders.length) return world;
-  const d = { units: world.units.map((u) => ({ ...u, path: [...u.path] })), controller: world.controller, wars: [...world.wars], declaredBy: { ...world.declaredBy }, day: world.day, startDate: world.startDate, economies: cloneEconomies(world.economies), factories: world.factories };
-  giveOrders(d, world.capitulated, orders);
-  return { ...world, units: d.units, wars: d.wars, declaredBy: d.declaredBy, economies: d.economies };
+  const d = draftOf(world);
+  giveOrders(d, orders);
+  return fromDraft(world, d);
 }
 
 /** Advance the world by one day, after applying the orders given today. */
 export function step(world: World, orders: Order[] = []): World {
   const rng = new Rng(world.rng);
+  const dd = draftOf(world);
+
+  // 1. Orders, then the day's diplomacy: deadlines, cases for war, and once a month the drift of relations.
+  giveOrders(dd, orders);
+  const monthEnd = monthEnds(world.startDate, world.day);
+  runDiplomacy(dd, monthEnd);
+
+  // 1b. The economy: taxes and bills, production lines, construction, training. New divisions appear.
+  const fallen = new Map(Object.entries(dd.economies).map(([name, e]) => [name, [e.governmentsFallen, e.government] as const]));
+  const oil = runEconomies(dd, dd.capitulated);
+  for (const [name, [n, was]] of fallen) if (dd.economies[name].governmentsFallen > n) onGovernmentFell(dd, name, was);
+
   const d: Draft = {
     day: world.day,
-    units: world.units.map((u) => ({ ...u, path: [...u.path] })),
-    controller: [...world.controller],
-    wars: [...world.wars],
+    units: dd.units,
+    controller: dd.controller,
+    wars: dd.wars,
     battles: world.battles.map((b) => ({ ...b, attackers: [...b.attackers], defenders: [...b.defenders], attackerUnits: [...b.attackerUnits], defenderUnits: [...b.defenderUnits], tally: { ...b.tally } })),
     nextBattleId: world.nextBattleId,
     reports: [...world.reports],
+    friends: allianceMap(dd.diplomacy),
   };
-  let capitulated = world.capitulated;
-  const economies = cloneEconomies(world.economies);
-  const factories = { civ: [...world.factories.civ], mil: [...world.factories.mil] };
-
-  // 1. Orders.
-  const ordered = { ...d, economies, factories, declaredBy: { ...world.declaredBy }, startDate: world.startDate };
-  giveOrders(ordered, capitulated, orders);
-  d.wars = ordered.wars;
-  let declaredBy = ordered.declaredBy;
-
-  // 1b. The economy: taxes and bills, production lines, construction, training. New divisions appear.
-  const econ = { day: d.day, startDate: world.startDate, units: d.units, nextUnitId: world.nextUnitId, controller: d.controller, wars: d.wars, declaredBy, economies, factories };
-  const oil = runEconomies(econ, capitulated);
+  const friends = d.friends!;
+  const economies = dd.economies;
 
   // 2. Supply, from where everyone stands this morning.
-  const levels = supplyLevels(d);
+  const levels = supplyLevels(d, friends);
   d.units.forEach((u, i) => {
     u.supply = levels[i];
     // Tanks without fuel: a country short of oil cannot keep its armour fully supplied.
@@ -204,9 +222,10 @@ export function step(world: World, orders: Order[] = []): World {
   const blocked = (u: Unit, p: number): boolean => [...(occupied.get(p) ?? [])].some((o) => atWar(d, u.owner, o));
   for (const u of d.units) {
     let dayLeft = 1; // a unit may cross more than one small province in a day
+    const allies = friends.get(u.owner);
     while (u.path.length && dayLeft > 0) {
       const next = u.path[0];
-      if (!canEnter(d, u.owner, next)) {
+      if (!canEnter(d, u.owner, next, allies)) {
         // Peace broke out, or the province changed hands to a neutral: stop here.
         u.path = [];
         u.progress = 0;
@@ -224,7 +243,12 @@ export function step(world: World, orders: Order[] = []): World {
         dayLeft -= remaining;
         u.at = u.path.shift()!;
         u.progress = 0;
-        if (atWar(d, u.owner, d.controller[u.at])) d.controller[u.at] = u.owner; // captured
+        const holder = d.controller[u.at];
+        if (atWar(d, u.owner, holder)) {
+          // Captured. Land that belongs to an ally still in the fight is handed back to it (liberated).
+          const owner = dd.owner[u.at];
+          d.controller[u.at] = owner !== u.owner && allies?.has(owner) && !dd.capitulated.includes(owner) && atWar(d, owner, holder) ? owner : u.owner;
+        }
         const owners = occupied.get(u.at);
         if (owners) owners.add(u.owner);
         else occupied.set(u.at, new Set([u.owner]));
@@ -261,23 +285,13 @@ export function step(world: World, orders: Order[] = []): World {
   }
   d.units = d.units.filter((u) => u.strength > 0);
 
-  // 6. Surrender. (Peace terms come in Stage F; for now the main occupier takes over.)
-  for (const loser of new Set(d.wars.flatMap((k) => k.split('|')))) {
-    const home = PROVINCES.filter((p) => p.owner === loser);
-    const total = home.reduce((a, p) => a + p.victoryPoints, 0);
-    const held = new Map<string, number>();
-    for (const p of home) if (atWar(d, loser, d.controller[p.id])) held.set(d.controller[p.id], (held.get(d.controller[p.id]) ?? 0) + p.victoryPoints);
-    const lost = [...held.values()].reduce((a, b) => a + b, 0);
-    if (!total || lost / total < SURRENDER_SHARE) continue;
-    const victor = [...held.entries()].sort((x, y) => y[1] - x[1] || (x[0] < y[0] ? -1 : 1))[0][0];
-    capitulated = [...capitulated, loser];
-    d.units = d.units.filter((u) => u.owner !== loser);
-    d.controller = d.controller.map((c) => (c === loser ? victor : c));
-    d.wars = d.wars.filter((k) => !k.split('|').includes(loser));
-    declaredBy = Object.fromEntries(Object.entries(declaredBy).filter(([k]) => d.wars.includes(k)));
-  }
+  // 6. Surrender (diplomacy.ts): the loser is occupied, and whatever it had conquered is restored.
+  dd.units = d.units;
+  dd.controller = d.controller;
+  dd.wars = d.wars;
+  surrenders(dd);
 
-  return { ...world, day: world.day + 1, rng: rng.state, units: d.units, nextUnitId: econ.nextUnitId, controller: d.controller, wars: d.wars, declaredBy, capitulated, battles: d.battles, nextBattleId: d.nextBattleId, reports: d.reports, economies, factories };
+  return { ...fromDraft(world, dd), day: world.day + 1, rng: rng.state, battles: d.battles, nextBattleId: d.nextBattleId, reports: d.reports };
 }
 
 /** The current date in words, e.g. "7 March 1936". Uses UTC so it is the same on every computer. */

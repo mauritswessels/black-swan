@@ -56,14 +56,19 @@ export const DEPOTS: Record<string, number[]> = (() => {
   return out;
 })();
 
-/** For one country: which provinces have a link back to a depot it still controls. */
-export function linkedProvinces(controller: string[], country: string): boolean[] {
+/**
+ * For one country: which provinces have a link back to a depot. With allies (`friends`), the
+ * link may run through allied land and end at an ally's depot: allies feed each other's armies.
+ */
+export function linkedProvinces(controller: string[], country: string, friends?: Set<string>): boolean[] {
   const linked = new Array<boolean>(PROVINCES.length).fill(false);
+  const ours = (c: string) => c === country || !!friends?.has(c);
   const queue = (DEPOTS[country] ?? []).filter((d) => controller[d] === country);
+  for (const f of friends ?? []) for (const d of DEPOTS[f] ?? []) if (controller[d] === f) queue.push(d);
   for (const d of queue) linked[d] = true;
   while (queue.length) {
     for (const n of PROVINCES[queue.pop()!].neighbours) {
-      if (!linked[n] && controller[n] === country) {
+      if (!linked[n] && ours(controller[n])) {
         linked[n] = true;
         queue.push(n);
       }
@@ -73,13 +78,13 @@ export function linkedProvinces(controller: string[], country: string): boolean[
 }
 
 /** The supply level, 0 to 1, of every unit in the world, in the same order as world.units. */
-export function supplyLevels(w: Pick<World, 'units' | 'controller'>): number[] {
+export function supplyLevels(w: Pick<World, 'units' | 'controller'>, friends?: Map<string, Set<string>>): number[] {
   const count = new Array<number>(PROVINCES.length).fill(0);
   for (const u of w.units) count[u.at]++;
   const links = new Map<string, boolean[]>();
   return w.units.map((u) => {
     let linked = links.get(u.owner);
-    if (!linked) links.set(u.owner, (linked = linkedProvinces(w.controller, u.owner)));
+    if (!linked) links.set(u.owner, (linked = linkedProvinces(w.controller, u.owner, friends?.get(u.owner))));
     return linked[u.at] ? Math.min(1, supplyCapacity(u.at) / count[u.at]) : 0;
   });
 }

@@ -103,6 +103,7 @@ export function Help() {
     ['T', 'Research: technologies and research teams'],
     ['N', 'National plan'],
     ['W', 'Home front: stability and war support'],
+    ['D', 'Diplomacy: allies, promises, war and peace'],
     ['X', 'Codex'],
     ['S', 'Save and load'],
     ['M', 'Sound on or off'],

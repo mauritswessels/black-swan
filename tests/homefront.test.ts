@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { quiet } from '../src/sim/agenda';
 import { attackPower, defencePower, outlook } from '../src/sim/combat';
 import { COUNTRIES } from '../src/sim/countries';
 import { conscriptionBlocked, CRISIS_MONTHS, economyView, moraleOf, onBattleEnded, WAR_SUPPORT_BASE } from '../src/sim/economy';
@@ -11,7 +12,8 @@ import { runWar } from '../src/sim/testwar';
 import type { Economy, Order, Unit, World } from '../src/sim/types';
 import { applyOrders, newWorld, step } from '../src/sim/world';
 
-const as = (country: string, seed = 'stage-e') => newWorld('freeForAll', seed, '1936-01-01', country);
+// A quiet world: no pacts and no historical agenda, so these tests see only the home front.
+const as = (country: string, seed = 'stage-e') => quiet(newWorld('freeForAll', seed, '1936-01-01', country));
 const give = (w: World, ...orders: Order[]): World => applyOrders(w, orders);
 const days = (w: World, n: number): World => {
   for (let d = 0; d < n; d++) w = step(w);
@@ -261,14 +263,17 @@ describe('war support', () => {
     const w = give(as('France'), { type: 'declareWar', by: 'Germany', on: 'Poland' });
     const belgium = economyView(w, 'Belgium'); // borders Germany
     const spain = economyView(w, 'Spain'); // borders neither
-    expect(belgium.warSupportTarget).toBe(WAR_SUPPORT_BASE.democracy + 4 + 8);
-    expect(spain.warSupportTarget).toBe(WAR_SUPPORT_BASE.democracy + 4);
+    // An attack on a great power raises world tension by 20, worth 4 points of war support everywhere.
+    expect(w.diplomacy.tension).toBe(20);
+    expect(belgium.warSupportTarget).toBe(WAR_SUPPORT_BASE.democracy + 4 + 8 + 4);
+    expect(spain.warSupportTarget).toBe(WAR_SUPPORT_BASE.democracy + 4 + 4);
   });
 
   it('charges stability for declaring a war people do not want, most of all in a democracy', () => {
     const w = as('France');
     const fr = give(w, { type: 'declareWar', by: 'France', on: 'Ireland' });
-    expect(fr.economies.France.stability).toBeCloseTo(w.economies.France.stability - 0.4 * (50 - 35), 9);
+    // France has no cause for war against Ireland, so the cost is doubled.
+    expect(fr.economies.France.stability).toBeCloseTo(w.economies.France.stability - 2 * 0.4 * (50 - 35), 9);
     const de = give(w, { type: 'declareWar', by: 'Germany', on: 'Ireland' });
     expect(de.economies.Germany.stability).toBe(w.economies.Germany.stability);
     const keen = give(withEconomy(w, 'France', { warSupport: 60 }), { type: 'declareWar', by: 'France', on: 'Ireland' });
@@ -355,7 +360,7 @@ describe('war support', () => {
 });
 
 describe('four years of peace with research and plans (bot playtest)', () => {
-  let w = newWorld('freeForAll', 'stage-e-peace');
+  let w = quiet(newWorld('freeForAll', 'stage-e-peace'));
   for (let d = 0; d < 365 * 4; d++) w = advance(w);
 
   it('every country researches and plans, and nobody falls apart', () => {

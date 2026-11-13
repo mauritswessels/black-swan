@@ -85,6 +85,8 @@ export interface Draft {
   reports: BattleReport[];
   /** What research, plans and forts add to each division's hitting power. Missing means nothing. */
   edges?: Edges;
+  /** Each country's allies: a beaten division may fall back onto allied land. */
+  friends?: Map<string, Set<string>>;
 }
 
 const emptyTally = (): BattleTally => ({ days: 0, attackerCount: 0, defenderCount: 0, terrain: 0, attackerSupply: 0, defenderSupply: 0, dugIn: 0, directions: 0, armourShare: 0, artilleryShare: 0, attackerEdge: 0, defenderEdge: 0 });
@@ -105,11 +107,11 @@ const round1 = (x: number): number => Math.round(x * 10) / 10;
  * Where a beaten division falls back to: a neighbouring province its own country controls,
  * the one nearest its capital. Returns -1 if there is none, which means surrender.
  */
-export function retreatTarget(d: Pick<Draft, 'controller'>, u: Unit, capital: number | undefined): number {
+export function retreatTarget(d: Pick<Draft, 'controller' | 'friends'>, u: Unit, capital: number | undefined): number {
   let best = -1;
   let bestKm = Infinity;
   for (const n of PROVINCES[u.at].neighbours) {
-    if (d.controller[n] !== u.owner) continue;
+    if (d.controller[n] !== u.owner && !d.friends?.get(u.owner)?.has(d.controller[n])) continue;
     const km = capital === undefined ? 0 : distanceKm(PROVINCES[n].centre, PROVINCES[capital].centre);
     if (km < bestKm) {
       best = n;

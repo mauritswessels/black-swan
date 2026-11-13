@@ -14,7 +14,7 @@
  * The rules are written out in plain words in MODEL.md. All the numbers are constants at the
  * top of this file. Nothing here is random.
  */
-import { COUNTRIES, countryByName } from './countries';
+import { COUNTRIES } from './countries';
 import { PROVINCES } from './map';
 import { modsOf, type Mods } from './mods';
 import { cannotStartPlan, emptyPlan, planById, type Plan } from './plans';
@@ -116,6 +116,8 @@ export const HOME_LOST_SUPPORT = 60;
 export const ALARM_PER_COUNTRY = 2;
 export const ALARM_MAX = 10;
 export const ALARM_NEIGHBOUR = 8;
+/** Points of war support in peacetime for each point of world tension (see diplomacy.ts). */
+export const TENSION_SUPPORT = 0.2;
 /** The public's mood moves this much with each battle won or lost, within these limits. */
 export const MOOD_PER_BATTLE = 2;
 export const MOOD_MAX = 15;
@@ -133,6 +135,12 @@ export const DECLARATION_COST: Record<Government, number> = { democracy: 0.4, au
 /** A government falls after this many months in a row with stability below CRISIS_STABILITY. */
 export const CRISIS_STABILITY = 20;
 export const CRISIS_MONTHS = 3;
+/**
+ * The kind of government that takes over when one falls. A democracy in crisis gives way to an
+ * emergency government that rules by decree; a dictatorship that falls is replaced by a
+ * provisional government (authoritarian), and an authoritarian one by an elected government.
+ */
+export const AFTER_A_FALL: Record<Government, Government> = { democracy: 'authoritarian', authoritarian: 'democracy', fascist: 'authoritarian', communist: 'authoritarian' };
 
 /** Countries that share a land border on the 1936 map. */
 const NEIGHBOURS: Map<string, Set<string>> = (() => {
@@ -239,7 +247,7 @@ export interface Tally {
   divisions: Record<UnitType, number>;
 }
 
-type Holdings = Pick<World, 'controller' | 'factories' | 'units' | 'wars'> & { declaredBy?: World['declaredBy'] };
+type Holdings = Pick<World, 'controller' | 'factories' | 'units' | 'wars'> & { declaredBy?: World['declaredBy']; owner?: string[]; diplomacy?: { tension: number } };
 
 export function tallies(w: Holdings): Map<string, Tally> {
   const out = new Map<string, Tally>();
@@ -253,14 +261,15 @@ export function tallies(w: Holdings): Map<string, Tally> {
   for (const p of PROVINCES) {
     const holder = w.controller[p.id];
     const t = get(holder);
-    const own = p.owner === holder;
+    const owner = w.owner ? w.owner[p.id] : p.owner;
+    const own = owner === holder;
     t.civ += w.factories.civ[p.id] * (own ? 1 : OCCUPIED_FACTORIES);
     t.mil += w.factories.mil[p.id] * (own ? 1 : OCCUPIED_FACTORIES);
     t.steel += STEEL[p.id] * (own ? 1 : OCCUPIED_RESOURCES);
     t.oil += OIL[p.id] * (own ? 1 : OCCUPIED_RESOURCES);
     if (own) t.population += POPULATION[p.id];
-    vpHome.set(p.owner, (vpHome.get(p.owner) ?? 0) + p.victoryPoints);
-    if (!own) vpLost.set(p.owner, (vpLost.get(p.owner) ?? 0) + p.victoryPoints);
+    vpHome.set(owner, (vpHome.get(owner) ?? 0) + p.victoryPoints);
+    if (!own) vpLost.set(owner, (vpLost.get(owner) ?? 0) + p.victoryPoints);
   }
   for (const [name, total] of vpHome) get(name).homeLost = total ? (vpLost.get(name) ?? 0) / total : 0;
   for (const u of w.units) get(u.owner).divisions[u.type]++;
@@ -337,7 +346,7 @@ const taxFactor = (rate: number): number => 1 - TAX_DRAG * Math.max(0, rate - 0.
 /** May this conscription law be brought in? Returns the reason if not. Narrowing the law is always allowed. */
 export function conscriptionBlocked(e: Economy, country: string, level: number): string | null {
   if (level <= e.conscription) return null;
-  const need = (CONSCRIPTION_SUPPORT[level] ?? 0) - SUPPORT_LENIENCY[countryByName(country).government];
+  const need = (CONSCRIPTION_SUPPORT[level] ?? 0) - SUPPORT_LENIENCY[e.government];
   return Math.round(e.warSupport) < need ? `needs war support of ${need}` : null;
 }
 
@@ -351,7 +360,7 @@ export function economyView(w: Holdings & Pick<World, 'economies'>, country: str
   const atWar = enemies.length > 0;
   const p = e.priceLevel / 100;
   const m = modsOf(e);
-  const regime = countryByName(country).government;
+  const regime = e.government;
 
   const milUsed = Math.min(Math.floor(t.mil + 1e-9), UNIT_TYPES.reduce((a, k) => a + e.lines[k].factories, 0));
   const building = e.construction.length ? Math.min(e.constructionFactories, Math.floor(t.civ + 1e-9), e.construction.length * BUILDERS_PER_PROJECT) : 0;
@@ -417,6 +426,7 @@ export function economyView(w: Holdings & Pick<World, 'economies'>, country: str
   if (!atWar) {
     const fighting = new Set(w.wars.flatMap((k) => k.split('|')));
     support('war elsewhere in Europe', Math.min(ALARM_MAX, ALARM_PER_COUNTRY * fighting.size));
+    support('world tension', TENSION_SUPPORT * (w.diplomacy?.tension ?? 0));
     if ([...(NEIGHBOURS.get(country) ?? [])].some((n) => fighting.has(n))) support('a neighbour is at war', ALARM_NEIGHBOUR);
   }
   support('home provinces in enemy hands', -HOME_LOST_SUPPORT * t.homeLost);
@@ -458,6 +468,7 @@ export function economyView(w: Holdings & Pick<World, 'economies'>, country: str
 const START_TAX: Record<Government, number> = { democracy: 0.22, authoritarian: 0.22, fascist: 0.22, communist: 0.25 };
 
 const emptyEconomy = (): Economy => ({
+  government: 'democracy',
   treasury: 0, debt: 0, debtRate: BASE_REAL_RATE + BANK_CREDIT, money: 0, priceLevel: 100, inflation: BANK_CREDIT, expected: BANK_CREDIT, taxRate: 0.22, bondShare: 1, rationing: false, imports: true,
   conscription: 1, stability: 70, warSupport: 40, mood: 0, weariness: 0, crisisMonths: 0, governmentsFallen: 0, research: emptyResearch(1), plan: emptyPlan(), manpower: 0, stock: { infantry: 0, armour: 0, artillery: 0 },
   lines: { infantry: { factories: 0, efficiency: LINE_START }, armour: { factories: 0, efficiency: LINE_START }, artillery: { factories: 0, efficiency: LINE_START } },
@@ -482,6 +493,7 @@ export function startEconomies(w: Holdings): Record<string, Economy> {
     const e = emptyEconomy();
     e.research = emptyResearch(researchSlots(c.name));
     e.conscription = c.name === 'United Kingdom' ? 0 : 1;
+    e.government = c.government;
     e.taxRate = START_TAX[c.government];
     const total = c.startArmy[0] + c.startArmy[1] + c.startArmy[2];
     const mil = Math.floor(t.mil);
@@ -526,14 +538,16 @@ export function cloneEconomies(es: Record<string, Economy>): Record<string, Econ
   return out;
 }
 
-export type EconomyOrder = Exclude<Order, { type: 'move' | 'halt' | 'declareWar' | 'makePeace' }>;
+export type EconomyOrder = Extract<Order, { country: string }>;
 export const isEconomyOrder = (o: Order): o is EconomyOrder => 'country' in o;
 
 /** Where a new division forms: the capital, or failing that the biggest home city the country still holds. */
-export function musterPoint(controller: string[], country: string): number | null {
+export function musterPoint(controller: string[], country: string, owner?: string[]): number | null {
   let best: number | null = null;
+  // The 1936 capital first, then the biggest city of the land that is the country's own today.
+  for (const p of PROVINCES) if (p.capital && p.owner === country && controller[p.id] === country && (!owner || owner[p.id] === country)) return p.id;
   for (const p of PROVINCES) {
-    if (p.owner !== country || controller[p.id] !== country) continue;
+    if ((owner ? owner[p.id] : p.owner) !== country || controller[p.id] !== country) continue;
     if (p.capital) return p.id;
     if (best === null || p.victoryPoints > PROVINCES[best].victoryPoints) best = p.id;
   }
@@ -545,8 +559,8 @@ export function musterPoint(controller: string[], country: string): number | nul
  * than half of what it can supply), otherwise the least crowded home province that has a supply
  * link. This keeps a growing army from piling up in one place.
  */
-export function formUpPoint(d: Pick<World, 'controller' | 'units'>, country: string): number | null {
-  const capital = musterPoint(d.controller, country);
+export function formUpPoint(d: Pick<World, 'controller' | 'units'> & { owner?: string[] }, country: string): number | null {
+  const capital = musterPoint(d.controller, country, d.owner);
   if (capital === null) return null;
   const count = new Map<number, number>();
   for (const u of d.units) count.set(u.at, (count.get(u.at) ?? 0) + 1);
@@ -555,7 +569,7 @@ export function formUpPoint(d: Pick<World, 'controller' | 'units'>, country: str
   const linked = linkedProvinces(d.controller, country);
   let best = capital;
   for (const p of PROVINCES) {
-    if (p.owner !== country || d.controller[p.id] !== country || !linked[p.id]) continue;
+    if ((d.owner ? d.owner[p.id] : p.owner) !== country || d.controller[p.id] !== country || !linked[p.id]) continue;
     const better = crowding(p.id) - crowding(best);
     if (better < -1e-9 || (Math.abs(better) <= 1e-9 && p.victoryPoints > PROVINCES[best].victoryPoints)) best = p.id;
   }
@@ -570,7 +584,7 @@ export function cannotRaise(e: Economy, type: UnitType): string | null {
 }
 
 /** Carry out one economic order on an economy that is being changed. Orders that make no sense are ignored. */
-export function giveEconomyOrder(d: Pick<World, 'economies' | 'controller' | 'factories' | 'units' | 'wars'> & { day?: number; startDate?: string }, capitulated: string[], o: EconomyOrder): void {
+export function giveEconomyOrder(d: Pick<World, 'economies' | 'controller' | 'factories' | 'units' | 'wars'> & { day?: number; startDate?: string; owner?: string[] }, capitulated: string[], o: EconomyOrder): void {
   const e = d.economies[o.country];
   if (!e || capitulated.includes(o.country)) return;
   switch (o.type) {
@@ -615,7 +629,7 @@ export function giveEconomyOrder(d: Pick<World, 'economies' | 'controller' | 'fa
       const p = PROVINCES[o.province];
       if (!p || (o.kind !== 'civ' && o.kind !== 'mil') || e.construction.length >= 12) break;
       // Only in your own home provinces that you still hold.
-      if (p.owner !== o.country || d.controller[p.id] !== o.country) break;
+      if ((d.owner ? d.owner[p.id] : p.owner) !== o.country || d.controller[p.id] !== o.country) break;
       e.construction.push({ kind: o.kind, province: p.id, done: 0 });
       break;
     }
@@ -658,17 +672,6 @@ export function giveEconomyOrder(d: Pick<World, 'economies' | 'controller' | 'fa
   }
 }
 
-/**
- * A declaration of war reaches the home front at once. The country that declares loses
- * stability if its people are not behind it; the country attacked rallies.
- */
-export function onWarDeclared(economies: Record<string, Economy>, by: string, on: string): void {
-  const a = economies[by];
-  const b = economies[on];
-  if (a) a.stability = clamp(a.stability - DECLARATION_COST[countryByName(by).government] * Math.max(0, 50 - a.warSupport), 0, 100);
-  if (b) b.warSupport = clamp(b.warSupport + 10, 0, 100);
-}
-
 /** A battle has ended: the public's mood moves with the result. */
 export function onBattleEnded(economies: Record<string, Economy>, winners: string[], losers: string[]): void {
   for (const name of winners) if (economies[name]) economies[name].mood = clamp(economies[name].mood + MOOD_PER_BATTLE, -MOOD_MAX, MOOD_MAX);
@@ -679,7 +682,7 @@ export function onBattleEnded(economies: Record<string, Economy>, winners: strin
 function completePlan(d: EconomyDraft, name: string, e: Economy, plan: Plan, v: EconomyView): boolean {
   const g = plan.grant ?? {};
   if (g.mil || g.civ) {
-    const at = musterPoint(d.controller, name);
+    const at = musterPoint(d.controller, name, d.owner);
     if (at === null) return false;
     d.factories.mil[at] += g.mil ?? 0;
     d.factories.civ[at] += g.civ ?? 0;
@@ -698,6 +701,8 @@ function completePlan(d: EconomyDraft, name: string, e: Economy, plan: Plan, v: 
 /** The parts of the world the economy changes during a day. */
 export interface EconomyDraft {
   day: number;
+  owner?: string[];
+  diplomacy?: { tension: number };
   startDate: string;
   units: Unit[];
   nextUnitId: number;
@@ -857,6 +862,7 @@ function closeMonth(d: EconomyDraft, name: string, e: Economy, v: EconomyView): 
   if (e.crisisMonths >= CRISIS_MONTHS) {
     e.crisisMonths = 0;
     e.governmentsFallen++;
+    e.government = AFTER_A_FALL[e.government];
     e.stability = 45;
     e.warSupport = clamp(e.warSupport - 10, 0, 100);
     e.plan.active = null;
@@ -892,4 +898,4 @@ export function reinforce(e: Economy | undefined, u: Unit, share: number): numbe
 /** The real interest rate on new bonds once inflation is taken off: r = i - pi. */
 export const realReturn = (v: EconomyView, e: Economy): number => v.marketRate - e.inflation;
 
-export const governmentOf = (country: string): Government => countryByName(country).government;
+

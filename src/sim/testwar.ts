@@ -2,6 +2,7 @@
  * AI against AI test wars: two countries, both led by the simple AI, fight on the real map.
  * Used by `npm run balance` and by the "watch a test war" preview in the app.
  */
+import { quiet } from './agenda';
 import { aiOrders } from './ai';
 import { aiEconomyOrders } from './aiEconomy';
 import { COUNTRIES } from './countries';
@@ -38,7 +39,8 @@ export const bothSides = (w: World, a: string, b: string): Order[] => [...aiOrde
 
 /** A fresh world in which `attacker` has just declared war on `defender`. */
 export function startWar(attacker: string, defender: string, seed: string): World {
-  return step(newWorld('freeForAll', seed), [{ type: 'declareWar', by: attacker, on: defender }]);
+  // A duel: no alliances, guarantees or historical agenda, so nobody else joins in.
+  return step(quiet(newWorld('freeForAll', seed)), [{ type: 'declareWar', by: attacker, on: defender }]);
 }
 
 export interface WarResult {

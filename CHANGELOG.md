@@ -1,5 +1,69 @@
 # Changelog
 
+## War game, Stage F: diplomacy, AI countries and peace (2026-11-13)
+
+- **Relations.** Every pair of countries has a relation from -100 to 100. It drifts 2 points a
+  month towards a resting point made of their kinds of government, their history, their
+  treaties, claims on each other's land and any diplomatic mission. The sidebar lists every
+  reason in points.
+- **Treaties.** Alliances (you fight each other's wars and may use each other's land and
+  depots), guarantees (a one-way promise to defend a country) and non-aggression pacts. The
+  real treaties of 1936 are in place at the start: Britain and France, France with Poland and
+  Czechoslovakia, the guarantee of Belgium, the German-Polish and Soviet pacts.
+- **World tension**, 0 to 100, in the top bar. Ultimatums, annexations and wars raise it; it
+  falls half a point a month. Democracies can guarantee other countries only from tension 25
+  and build a case for war only from 50. From 50 every AI country arms faster, and tension
+  raises war support in countries still at peace.
+- **A cause for war.** Story mode needs one: a claim, a case you have built (45 days for a
+  dictatorship, 120 for a democracy), a refused ultimatum, or a promise to an ally. Free-for-all
+  lets you attack anyone without one, at twice the cost in stability, more tension and worse
+  relations with everyone.
+- **Ultimatums.** A country with a claim can demand it without a war. The target gives in if
+  nobody will fight for it and it is clearly outmatched (1.5 to 1). If a protector stands firm
+  it refuses, and the demander must fight or back down. This is how Austria, Munich and
+  Bessarabia work.
+- **Decisions.** When an ally is attacked, a country you protect receives an ultimatum, an ally
+  calls you into its war or an enemy offers peace, the clock stops and the question opens in
+  the sidebar with what each answer costs. Breaking a promise costs stability and trust.
+- **AI countries follow history.** Each has the real timetable of 1936 to 1941: the Rhineland,
+  the Anschluss, Munich, Prague, Albania, the Pact of Steel, the German-Soviet pact, Poland,
+  the Winter War, Denmark, the attack in the west, the Baltic states, Yugoslavia and the
+  invasion of the Soviet Union. Each step has conditions (earlier steps done, good enough
+  odds, no firm protector), so what you do changes it: stand firm at Munich as France and
+  Germany must fight in 1938 or back down; lead Germany and do nothing and there is no war.
+- **Containment.** Once a country has broken the peace three times, the major democracies
+  guarantee the countries it still has claims on. This is why Britain guarantees Poland two
+  weeks after Prague.
+- **Peace.** Offer peace on the old borders or with each side keeping what it holds. The other
+  side answers by the war score (land, armies, the home front, who else it is fighting), which
+  the sidebar shows with every reason. Peace starts a truce of 180 days. AI countries offer
+  peace themselves when a war is lost or their people will no longer carry it.
+- **Surrender and what follows.** A country that loses 60% of its own land's victory points
+  surrenders and is occupied (factories at 30%). The victor can leave it occupied, annex it or
+  set up a friendly government, which returns it to the map as an ally. When a conqueror falls,
+  the countries it took are restored. Land you take back from an enemy returns to the ally
+  that owned it.
+- **A government that falls changes its kind**: a democracy becomes authoritarian, an
+  authoritarian state a democracy, and fascist or communist rule gives way to authoritarian.
+- **The Diplomacy panel** (key D, or the rail button): tension, treaties, wars, causes for war,
+  the countries that matter most to you and the news of the world. The Diplomacy map mode
+  colours allies, protected countries, enemies and hostile neighbours. A gold dot on the rail
+  marks a question waiting for your answer.
+- 14 new codex entries and a fuller one for appeasement, among them world tension, guarantee, cause for war, ultimatum,
+  appeasement, containment, war score and the butterfly effect.
+- Engine: `diplomacy.ts` and `agenda.ts`, pure TypeScript. 129 unit tests (19 new), including
+  bot playtests: the AI alone reaches 1 September 1939 on the real dates, and two games where
+  a player changes history. `npm run balance` now writes `docs/balance-stage-f.md`, with a
+  table of 21 real events against the dates they happen in three AI-only games.
+- Saves from Stage E no longer load (a save now holds relations, treaties and who owns what).
+
+Not in this stage, and known weak spots: Britain cannot reach the continent or Africa in
+force until the navy exists (Stage G), so after France falls the war in the west goes quiet;
+the German-Soviet war settles into a stalemate after the first months instead of swinging back
+and forth; the campaign in France takes about six weeks longer than the real one; Norway,
+Greece, the Spanish Civil War, the Vienna Awards and Vichy France are not modelled; history
+cards for each event come in Stage H; the Mac app build is not tested in the cloud.
+
 ## War game, Stage E: research, the home front and national plans (2026-11-13)
 
 - **Research** (key T, or the Research button on the rail). Sixteen technologies in four

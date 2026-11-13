@@ -318,7 +318,7 @@ export function PlanView({ w, me, id }: { w: World; me: string; id: string }) {
 export function HomeFrontPanel({ w, me }: { w: World; me: string }) {
   const e = w.economies[me];
   const v = economyView(w, me);
-  const government = countryByName(me).government;
+  const government = e.government;
   const h = e.history;
   const yearOf = (day: number) => String(Math.floor(yearAt(w.startDate, day)));
   const stabilityDown = v.stabilityReasons.filter((r) => r.points < 0);

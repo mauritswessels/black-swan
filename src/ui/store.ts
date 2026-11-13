@@ -3,7 +3,7 @@
  * engine (src/sim); it never does game maths itself.
  */
 import { create } from 'zustand';
-import { advance } from '../sim/game';
+import { advance, ownOrders } from '../sim/game';
 import { PROVINCES } from '../sim/map';
 import { planById } from '../sim/plans';
 import { techById } from '../sim/research';
@@ -32,7 +32,9 @@ export type Selection =
   | { kind: 'tech'; id: string }
   | { kind: 'plans' }
   | { kind: 'plan'; id: string }
-  | { kind: 'politics' };
+  | { kind: 'politics' }
+  | { kind: 'diplomacy' }
+  | { kind: 'decision'; id: number };
 
 /** An economic order before the player's country is filled in. */
 export type EconomyAction = EconomyOrder extends infer O ? (O extends { country: string } ? Omit<O, 'country'> : never) : never;
@@ -93,8 +95,8 @@ interface Store {
   /** Send the selected divisions to a province. */
   marchTo: (province: number) => void;
   halt: () => void;
-  declareWar: (on: string) => void;
-  makePeace: (withCountry: string) => void;
+  /** Give a diplomatic order as your country (declare war, propose a pact, answer a decision). It takes effect at once. */
+  act: (order: Order) => void;
   cycleArmy: (step: 1 | -1) => void;
   /** Give an order about your economy (taxes, factories, new divisions). It takes effect at once. */
   economy: (action: EconomyAction) => void;
@@ -137,11 +139,7 @@ function headlines(before: World, after: World): News[] {
     if (fighting.has(b.id) || !me || !b.defenders.includes(me)) continue;
     add(`${list(b.attackers)} ${b.attackers.length > 1 ? 'attack' : 'attacks'} ${PROVINCES[b.province].name}`, 'bad', b.province, { kind: 'battle', id: b.id });
   }
-  for (const c of after.capitulated) {
-    if (before.capitulated.includes(c)) continue;
-    const capital = PROVINCES.find((p) => p.owner === c && p.capital);
-    add(c === me ? `${c} has surrendered` : `${c} surrenders`, c === me ? 'bad' : before.wars.some((k) => me && k.split('|').includes(me) && k.split('|').includes(c)) ? 'good' : 'plain', capital?.id, { kind: 'country', name: c });
-  }
+  out.push(...diplomaticNews(before, after));
   // Capitals changing hands.
   for (const p of PROVINCES) {
     if (!p.capital || before.controller[p.id] === after.controller[p.id] || after.capitulated.includes(p.owner)) continue;
@@ -189,6 +187,27 @@ function headlines(before: World, after: World): News[] {
   return out;
 }
 
+/** Headlines for diplomatic news and for decisions that have just landed on the player's desk. */
+function diplomaticNews(before: World, after: World): News[] {
+  const out: News[] = [];
+  const me = after.player;
+  const last = before.diplomacy.log.length ? before.diplomacy.log[before.diplomacy.log.length - 1].id : -1;
+  for (const e of after.diplomacy.log) {
+    if (e.id <= last) continue;
+    const mine = !!me && e.countries.includes(me);
+    const other = e.countries.find((c) => c !== me) ?? e.countries[0];
+    const capital = PROVINCES.find((p) => p.owner === other && p.capital);
+    const tone: News['tone'] = e.kind === 'war' || e.kind === 'crisis' ? (mine && e.countries[0] !== me ? 'bad' : 'plain') : e.kind === 'peace' && mine ? 'good' : 'plain';
+    out.push({ id: newsId++, day: e.day, text: e.text, tone, province: capital?.id, open: other ? { kind: 'country', name: other } : { kind: 'diplomacy' } });
+  }
+  const known = new Set(before.diplomacy.decisions.map((d) => d.id));
+  for (const d of after.diplomacy.decisions) {
+    if (known.has(d.id) || d.country !== me) continue;
+    out.push({ id: newsId++, day: after.day, text: `Decision needed: ${d.title}`, tone: 'bad', open: { kind: 'decision', id: d.id } });
+  }
+  return out;
+}
+
 const fresh = { running: false, selection: null, ordering: false, news: [] as News[], notice: '', focus: null, defeated: false };
 let focusN = 0;
 
@@ -201,8 +220,6 @@ export const useGame = create<Store>((set, get) => {
     set({ world: next });
     return next;
   };
-  const say = (text: string, tone: News['tone'], open?: Selection, province?: number) =>
-    set((s) => ({ news: [...s.news, { id: newsId++, day: s.world?.day ?? 0, text, tone, open, province }].slice(-40) }));
   const selectedUnits = (): number[] => {
     const { selection, world } = get();
     if (!world || selection?.kind !== 'units') return [];
@@ -282,8 +299,12 @@ export const useGame = create<Store>((set, get) => {
       }
       const defeated = !!next.player && next.capitulated.includes(next.player);
       const attacked = get().pauseOnAttack && added.some((n) => n.open?.kind === 'battle');
-      if (attacked && get().running && !get().muted) sound.alert();
-      set({ world: next, selection: sel, news: added.length ? [...news, ...added].slice(-40) : news, defeated, running: get().running && !defeated && !attacked });
+      // A decision always stops the clock and opens in the sidebar: it has a deadline.
+      const decision = added.find((n) => n.open?.kind === 'decision');
+      if (decision) sel = decision.open!;
+      else if (sel?.kind === 'decision' && !next.diplomacy.decisions.some((d) => d.id === (sel as { id: number }).id)) sel = { kind: 'diplomacy' };
+      if ((attacked || decision) && get().running && !get().muted) sound.alert();
+      set({ world: next, selection: sel, news: added.length ? [...news, ...added].slice(-40) : news, defeated, running: get().running && !defeated && !attacked && !decision });
       // Autosave on the first of each month.
       if (dateLabel(next).startsWith('1 ')) writeSave('auto', summaryOf(next), next);
     },
@@ -322,19 +343,18 @@ export const useGame = create<Store>((set, get) => {
       set({ notice: `${plural(ids.length, 'division')} halted.`, ordering: false });
     },
 
-    declareWar: (on) => {
-      const { world } = get();
-      if (!world?.player) return;
-      give([{ type: 'declareWar', by: world.player, on }]);
-      const capital = PROVINCES.find((p) => p.owner === on && p.capital);
-      say(`${world.player} declares war on ${on}`, 'plain', { kind: 'country', name: on }, capital?.id);
-    },
-
-    makePeace: (other) => {
-      const { world } = get();
-      if (!world?.player) return;
-      give([{ type: 'makePeace', a: world.player, b: other }]);
-      say(`Peace between ${world.player} and ${other}`, 'plain', { kind: 'country', name: other });
+    act: (order) => {
+      const { world, selection } = get();
+      if (!world?.player || world.capitulated.includes(world.player)) return;
+      const next = give(ownOrders(world, [order]));
+      if (!next || next === world) return;
+      const added = diplomaticNews(world, next);
+      const decision = added.find((n) => n.open?.kind === 'decision');
+      let sel = selection;
+      if (decision) sel = decision.open!;
+      else if (sel?.kind === 'decision' && !next.diplomacy.decisions.some((d) => d.id === (sel as { id: number }).id)) sel = { kind: 'diplomacy' };
+      if (!get().muted) sound.click();
+      set((s) => ({ news: added.length ? [...s.news, ...added].slice(-40) : s.news, selection: sel, defeated: next.capitulated.includes(world.player!), running: s.running && !next.capitulated.includes(world.player!) }));
     },
 
     economy: (action) => {

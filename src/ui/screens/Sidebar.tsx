@@ -13,8 +13,10 @@ import { atWar, enemiesOf } from '../../sim/war';
 import { dateLabel } from '../../sim/world';
 import { TERRAIN_NOTE } from '../map/colours';
 import { useGame, type Selection } from '../store';
+import { picturesOf } from '../forces';
 import { EconomyPanel, ProductionPanel } from './EconomyPanels';
 import { CountryDiplomacy, DecisionView, DiplomacyPanel, Settlement } from './DiplomacyPanels';
+import { FleetView, ForcesPanel, SeaOrders, WingsView, ZoneView } from './ForcesPanels';
 import { HomeFrontPanel, PlansPanel, PlanView, ResearchPanel, TechView } from './HomePanels';
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
@@ -89,6 +91,8 @@ function OutlookBox({ o, mine }: { o: Outlook; mine: 'attacker' | 'defender' | n
   if (o.dugIn > 1.005) factors.push(`Defenders dug in: +${pct((o.dugIn - 1) * 100)} defence`);
   if (o.attackerSupply < 0.995) factors.push(`Attackers short of supply: ${pct((1 - o.attackerSupply) * 100)} weaker`);
   if (o.defenderSupply < 0.995) factors.push(`Defenders short of supply: ${pct((1 - o.defenderSupply) * 100)} weaker`);
+  if (o.air > 1.005) factors.push('Attackers control the sky: they hit 15% harder, the defenders 15% less hard');
+  if (o.air < 0.995) factors.push('Defenders control the sky: they hit 15% harder, the attackers 15% less hard');
   if (o.attackerEdge > 1.005) factors.push(`Attackers' research: +${pct((o.attackerEdge - 1) * 100)} attack`);
   if (o.defenderEdge > 1.005) factors.push(`Defenders' research and forts: +${pct((o.defenderEdge - 1) * 100)} defence`);
   if (o.directions > 1) factors.push(`Attack from ${o.directions} directions: room for ${o.attackersFighting} attackers at once`);
@@ -119,6 +123,7 @@ function OutlookBox({ o, mine }: { o: Outlook; mine: 'attacker' | 'defender' | n
 function Units({ w, ids }: { w: World; ids: number[] }) {
   const { select, marchTo, halt, setOrdering, focusOn } = useGame.getState();
   const ordering = useGame((s) => s.ordering);
+  const bySea = useGame((s) => s.bySea);
   const notice = useGame((s) => s.notice);
   const input = useRef<HTMLInputElement>(null);
   const units = w.units.filter((u) => ids.includes(u.id));
@@ -160,17 +165,17 @@ function Units({ w, ids }: { w: World; ids: number[] }) {
         </p>
       )}
       {attacking.map((p) => {
-        const o = outlookAt(w, p);
+        const o = outlookAt(w, p, picturesOf(w).air.battle);
         return o ? <OutlookBox key={p} o={o} mine="attacker" /> : null;
       })}
       <p className="sb-notice" role="status">
-        {ordering ? 'Now click the destination on the map. Clicking a province with enemy divisions in it means attack.' : notice}
+        {ordering ? (bySea ? 'Now click a coastal province on the map. An enemy shore means a landing.' : 'Now click the destination on the map. Clicking a province with enemy divisions in it means attack.') : notice}
       </p>
       <div className="sb-actions">
-        <button className={`sb-btn${ordering ? ' on' : ''}`} aria-pressed={ordering} onClick={() => setOrdering(!ordering)}>
-          {ordering ? 'Cancel' : 'Move or attack'} <kbd>G</kbd>
+        <button className={`sb-btn${ordering && !bySea ? ' on' : ''}`} aria-pressed={ordering && !bySea} onClick={() => setOrdering(!(ordering && !bySea))}>
+          {ordering && !bySea ? 'Cancel' : 'Move or attack'} <kbd>G</kbd>
         </button>
-        <button className="sb-btn" onClick={halt} disabled={!moving.length}>
+        <button className="sb-btn" onClick={halt} disabled={!moving.length && !units.some((u) => u.sea)}>
           Halt <kbd>H</kbd>
         </button>
         {units.length > 1 && (
@@ -179,6 +184,7 @@ function Units({ w, ids }: { w: World; ids: number[] }) {
           </button>
         )}
       </div>
+      <SeaOrders w={w} ids={ids} />
       <form
         className="sb-goto"
         onSubmit={(e) => {
@@ -417,7 +423,7 @@ function BattleView({ w, id }: { w: World; id: number }) {
   const b = w.battles.find((x) => x.id === id);
   if (!b) return null;
   const me = w.player;
-  const o = outlookAt(w, b.province);
+  const o = outlookAt(w, b.province, picturesOf(w).air.battle);
   const mine = me && b.attackers.includes(me) ? 'attacker' : me && b.defenders.includes(me) ? 'defender' : null;
   return (
     <Frame kicker="Battle" title={`Battle of ${PROVINCES[b.province].name}`} sub={`Since ${dateLabel({ startDate: w.startDate, day: b.startDay })} · day ${w.day - b.startDay + 1}`}>
@@ -534,5 +540,13 @@ export function Sidebar() {
       return w.player ? <DiplomacyPanel w={w} me={w.player} /> : null;
     case 'decision':
       return <DecisionView w={w} id={sel.id} />;
+    case 'forces':
+      return w.player ? <ForcesPanel w={w} me={w.player} /> : null;
+    case 'zone':
+      return <ZoneView w={w} id={sel.id} />;
+    case 'fleet':
+      return <FleetView w={w} id={sel.id} />;
+    case 'wings':
+      return <WingsView w={w} province={sel.province} />;
   }
 }

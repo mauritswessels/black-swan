@@ -6,6 +6,7 @@ import { geoConicConformal, geoGraticule10, geoPath } from 'd3-geo';
 import { feature, mesh } from 'topojson-client';
 import topo from '../../content/map/europe1936.topo.json';
 import { PROVINCES } from '../../sim/map';
+import { ZONES } from '../../sim/sea';
 
 export const TABLE_W = 1600;
 export const TABLE_H = 1000;
@@ -67,3 +68,7 @@ export function countryLabelPoints(): Map<string, [number, number]> {
   return out;
 }
 export const COUNTRY_POINTS = countryLabelPoints();
+
+/** Sea zones: their outlines (drawn under the land) and where their names and fleet counters sit. */
+export const ZONE_SHAPES: string[] = ZONES.map((z) => `M${z.outline.map((pt) => project(pt).map((n) => n.toFixed(1)).join(',')).join('L')}Z`);
+export const ZONE_POINTS: [number, number][] = ZONES.map((z) => project(z.label));

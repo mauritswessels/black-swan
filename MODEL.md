@@ -474,7 +474,8 @@ or more). And every month each AI country at war asks whether peace would serve 
 
 ## Surrender and occupation
 
-A country surrenders when its enemies control 60% of the victory points of its own land. Its
+A country surrenders when its enemies control 60% of the victory points of its own land, or
+40% once they hold its capital (France asked for an armistice eight days after Paris fell). Its
 army leaves the map and the enemy holding most of it occupies the rest of its homeland;
 occupied factories work at 30%. Countries it had conquered itself are restored, and land it
 took from others goes back. An attacker with a limited aim (eastern Poland, Bessarabia, the
@@ -485,6 +486,87 @@ a friendly government (the country returns as an ally with a small army).
 When stability brings a government down, the kind of government changes: democracy to
 authoritarian, authoritarian to democracy, fascist or communist to authoritarian. An AI
 country's historical aims belong to the government that had them, so they end with it.
+
+## The sea (`src/sim/sea.ts`, `src/sim/navy.ts`)
+
+The sea around Europe is cut into 17 zones. A province with a coast lies on one or more of
+them. Nobody steers ships: a fleet has a zone and a mission, and takes 2 days to cross each
+zone on its way to a new one.
+
+**Strength.** A capital ship counts 10, an escort flotilla 3, a submarine flotilla 1. A fleet
+on patrol counts in full, on escort 70%, on a raid or in port nothing. Naval bombers in range
+add 6 per wing at full strength.
+
+**Control**, worked out each day for each country and zone:
+
+    own        its side has at least 2 x the enemy's strength, and a ship there
+    enemy      the enemy has at least 2 x its side's strength
+    contested  both are there and neither has twice the other
+    open       nobody is there
+
+**Battle.** Each day a surface fleet in a zone with enemy strength loses
+
+    share of its ships lost = 1.5% x enemy strength x luck (0.7 to 1.3) / its own strength
+
+Ship counts are fractions (2.5 is two ships and a damaged one). A fleet under half a ship is
+destroyed. Ships are not repaired; new ones come from the ship lines.
+
+**Convoys.** Each country's imports cross a fixed route from the ocean to its home waters
+(Britain: the Western Approaches). In each zone of the route:
+
+    raiders  = submarines + 2 x capital ships + 0.5 x escorts of enemy fleets on Raid
+    escorts  = escort flotillas of friendly fleets on Escort (30% for fleets on Patrol)
+    sunk     = raiders / (raiders + 2 x escorts + 6), at most 70%
+               90% if the enemy controls the zone outright
+
+The shares multiply along the route. Escorts sink raiders: submarines lost a day = 0.4% x
+enemy escort strength x luck.
+
+    imports lost = share sunk x share of the country's imports that go by sea
+
+That share is 100% for Britain, 80% for Italy, 60% for France, 15% for the Soviet Union, 10%
+for Germany (ore from Sweden and oil from Romania come overland or across the Baltic), and 50%
+for other countries with a coast. Lost imports mean less steel and oil for the factories, and
+for half of the loss, fewer goods in the shops, which pushes prices up.
+
+**Troops by sea.** A division on a coast can be shipped to any other coast it can reach
+through zones the enemy does not control.
+
+    to a friendly shore   3 days + 2 for each further zone
+    landing               14 days + 2 for each further zone; the zone off the beach must be
+                          your own; at most 2 divisions + 1 per friendly ship there at a time
+
+A division coming ashore attacks at 60% (less of a penalty with Landing craft). Ports matter
+for supply: troops overseas are in supply only while a coastal province linked to them opens
+onto a sea the enemy does not control.
+
+## The air (`src/sim/air.ts`)
+
+An air wing is about a hundred aircraft, fighters or bombers, with a base and a mission.
+Fighters reach 400 km from the base, bombers 800 km. Moving to a new base takes 3 days.
+
+**The sky over a province.** Each side's air score there is
+
+    fighters on Air superiority in range (x strength)
+    + 0.7 x bombers on Ground support in range
+
+The side with at least 1.5 x the other's score, and at least 0.5, controls the sky: in a land
+battle there it hits 15% harder and the other side 15% less hard.
+
+**Losses.** Each day a flying wing loses strength where enemy fighters can reach it:
+
+    loss = 0.3 x threat x luck / (1 + threat + cover)
+
+where threat is the enemy fighter score and cover its own side's. Bombers on a raid also lose
+a little to the defences. Wings refill from the aircraft in store, faster when resting.
+
+**Strategic bombing.** Each bomber wing puts 0.3% of the factories of its target province out
+of action per day, up to half of them; the damage mends by 1.5% of itself a day. The target is
+the enemy province in range with the most working factories. Bombing also lowers war support
+and stability a little in the country being bombed.
+
+**Naval strike.** Bombers add to their side's strength in every sea zone in range, so they
+help hold a sea and wear down enemy fleets there.
 
 ## Starting armies
 

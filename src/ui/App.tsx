@@ -56,6 +56,9 @@ function useShortcuts() {
       if (k === 'n' && g.world?.player) return g.select({ kind: 'plans' });
       if (k === 'w' && g.world?.player) return g.select({ kind: 'politics' });
       if (k === 'd' && g.world?.player) return g.select({ kind: 'diplomacy' });
+      if (k === 'f' && g.world?.player) return g.select({ kind: 'forces' });
+      if (k === 'b' && g.selection?.kind === 'units') return g.setBySea(!g.bySea);
+      if (k === 'g' && (g.selection?.kind === 'fleet' || g.selection?.kind === 'wings')) return g.setOrdering(!g.ordering);
       if (k === 'g' && g.selection?.kind === 'units') {
         e.preventDefault();
         g.setOrdering(true);

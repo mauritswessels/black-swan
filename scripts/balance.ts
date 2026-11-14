@@ -4,7 +4,7 @@
  * years of AI peace, to check research, national plans and the home front; and three runs of
  * the whole story with every country led by the AI, to check that it follows real history.
  *
- *   npm run balance            200 wars, 24 finance runs, a peace run and three history runs, writes docs/balance-stage-f.md
+ *   npm run balance            200 wars, 24 finance runs, a peace run and three history runs, writes docs/balance-stage-g.md
  *   npm run balance -- 40      a quicker run with fewer wars
  *
  * Every war uses the real 1936 map and starting armies, with both sides led by the simple AI
@@ -61,7 +61,7 @@ for (const c of COUNTRIES.filter((k) => k.major)) {
   const e = peace.economies[c.name];
   const v = economyView(peace, c.name);
   const start = c.startArmy[0] + c.startArmy[1] + c.startArmy[2];
-  peaceRows.push(`| ${c.name} | ${start} to ${peace.units.filter((u) => u.owner === c.name).length} | ${c.industry.civ} + ${c.industry.mil} to ${Math.floor(v.civ + 1e-9)} + ${Math.floor(v.mil + 1e-9)} | ${e.research.done.length} of 16 | ${e.plan.done.length} | ${e.plan.done.filter((id) => planById(id)?.country).map((id) => planById(id)!.name).join(', ') || 'none'} | ${Math.round(e.stability)} | ${Math.round(e.warSupport)} | ${Math.round(v.debtRatio * 100)}% |`);
+  peaceRows.push(`| ${c.name} | ${start} to ${peace.units.filter((u) => u.owner === c.name).length} | ${c.industry.civ} + ${c.industry.mil} to ${Math.floor(v.civ + 1e-9)} + ${Math.floor(v.mil + 1e-9)} | ${e.research.done.length} of 24 | ${e.plan.done.length} | ${e.plan.done.filter((id) => planById(id)?.country).map((id) => planById(id)!.name).join(', ') || 'none'} | ${Math.round(e.stability)} | ${Math.round(e.warSupport)} | ${Math.round(v.debtRatio * 100)}% |`);
   console.log(peaceRows[peaceRows.length - 1]);
 }
 
@@ -103,10 +103,23 @@ const historyRows = EVENTS.map(([what, real, text]) => {
   return `| ${what} | ${real} | ${when.join(' | ')} |`;
 });
 const endRows = histories.map((w, i) => `| ${SEEDS[i]} | ${Math.round(w.diplomacy.tension)} | ${w.capitulated.join(', ') || 'none'} | ${w.wars.map((k) => k.replace('|', ' and ')).join('; ') || 'none'} |`);
+// The war at sea and in the air in the same three runs.
+const forceRows = histories.flatMap((w, i) =>
+  COUNTRIES.filter((c) => c.major && !w.capitulated.includes(c.name)).map((c) => {
+    const fleets = w.fleets.filter((f) => f.owner === c.name);
+    const n = (k: 'capital' | 'escort' | 'submarine') => Math.round(fleets.reduce((a, f) => a + f.ships[k], 0));
+    const wings = w.wings.filter((x) => x.owner === c.name);
+    const landings = w.forceLog.filter((e) => e.kind === 'landing' && e.countries[0] === c.name && / lands /.test(e.text)).length;
+    return `| ${SEEDS[i]} | ${c.name} | ${n('capital')} / ${n('escort')} / ${n('submarine')} | ${wings.filter((x) => x.type === 'fighter').length} + ${wings.filter((x) => x.type === 'bomber').length} | ${Math.round(economyView(w, c.name).blockade * 100)}% | ${landings} | ${w.units.filter((u) => u.owner === c.name).length} |`;
+  }),
+);
+const seaRows = histories.map((w, i) => `| ${SEEDS[i]} | ${w.forceLog.filter((e) => /^Naval battle/.test(e.text)).length} | ${w.forceLog.filter((e) => /is destroyed/.test(e.text)).length} | ${w.forceLog.filter((e) => / lands /.test(e.text)).length} | ${w.forceLog.filter((e) => /loses a (fighter|bomber) wing/.test(e.text)).length} | ${Object.keys(w.bombed).length} |`);
+console.log(forceRows.join('\n'));
+console.log(seaRows.join('\n'));
 console.log(historyRows.join('\n'));
 console.log(endRows.join('\n'));
 
-const report = `# Balance report, Stage F: ${all.length} AI against AI wars, ${financeRows.length} finance playtests, four years of peace and three runs of history
+const report = `# Balance report, Stage G: ${all.length} AI against AI wars, ${financeRows.length} finance playtests, four years of peace and three runs of history
 
 Made by \`npm run balance\`. Do not edit the tables by hand; run the command again instead.
 
@@ -116,7 +129,7 @@ Each war starts on 1 January 1936 with the real map and each country's starting 
 economy, with all treaties set aside so that nobody else joins in. The first country declares war on the second on day 1. Both are led by the same simple
 army AI and the same AI finance minister, which raises new divisions, refills damaged ones,
 picks research and national plans, and pays for it all. A war ends when one side surrenders (enemies hold 60% of its home victory
-points) or after 2 years, which counts as a stalemate. Only the two countries fight.
+points, or 40% once its capital has fallen) or after 2 years, which counts as a stalemate. Only the two countries fight.
 
 | War | Divisions at the start | First side wins | Second side wins | Stalemate | Average days to win | Divisions lost, first | Divisions lost, second | Battles | Attacks that succeed | What really happened |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -165,9 +178,25 @@ How each run stood on 1 January 1942:
 | Run | World tension | Countries that have fallen | Wars still being fought |
 | --- | --- | --- | --- |
 ${endRows.join('\n')}
+
+## The war at sea and in the air
+
+The same three runs on 1 January 1942. Ships are capital ships / escort flotillas / submarine
+flotillas; wings are fighters + bombers; "imports sunk" is the share of the country's imports
+lost at sea that day.
+
+| Run | Country | Ships | Air wings | Imports sunk | Landings made | Divisions |
+| --- | --- | --- | --- | --- | --- | --- |
+${forceRows.join('\n')}
+
+Over the six years of each run:
+
+| Run | Naval battles | Fleets destroyed | Landings | Air wings lost | Provinces with bomb damage at the end |
+| --- | --- | --- | --- | --- | --- |
+${seaRows.join('\n')}
 `;
 fs.mkdirSync('docs', { recursive: true });
-const file = 'docs/balance-stage-f.md';
+const file = 'docs/balance-stage-g.md';
 // Keep the hand-written notes below the tables when the numbers are refreshed.
 const marker = '\n## What the results say';
 const old = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';

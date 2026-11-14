@@ -13,6 +13,10 @@
  *      front is full), keeps a guard on each front province in proportion to the enemy next
  *      to it, and sends everything else towards the weakest valuable point of the enemy line.
  *
+ * Divisions that cannot reach any front on foot may go by sea: to a front overseas through a
+ * friendly port, or in a landing on a weakly held enemy coast (aiForces.ts). A worn-out
+ * division about to be overrun on a foreign shore is taken off by sea.
+ *
  * It has no memory: the orders depend only on the world as it is today. When and against whom
  * a country goes to war is decided elsewhere (agenda.ts); this only fights the war. Allied land
  * counts as friendly ground.
@@ -22,12 +26,20 @@ import { daysToEnter, findRoute, PROVINCES } from './map';
 import { combatEdges } from './mods';
 import { supplyCapacity } from './supply';
 import type { Order, Unit, World } from './types';
+import { seaOrders } from './aiForces';
 import { allianceMap } from './diplomacy';
+import { musterPoint } from './economy';
+import { navalPicture } from './navy';
+import { COAST, seaRoute, type SeaPicture } from './sea';
 import { canEnter, enemiesOf } from './war';
 
 export interface AiOptions {
   /** Attack when the estimated odds of outlasting the defenders are at least this. */
   boldness?: number;
+  /** Today's control of the sea, if the caller has already worked it out. */
+  sea?: SeaPicture;
+  /** Today's control of the sky: the attackers' multiplier in a battle for a province (air.ts). */
+  air?: (attackers: string[], defenders: string[], province: number) => number;
 }
 
 /** A division is ready to attack when it is rested and fed. */
@@ -40,8 +52,10 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
   const enemies = new Set(enemiesOf(w, country));
   if (!enemies.size) return [];
   const orders: Order[] = [];
-  const mine = w.units.filter((u) => u.owner === country);
-  if (!mine.length) return [];
+  const everyone = w.units.filter((u) => u.owner === country);
+  if (!everyone.length) return [];
+  // Divisions getting ready to sail, or coming ashore, already have their orders.
+  const mine = everyone.filter((u) => !u.sea && !u.landing);
   const edges = combatEdges(w.economies);
 
   const at = new Map<number, Unit[]>();
@@ -70,14 +84,37 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
       }
     }
   }
-  if (!targets.size) return [];
+  let seaToday = opts.sea;
+  const sea = () => (seaToday ??= navalPicture(w, allianceMap(w.diplomacy)));
+  if (!targets.size) {
+    // No front on land anywhere: the only way at the enemy is by sea.
+    const crowd = new Map<number, number>();
+    for (const u of mine) crowd.set(u.at, (crowd.get(u.at) ?? 0) + 1);
+    return seaOrders({ w, country, sea: sea(), enemies, allies, edges, boldness, stranded: mine.filter((u) => !u.path.length), front: [], crowd });
+  }
 
   const used = new Set<number>();
   const ready = (u: Unit) => !used.has(u.id) && u.organisation >= READY_ORG && u.supply >= 0.7;
   const attacking = (u: Unit) => u.path.length > 0 && enemyAt(u.path[0]).length > 0;
 
   // 3. Pull worn-out divisions out of attacks.
+  let homePort: number | null | undefined;
   for (const u of mine) {
+    // Dunkirk: a worn-out division on a foreign shore, heavily outnumbered, is taken off by sea.
+    if (u.organisation < 30 && COAST[u.at].length && w.owner[u.at] !== country && !PROVINCES[u.at].neighbours.some((n) => w.controller[n] === country)) {
+      const around = PROVINCES[u.at].neighbours.reduce((a, n) => a + enemyAt(n).length, 0);
+      if (around >= 2 * mineAt(u.at).length && around >= 3) {
+        if (homePort === undefined) {
+          const capital = musterPoint(w.controller, country, w.owner);
+          homePort = capital === null ? null : COAST[capital].length ? capital : PROVINCES.filter((p) => w.controller[p.id] === country && p.owner === country && COAST[p.id].length).sort((a, b) => b.victoryPoints - a.victoryPoints || a.id - b.id)[0]?.id ?? null;
+        }
+        if (homePort !== null && homePort !== u.at && !('why' in seaRoute(sea(), country, u.at, homePort, false))) {
+          used.add(u.id);
+          orders.push({ type: 'ship', unit: u.id, to: homePort });
+          continue;
+        }
+      }
+    }
     if (attacking(u)) {
       used.add(u.id);
       if (u.organisation < PULL_OUT_ORG) orders.push({ type: 'halt', unit: u.id });
@@ -133,7 +170,9 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
     const power = all.map((u) => attackPower(u, t, edges.attack(u))).sort((a, b) => b - a).slice(0, width).reduce((a, b) => a + b, 0);
     const ourStamina = all.reduce((a, u) => a + Math.max(0, u.organisation - 10), 0);
     const theirStamina = enemyAt(t).reduce((a, u) => a + u.organisation, 0) + 1;
-    const odds = (power * ourStamina) / (defence * theirStamina);
+    // Whoever controls the sky hits 15% harder, and the other side 15% less hard.
+    const sky = opts.air ? opts.air([country], [w.controller[t]], t) : 1;
+    const odds = (power * sky * ourStamina) / (defence * (2 - sky) * theirStamina);
     // Joining a battle already under way needs less of an edge than starting one.
     if (odds < (ongoing ? boldness * 0.8 : boldness)) {
       // Not enough to win. If even the divisions already attacking plus these have little hope, call it off.
@@ -152,12 +191,25 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
     const dest = u.path.length ? u.path[u.path.length - 1] : u.at;
     crowd.set(dest, (crowd.get(dest) ?? 0) + 1);
   }
+  // Allied divisions standing in a province eat from the same roads and railways.
+  if (allies) for (const u of w.units) if (allies.has(u.owner)) crowd.set(u.at, (crowd.get(u.at) ?? 0) + 1);
   const staging = scored
     .filter((s) => s.defence > 0)
     .flatMap((s) => PROVINCES[s.t].neighbours.filter(friendly))
     .filter((n, i, a) => a.indexOf(n) === i);
   const frontList = [...front].sort((a, b) => a - b);
+  // Provinces with a way to the front on foot through friendly land. A division anywhere else is stranded.
+  const linked = new Set<number>(frontList);
+  {
+    const queue = [...frontList];
+    for (let i = 0; i < queue.length; i++) for (const n of PROVINCES[queue[i]].neighbours) if (friendly(n) && !linked.has(n)) (linked.add(n), queue.push(n));
+  }
+  const stranded: Unit[] = [];
   for (const u of mine) {
+    if (!used.has(u.id) && !u.path.length && !linked.has(u.at)) {
+      stranded.push(u);
+      continue;
+    }
     if (used.has(u.id) || u.path.length) continue;
     const here = u.at;
     const isFront = front.has(here);
@@ -217,5 +269,7 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
       orders.push({ type: 'move', unit: u.id, to: best });
     }
   }
+  // 5. Divisions with no way to the front on foot go by sea, if the sea allows.
+  if (stranded.length) orders.push(...seaOrders({ w, country, sea: sea(), enemies, allies, edges, boldness, stranded, front: frontList, crowd }));
   return orders;
 }

@@ -1,6 +1,5 @@
 /**
- * Research: four branches of four technologies each (the navy and air branches arrive with
- * Stage G, which will bring the total to the design's 24).
+ * Research: six branches of four technologies each, 24 in all.
  *
  * A country works on one technology per research team: the six major powers have two teams,
  * everyone else has one. Inside a branch the technologies come in order. Every technology has
@@ -15,7 +14,7 @@ import { countryByName } from './countries';
 import type { Effects } from './mods';
 import type { ResearchState } from './types';
 
-export type Branch = 'infantry' | 'armour' | 'industry' | 'society';
+export type Branch = 'infantry' | 'armour' | 'navy' | 'air' | 'industry' | 'society';
 
 export interface Tech {
   id: string;
@@ -37,17 +36,13 @@ export interface Tech {
 export const BRANCHES: { id: Branch; name: string; note: string }[] = [
   { id: 'infantry', name: 'Infantry', note: 'Most of every army. Better weapons and transport for the foot soldier.' },
   { id: 'armour', name: 'Armour and artillery', note: 'Tanks to break through and guns to break up dug-in defenders.' },
+  { id: 'navy', name: 'Navy', note: 'Control of the sea: convoys, submarines and landings.' },
+  { id: 'air', name: 'Air', note: 'Control of the sky: fighters, bombers and radar.' },
   { id: 'industry', name: 'Industry', note: 'More equipment from the same factories.' },
   { id: 'society', name: 'Economy and society', note: 'Better ways to pay for a war and to run the home front.' },
 ];
-/** Branches from the design document that need ships and aircraft first. */
-export const LATER_BRANCHES: { name: string; stage: string }[] = [
-  { name: 'Navy', stage: 'G' },
-  { name: 'Air', stage: 'G' },
-];
-
 /** Days of work by tier, and how much slower a team is for each year a technology is ahead of its time. */
-export const TECH_DAYS = [200, 280, 360, 440];
+export const TECH_DAYS = [135, 185, 240, 295];
 export const AHEAD_PENALTY = 0.5;
 
 const t = (id: string, branch: Branch, tier: number, year: number, name: string, effects: Effects, what: string, history: string): Tech => ({ id, name, branch, tier, year, days: TECH_DAYS[tier - 1], effects, what, history });
@@ -70,6 +65,24 @@ export const TECHS: Tech[] = [
     'The German Panzer IV, the Soviet T-34 (in production from 1940) and the American Sherman (1942) were the main tanks of the war.'),
   t('arm4', 'armour', 4, 1942, 'Radio fire control', { attackArtillery: 0.15, defenceArtillery: 0.1 }, 'Observers with radios bring the fire of many batteries onto one target within minutes.',
     'By 1942 and 1943 British and American gunners could mass the fire of dozens of batteries on a single map square at a few minutes notice.'),
+
+  t('nav1', 'navy', 1, 1936, 'Sonar', { antiSub: 0.2 }, 'A sound pulse that echoes off a submerged submarine, so an escort can find it.',
+    'The Royal Navy had fitted most of its destroyers with ASDIC, its name for sonar, by 1939. It worked, but not well enough on its own: submarines learned to attack on the surface at night.'),
+  t('nav2', 'navy', 2, 1938, 'Ocean-going submarines', { subRaiding: 0.25 }, 'Submarines with the range to hunt merchant ships far out in the ocean, working in groups.',
+    'The German Type VII, in service from 1936, sank more ships than any other submarine. From 1940 U-boats hunted in "wolf packs" directed by radio.'),
+  t('nav3', 'navy', 3, 1940, 'Naval radar and fire control', { navalPower: 0.15, antiSub: 0.15 }, 'Radar finds ships at night and in fog, and aims the guns.',
+    'In March 1941 British battleships used radar to surprise an Italian squadron at night off Cape Matapan and sank three cruisers. Radar on escorts and aircraft later turned the battle against the U-boats.'),
+  t('nav4', 'navy', 4, 1942, 'Landing craft', { amphibious: 0.2, landingPrep: -0.3 }, 'Flat-bottomed boats that put men and tanks straight onto a beach.',
+    'The landings in North Africa (1942), Sicily (1943) and Normandy (1944) depended on thousands of landing craft. The shortage of them set the timetable for the Allies more than once.'),
+
+  t('air1', 'air', 1, 1936, 'Monoplane fighters', { fighterPower: 0.15 }, 'All-metal fighters with one wing, an enclosed cockpit and wheels that fold away.',
+    'The Hurricane first flew in November 1935, the Bf 109 in May 1935 and the Spitfire in March 1936. Within four years the biplane fighter was obsolete.'),
+  t('air2', 'air', 2, 1938, 'Fast medium bombers', { bomberPower: 0.15 }, 'Twin-engined bombers fast enough to support an advancing army.',
+    'The German He 111 and Ju 88 and the Soviet SB were built for this. Germany never built a heavy bomber force; Britain and the United States did.'),
+  t('air3', 'air', 3, 1940, 'Radar early warning', { airDefence: 0.3 }, 'A chain of radar stations sees raiders coming, so fighters can be sent up to meet them.',
+    'The British Chain Home stations were working by 1939. In the Battle of Britain in 1940 they let a smaller fighter force be in the right place at the right time.'),
+  t('air4', 'air', 4, 1942, 'Long-range aircraft', { airRange: 0.4, bomberPower: 0.1 }, 'Four-engined bombers, and escort fighters with drop tanks to go with them.',
+    'The Lancaster flew its first raids in 1942. Bomber losses over Germany stayed heavy until long-range Mustang escorts arrived in early 1944.'),
 
   t('ind1', 'industry', 1, 1936, 'Machine tools', { lineOutput: 0.1 }, 'Better lathes, presses and gauges, so that parts fit without hand finishing.',
     'Machine tools were a bottleneck for every country that rearmed. Britain and France bought thousands from the United States in 1938 to 1940.'),

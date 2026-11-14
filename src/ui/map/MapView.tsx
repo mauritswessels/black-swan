@@ -11,9 +11,14 @@ import { allianceMap, allied, hasPact, relation } from '../../sim/diplomacy';
 import { linkedProvinces, supplyCapacity } from '../../sim/supply';
 import type { World } from '../../sim/types';
 import { atWar } from '../../sim/war';
+import { km, wingRange } from '../../sim/air';
+import { modsOf } from '../../sim/mods';
+import { shipPlan } from '../../sim/navy';
+import { shipCount, ZONE_INDEX, ZONES, type SeaStatus } from '../../sim/sea';
+import { picturesOf, skyOver } from '../forces';
 import { useGame, type MapMode } from '../store';
 import { countryColour, landColour, TERRAIN_COLOUR, tint } from './colours';
-import { COAST, COUNTRY_POINTS, countryLines, GRATICULE, POINTS, PROVINCE_LINES, SEAS, SHAPES, TABLE_H, TABLE_W } from './geo';
+import { COAST, COUNTRY_POINTS, countryLines, GRATICULE, POINTS, PROVINCE_LINES, SEAS, SHAPES, TABLE_H, TABLE_W, ZONE_POINTS, ZONE_SHAPES } from './geo';
 
 interface View {
   k: number;
@@ -52,8 +57,21 @@ function fills(w: World, mode: MapMode): string[] {
       return tint('#9cc8ff', 0.12 + 0.5 * ((supplyCapacity(p) - 7) / 12));
     });
   }
+  if (mode === 'airsea') {
+    // The sky over each province, for the player: who would have the edge in a battle there.
+    return w.controller.map((c, p) => {
+      if (!me) return tint('#8592a9', 0.16);
+      const sky = skyOver(w, me, p).status;
+      if (sky === 'own') return tint('#5b9bff', 0.55);
+      if (sky === 'enemy') return 'url(#hatch-war)';
+      if (sky === 'contested') return tint('#ffc46b', 0.5);
+      return tint('#8592a9', c === me ? 0.26 : 0.14);
+    });
+  }
   return w.controller.map((c) => landColour(c, c === me));
 }
+
+const SEA_FILL: Record<SeaStatus, string> = { own: 'rgba(91,155,255,0.30)', enemy: 'rgba(255,106,61,0.30)', contested: 'rgba(255,196,107,0.26)', open: 'rgba(133,146,169,0.07)' };
 
 const Land = memo(function Land({ fill, lines }: { fill: string[]; lines: string }) {
   return (
@@ -94,6 +112,7 @@ export function MapView() {
   const sizeRef = useRef(size);
   sizeRef.current = size;
   const [hover, setHover] = useState<number | null>(null);
+  const [hoverZone, setHoverZone] = useState<string | null>(null);
 
   // Keep the table on screen: never let it be dragged wholly out of view.
   const clamp = useCallback((v: View): View => {
@@ -173,7 +192,9 @@ export function MapView() {
     const battle = el?.closest('[data-b]')?.getAttribute('data-b');
     const country = el?.closest('[data-c]')?.getAttribute('data-c');
     const province = el?.closest('[data-p]')?.getAttribute('data-p');
-    return { stack, battle, country, province: province == null ? null : Number(province) };
+    const wing = el?.closest('[data-w]')?.getAttribute('data-w');
+    const zone = el?.closest('[data-z]')?.getAttribute('data-z') ?? null;
+    return { stack, battle, country, zone, wing: wing == null ? null : Number(wing), province: province == null ? null : Number(province) };
   };
   const onPointerDown = (e: React.PointerEvent) => {
     if (e.button !== 0) return;
@@ -191,8 +212,10 @@ export function MapView() {
       return;
     }
     const p = hit(e.target as Element);
-    const at = p.stack ? Number(p.stack.split('|')[0]) : p.province;
+    const at = p.stack ? Number(p.stack.split('|')[0]) : p.wing ?? p.province;
     if (at !== hover) setHover(at);
+    const z = at === null ? p.zone : null;
+    if (z !== hoverZone) setHoverZone(z);
   };
   const onPointerUp = (e: React.PointerEvent) => {
     const d = drag.current;
@@ -200,7 +223,23 @@ export function MapView() {
     if (!d || d.moved) return;
     const g = useGame.getState();
     const h = hit(d.target);
+    // Orders to a fleet or to air wings: the next click is where they go.
+    if (g.ordering && g.selection?.kind === 'fleet') {
+      if (h.zone && h.province == null && !h.stack) return g.sailTo(h.zone);
+      return useGame.setState({ notice: 'Click a sea zone: fleets cannot go on land.' });
+    }
+    if (g.ordering && g.selection?.kind === 'wings') {
+      const p = h.wing ?? (h.stack ? Number(h.stack.split('|')[0]) : h.province);
+      if (p != null) return g.rebaseTo(p);
+      return useGame.setState({ notice: 'Click a province in your hands or an ally\'s.' });
+    }
+    if (g.ordering && g.bySea) {
+      const p = h.stack ? Number(h.stack.split('|')[0]) : h.wing ?? h.province;
+      if (p != null) return g.shipTo(p);
+      return;
+    }
     if (h.battle != null) return g.select({ kind: 'battle', id: Number(h.battle) });
+    if (h.wing != null) return g.ordering ? g.marchTo(h.wing) : g.select({ kind: 'wings', province: h.wing });
     if (h.stack) {
       const [p, owner] = [Number(h.stack.split('|')[0]), h.stack.slice(h.stack.indexOf('|') + 1)];
       if (g.ordering) return g.marchTo(p);
@@ -216,14 +255,27 @@ export function MapView() {
     }
     if (h.country) return g.select({ kind: 'country', name: h.country });
     if (h.province != null) return g.ordering ? g.marchTo(h.province) : g.select({ kind: 'province', id: h.province });
+    if (h.zone) {
+      // One fleet of your own there: open it. Otherwise open the zone.
+      const own = world.fleets.filter((f) => f.zone === h.zone && f.owner === me);
+      return g.select(own.length === 1 ? { kind: 'fleet', id: own[0].id } : { kind: 'zone', id: h.zone });
+    }
     g.select(null);
   };
   const onContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
     const g = useGame.getState();
-    if (g.selection?.kind !== 'units') return;
     const h = hit(e.target as Element);
-    const p = h.stack ? Number(h.stack.split('|')[0]) : h.province;
+    const p = h.stack ? Number(h.stack.split('|')[0]) : h.wing ?? h.province;
+    if (g.selection?.kind === 'fleet') {
+      if (h.zone && p == null) g.sailTo(h.zone);
+      return;
+    }
+    if (g.selection?.kind === 'wings') {
+      if (p != null) g.rebaseTo(p);
+      return;
+    }
+    if (g.selection?.kind !== 'units') return;
     if (p != null) g.marchTo(p);
   };
 
@@ -243,7 +295,7 @@ export function MapView() {
     e.preventDefault();
   };
 
-  const fill = useMemo(() => fills(world, mapMode), [world.controller, world.wars, mapMode, mapMode === 'supply' ? world.units : null, mapMode === 'diplomacy' ? world.diplomacy : null]); // eslint-disable-line react-hooks/exhaustive-deps
+  const fill = useMemo(() => fills(world, mapMode), [world.controller, world.wars, mapMode, mapMode === 'supply' ? world.units : null, mapMode === 'diplomacy' ? world.diplomacy : null, mapMode === 'airsea' ? world.wings : null]); // eslint-disable-line react-hooks/exhaustive-deps
   const lines = useMemo(() => countryLines(world.controller), [world.controller]);
   const stacks = useMemo(() => visibleStacks(world, me), [world.units, world.controller, me]); // eslint-disable-line react-hooks/exhaustive-deps
   const seen = useMemo(() => visibleProvinces(world, me), [world.units, world.controller, me]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -277,6 +329,43 @@ export function MapView() {
       ends.add(u.path[u.path.length - 1]);
     }
   }
+
+  // The air and sea map: who holds each sea zone, the fleets in it, and the air wings at their bases.
+  const airsea = mapMode === 'airsea';
+  const seaNow = airsea ? picturesOf(world).sea : null;
+  const selectedZone = selection?.kind === 'zone' ? selection.id : selection?.kind === 'fleet' ? world.fleets.find((f) => f.id === selection.id)?.zone ?? null : null;
+  const fleetGroups: { zone: number; owner: string; ships: number; sailing: boolean }[] = [];
+  const wingGroups: { base: number; owner: string; fighters: number; bombers: number }[] = [];
+  if (airsea) {
+    for (const f of world.fleets) {
+      const zone = ZONE_INDEX[f.zone];
+      let g = fleetGroups.find((x) => x.zone === zone && x.owner === f.owner);
+      if (!g) fleetGroups.push((g = { zone, owner: f.owner, ships: 0, sailing: false }));
+      g.ships += shipCount(f);
+      if (world.day < f.arrives) g.sailing = true;
+    }
+    const friends = picturesOf(world).friends.get(me ?? '');
+    for (const x of world.wings) {
+      // Your own and your allies' airfields. Enemy airfields are not shown.
+      if (me && x.owner !== me && !friends?.has(x.owner)) continue;
+      let g = wingGroups.find((y) => y.base === x.base && y.owner === x.owner);
+      if (!g) wingGroups.push((g = { base: x.base, owner: x.owner, fighters: 0, bombers: 0 }));
+      if (x.type === 'fighter') g.fighters++;
+      else g.bombers++;
+    }
+  }
+  // Provinces within reach of the selected wings.
+  let inRange: number[] = [];
+  if (selection?.kind === 'wings' && me) {
+    const based = world.wings.filter((x) => x.owner === me && x.base === selection.province);
+    if (based.length) {
+      const reach = Math.max(...based.map((x) => wingRange(x, modsOf(world.economies[me]))));
+      inRange = PROVINCES.filter((p) => km(selection.province, p.id) <= reach).map((p) => p.id);
+    }
+  }
+  // Divisions waiting to cross the sea.
+  const crossings = new Map<string, { from: number; to: number; landing: boolean }>();
+  for (const u of world.units) if (u.sea && (u.owner === me || !me)) crossings.set(`${u.at}>${u.sea.to}`, { from: u.at, to: u.sea.to, landing: u.sea.landing });
 
   const showNames = k >= 2.6;
   const showCities = k >= 1.5;
@@ -317,7 +406,15 @@ export function MapView() {
         </defs>
         <g transform={`translate(${view.x},${view.y}) scale(${k})`}>
           <rect x={-TABLE_W} y={-TABLE_H} width={TABLE_W * 3} height={TABLE_H * 3} fill="url(#table-glow)" />
+          {airsea && (
+            <g className="mt-zones">
+              {ZONES.map((z, i) => (
+                <path key={z.id} d={ZONE_SHAPES[i]} data-z={z.id} fill={me && seaNow ? SEA_FILL[seaNow.status(me, i)] : SEA_FILL.open} className={`mt-zone${hoverZone === z.id ? ' hover' : ''}${selectedZone === z.id ? ' picked' : ''}`} />
+              ))}
+            </g>
+          )}
           <Land fill={fill} lines={lines} />
+          {inRange.length > 0 && <path d={inRange.map((p) => SHAPES[p]).join('')} className="mt-range" />}
           {hover !== null && <path d={SHAPES[hover]} className="mt-hover" />}
           {selectedProvince !== null && <path d={SHAPES[selectedProvince]} className="mt-picked" />}
           {[...ends].map((p) => (
@@ -325,11 +422,18 @@ export function MapView() {
           ))}
 
           <g className="mt-labels">
-            {SEAS.map((s) => (
-              <text key={s.name} x={s.at[0]} y={s.at[1]} className="mt-sea" style={{ fontSize: 12 * Math.max(inv, 0.5) }}>
-                {s.name}
-              </text>
-            ))}
+            {!airsea &&
+              SEAS.map((s) => (
+                <text key={s.name} x={s.at[0]} y={s.at[1]} className="mt-sea" style={{ fontSize: 12 * Math.max(inv, 0.5) }}>
+                  {s.name}
+                </text>
+              ))}
+            {airsea &&
+              ZONES.map((z, i) => (
+                <text key={z.id} x={ZONE_POINTS[i][0]} y={ZONE_POINTS[i][1] - 20 * cs} className="mt-sea zone" style={{ fontSize: 10.5 * Math.max(inv, 0.55) }}>
+                  {z.name.toUpperCase()}
+                </text>
+              ))}
             {k < 3.4 &&
               COUNTRIES.map((c) => {
                 const at = COUNTRY_POINTS.get(c.name);
@@ -370,6 +474,9 @@ export function MapView() {
               const t = 0.78;
               return <line key={a.key} x1={x1} y1={y1} x2={x1 + (x2 - x1) * t} y2={y1 + (y2 - y1) * t} className={a.attack ? 'attack' : a.own ? 'own' : 'other'} markerEnd="url(#arr)" />;
             })}
+            {[...crossings].map(([key, c]) => (
+              <line key={key} x1={POINTS[c.from][0]} y1={POINTS[c.from][1]} x2={POINTS[c.to][0]} y2={POINTS[c.to][1]} className={c.landing ? 'crossing landing' : 'crossing'} markerEnd="url(#arr)" />
+            ))}
             {routes.map((pts, i) => (
               <polyline key={i} points={pts} className="route" markerEnd="url(#arr)" />
             ))}
@@ -383,6 +490,7 @@ export function MapView() {
               const enemy = !!me && atWar(world, me, s.owner);
               const picked = own ? s.units.some((u) => selected.has(u.id)) : selection?.kind === 'stack' && selection.province === s.province && selection.owner === s.owner;
               if (!own && !enemy && k < 1.3 && !picked) return null; // neutral armies appear as you zoom in
+              if (airsea && !picked) return null; // the air and sea map shows fleets and air wings instead
               const colour = countryColour(s.owner);
               return (
                 <g key={`${s.province}|${s.owner}`} data-s={`${s.province}|${s.owner}`} transform={`translate(${x},${y}) scale(${cs})`} className={`mt-counter${own ? ' own' : ''}${enemy ? ' enemy' : ''}${picked ? ' picked' : ''}${fighting.has(s.province) ? ' fighting' : ''}`}>
@@ -404,6 +512,48 @@ export function MapView() {
             })}
           </g>
 
+          {airsea && (
+            <g className="mt-forces">
+              {ZONES.map((z, i) => {
+                const here = fleetGroups.filter((g) => g.zone === i).sort((a, b) => (a.owner === me ? -1 : b.owner === me ? 1 : b.ships - a.ships));
+                return here.map((g, n) => {
+                  const own = g.owner === me;
+                  const enemy = !!me && atWar(world, me, g.owner);
+                  const x = ZONE_POINTS[i][0] + (n - (here.length - 1) / 2) * 44 * cs;
+                  return (
+                    <g key={`${z.id}|${g.owner}`} data-z={z.id} transform={`translate(${x},${ZONE_POINTS[i][1]}) scale(${cs})`} className={`mt-fleet${own ? ' own' : ''}${enemy ? ' enemy' : ''}${selectedZone === z.id && own ? ' picked' : ''}`}>
+                      <path d="M-20 -9h40l-5 18h-30z" className="body" />
+                      <rect x={-20} y={-9} width={40} height={4} fill={countryColour(g.owner)} />
+                      <text x={-13} y={7} className="tag">
+                        {countryByName(g.owner).tag}
+                      </text>
+                      <text x={13} y={7} textAnchor="end" className="num">
+                        {Math.round(g.ships)}
+                      </text>
+                      {g.sailing && <path d="M14 -16l6 3.5l-6 3.5z" className="pip" />}
+                    </g>
+                  );
+                });
+              })}
+              {wingGroups.map((g) => {
+                const [x, y] = POINTS[g.base];
+                const own = g.owner === me;
+                const picked = own && selection?.kind === 'wings' && selection.province === g.base;
+                return (
+                  <g key={`${g.base}|${g.owner}`} data-w={own ? g.base : undefined} data-p={own ? undefined : g.base} transform={`translate(${x},${y + 22 * cs}) scale(${cs})`} className={`mt-wing${own ? ' own' : ''}${picked ? ' picked' : ''}`}>
+                    <rect x={-22} y={-8} width={44} height={16} rx={8} className="body" />
+                    <circle cx={-14} cy={0} r={3.5} fill={countryColour(g.owner)} />
+                    <text x={15} y={4.5} textAnchor="end">
+                      {g.fighters ? `F${g.fighters}` : ''}
+                      {g.fighters && g.bombers ? ' ' : ''}
+                      {g.bombers ? `B${g.bombers}` : ''}
+                    </text>
+                  </g>
+                );
+              })}
+            </g>
+          )}
+
           <g className="mt-battles">
             {world.battles.map((b) => {
               if (!seen[b.province] && !(me && (b.attackers.includes(me) || b.defenders.includes(me)))) return null;
@@ -419,7 +569,7 @@ export function MapView() {
           </g>
         </g>
       </svg>
-      <HoverLine province={hover} />
+      <HoverLine province={hover} zone={hoverZone} />
       <div className="mt-zoom">
         <button className="mt-icon" aria-label="Zoom in" onClick={() => zoomAt(1.4, size.w / 2, size.h / 2)} onPointerDown={(e) => e.stopPropagation()}>
           +
@@ -433,17 +583,37 @@ export function MapView() {
 }
 
 /** One line at the bottom of the map saying what is under the pointer, and what a right-click would do. */
-function HoverLine({ province }: { province: number | null }) {
+function HoverLine({ province, zone }: { province: number | null; zone: string | null }) {
   const world = useGame((s) => s.world)!;
   const selection = useGame((s) => s.selection);
   const ordering = useGame((s) => s.ordering);
+  const bySea = useGame((s) => s.bySea);
+  if (province === null && zone !== null) {
+    const i = ZONE_INDEX[zone];
+    const status = world.player ? picturesOf(world).sea.status(world.player, i) : 'open';
+    const words: Record<SeaStatus, string> = { own: 'you control it', enemy: 'the enemy controls it', contested: 'contested', open: 'open sea' };
+    const fleets = world.fleets.filter((f) => f.zone === zone);
+    return (
+      <div className="mt-hoverline" aria-hidden="true">
+        <b>{ZONES[i].name}</b> · {words[status]} · {fleets.length ? [...new Set(fleets.map((f) => f.owner))].join(', ') : 'no fleets'}
+        {selection?.kind === 'fleet' && <em> · {ordering ? 'Click' : 'Right-click'} to sail here</em>}
+      </div>
+    );
+  }
   if (province === null) return null;
   const p = PROVINCES[province];
   const me = world.player;
   const holder = world.controller[province];
   const mine = selection?.kind === 'units' && selection.ids.length > 0;
   let hint = '';
-  if (mine && me) {
+  if (mine && me && ordering && bySea) {
+    const u = world.units.find((x) => x.id === selection.ids[0]);
+    const { sea, friends } = picturesOf(world);
+    const plan = u ? shipPlan(world, sea, friends, u, province) : null;
+    hint = !plan ? '' : 'why' in plan ? `Cannot go by sea: ${plan.why}` : `Click to ${plan.landing ? 'land here' : 'go here by sea'}: ${plan.days} days`;
+  } else if (selection?.kind === 'wings' && me) {
+    hint = holder === me || picturesOf(world).friends.get(me)?.has(holder) ? `${ordering ? 'Click' : 'Right-click'} to base the wings here` : '';
+  } else if (mine && me) {
     const click = ordering ? 'Click' : 'Right-click';
     if (holder !== me && !atWar(world, me, holder)) hint = 'Neutral: your divisions cannot enter';
     else hint = world.units.some((u) => u.at === province && atWar(world, u.owner, me)) ? `${click} to attack` : `${click} to march here`;

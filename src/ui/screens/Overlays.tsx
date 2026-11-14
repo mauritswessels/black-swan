@@ -104,6 +104,8 @@ export function Help() {
     ['N', 'National plan'],
     ['W', 'Home front: stability and war support'],
     ['D', 'Diplomacy: allies, promises, war and peace'],
+    ['F', 'Navy and air force: fleets, air wings, your trade by sea'],
+    ['B', 'Selected divisions: go by sea (then click a coast)'],
     ['X', 'Codex'],
     ['S', 'Save and load'],
     ['M', 'Sound on or off'],

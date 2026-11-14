@@ -16,14 +16,22 @@
  */
 import { COUNTRIES } from './countries';
 import { PROVINCES } from './map';
+import { seaDependence, SHIP_KINDS } from './sea';
 import { modsOf, type Mods } from './mods';
 import { cannotStartPlan, emptyPlan, planById, type Plan } from './plans';
 import { cannotResearch, emptyResearch, researchSlots, runResearch, techById, yearAt } from './research';
-import type { Economy, FactoryKind, Government, InflationCauses, MonthRecord, Order, Unit, UnitType, World } from './types';
+import type { Economy, FactoryKind, Government, InflationCauses, LineKind, MonthRecord, Order, PlaneKind, ShipKind, Unit, UnitType, World } from './types';
 import { linkedProvinces, supplyCapacity } from './supply';
 import { enemiesOf, warKey } from './war';
 
 export const UNIT_TYPES: UnitType[] = ['infantry', 'armour', 'artillery'];
+export const PLANE_KINDS: PlaneKind[] = ['fighter', 'bomber'];
+/** Everything a production line can make, in the order the Production panel lists it. */
+export const LINE_KINDS: LineKind[] = [...UNIT_TYPES, ...PLANE_KINDS, ...SHIP_KINDS];
+/** What a wing or a ship costs to keep each month, in millions at 1936 prices (three times that at war, like the army). */
+export const FORCE_UPKEEP: Record<PlaneKind | ShipKind, number> = { fighter: 0.12, bomber: 0.15, capital: 0.08, escort: 0.02, submarine: 0.02 };
+/** How much of a sea-trading country's consumer goods are lost when all its imports are sunk. */
+export const BLOCKADE_GOODS = 0.5;
 
 // ---------- the numbers ----------
 
@@ -38,7 +46,7 @@ export const UPKEEP: Record<UnitType, number> = { infantry: 0.3, armour: 0.6, ar
 export const WAR_UPKEEP = 3;
 
 /** Factory-days of work to equip one division. */
-export const KIT_COST: Record<UnitType, number> = { infantry: 120, armour: 300, artillery: 180 };
+export const KIT_COST: Record<LineKind, number> = { infantry: 120, armour: 300, artillery: 180, fighter: 80, bomber: 120, capital: 800, escort: 160, submarine: 130 };
 /** Days to train a new division once its equipment and men are ready. */
 export const TRAINING_DAYS: Record<UnitType, number> = { infantry: 30, armour: 60, artillery: 40 };
 /** A new division arrives with this much organisation: it needs a few weeks to shake down. */
@@ -245,17 +253,22 @@ export interface Tally {
   /** Share of its home victory points held by countries it is at war with. */
   homeLost: number;
   divisions: Record<UnitType, number>;
+  wings: Record<PlaneKind, number>;
+  ships: Record<ShipKind, number>;
+  /** Share of its factories put out of action by bombing. */
+  bombed: number;
 }
 
-type Holdings = Pick<World, 'controller' | 'factories' | 'units' | 'wars'> & { declaredBy?: World['declaredBy']; owner?: string[]; diplomacy?: { tension: number } };
+type Holdings = Pick<World, 'controller' | 'factories' | 'units' | 'wars'> & { declaredBy?: World['declaredBy']; owner?: string[]; diplomacy?: { tension: number }; fleets?: World['fleets']; wings?: World['wings']; bombed?: World['bombed'] };
 
 export function tallies(w: Holdings): Map<string, Tally> {
   const out = new Map<string, Tally>();
   const get = (name: string): Tally => {
     let t = out.get(name);
-    if (!t) out.set(name, (t = { civ: 0, mil: 0, steel: 0, oil: 0, population: 0, homeLost: 0, divisions: { infantry: 0, armour: 0, artillery: 0 } }));
+    if (!t) out.set(name, (t = { civ: 0, mil: 0, steel: 0, oil: 0, population: 0, homeLost: 0, divisions: { infantry: 0, armour: 0, artillery: 0 }, wings: { fighter: 0, bomber: 0 }, ships: { capital: 0, escort: 0, submarine: 0 }, bombed: 0 }));
     return t;
   };
+  const standing = new Map<string, number>();
   const vpHome = new Map<string, number>();
   const vpLost = new Map<string, number>();
   for (const p of PROVINCES) {
@@ -263,8 +276,13 @@ export function tallies(w: Holdings): Map<string, Tally> {
     const t = get(holder);
     const owner = w.owner ? w.owner[p.id] : p.owner;
     const own = owner === holder;
-    t.civ += w.factories.civ[p.id] * (own ? 1 : OCCUPIED_FACTORIES);
-    t.mil += w.factories.mil[p.id] * (own ? 1 : OCCUPIED_FACTORIES);
+    // Bombed factories stand idle until they are repaired (air.ts).
+    const hit = w.bombed?.[p.id] ?? 0;
+    const share = (own ? 1 : OCCUPIED_FACTORIES) * (1 - hit);
+    t.civ += w.factories.civ[p.id] * share;
+    t.mil += w.factories.mil[p.id] * share;
+    t.bombed += (w.factories.civ[p.id] + w.factories.mil[p.id]) * hit;
+    standing.set(holder, (standing.get(holder) ?? 0) + w.factories.civ[p.id] + w.factories.mil[p.id]);
     t.steel += STEEL[p.id] * (own ? 1 : OCCUPIED_RESOURCES);
     t.oil += OIL[p.id] * (own ? 1 : OCCUPIED_RESOURCES);
     if (own) t.population += POPULATION[p.id];
@@ -273,6 +291,9 @@ export function tallies(w: Holdings): Map<string, Tally> {
   }
   for (const [name, total] of vpHome) get(name).homeLost = total ? (vpLost.get(name) ?? 0) / total : 0;
   for (const u of w.units) get(u.owner).divisions[u.type]++;
+  for (const x of w.wings ?? []) get(x.owner).wings[x.type]++;
+  for (const f of w.fleets ?? []) for (const k of SHIP_KINDS) get(f.owner).ships[k] += f.ships[k];
+  for (const [name, t] of out) t.bombed = t.bombed > 0 ? t.bombed / Math.max(1, standing.get(name) ?? 1) : 0;
   return out;
 }
 
@@ -309,6 +330,8 @@ export interface EconomyView {
   nominalGDP: number;
   steel: { have: number; need: number; ratio: number };
   oil: { have: number; need: number; ratio: number };
+  /** Share of this country's imports being sunk on the way: the loss at sea times how much of its trade goes by sea. */
+  blockade: number;
   budget: { taxes: number; exports: number; government: number; upkeep: number; military: number; construction: number; plan: number; imports: number; interest: number; revenue: number; spending: number; balance: number };
   /** Debt as a share of a year's output. */
   debtRatio: number;
@@ -324,7 +347,7 @@ export interface EconomyView {
   /** Thousands of men the conscription law allows in total. */
   manpowerCap: number;
   /** Division-sets of equipment each line makes a day. */
-  lineRate: Record<UnitType, number>;
+  lineRate: Record<LineKind, number>;
   stabilityTarget: number;
   stabilityReasons: Reason[];
   /** The tax rate above which stability falls: 25%, more in a war people support. */
@@ -362,7 +385,7 @@ export function economyView(w: Holdings & Pick<World, 'economies'>, country: str
   const m = modsOf(e);
   const regime = e.government;
 
-  const milUsed = Math.min(Math.floor(t.mil + 1e-9), UNIT_TYPES.reduce((a, k) => a + e.lines[k].factories, 0));
+  const milUsed = Math.min(Math.floor(t.mil + 1e-9), LINE_KINDS.reduce((a, k) => a + e.lines[k].factories, 0));
   const building = e.construction.length ? Math.min(e.constructionFactories, Math.floor(t.civ + 1e-9), e.construction.length * BUILDERS_PER_PROJECT) : 0;
   const consumer = t.civ - building;
   const law = CONSCRIPTION[e.conscription];
@@ -370,7 +393,9 @@ export function economyView(w: Holdings & Pick<World, 'economies'>, country: str
   const lawOutput = 1 - (1 - law.output) * Math.max(0, 1 + m.conscriptionDrag);
   // Taxes take spending money away, so people ask for fewer goods; rationing cuts what they may buy.
   const goodsNeed = GOODS_NEED * t.civ * (e.rationing ? RATIONING_NEED : 1) * clamp(1 - 0.6 * (e.taxRate - 0.2), 0.7, 1.1) * (1 + m.goodsNeed);
-  const shortage = goodsNeed > 0 ? clamp(1 - (consumer * lawOutput) / goodsNeed, 0, 1) : 0;
+  // Cargo sunk at sea: imported steel and oil that never arrive, and food and goods missing from the shops.
+  const blockade = clamp(e.blockade * seaDependence(country), 0, 1);
+  const shortage = goodsNeed > 0 ? clamp(1 - (consumer * lawOutput * (1 - BLOCKADE_GOODS * blockade)) / goodsNeed, 0, 1) : 0;
 
   const factors = { conscription: lawOutput, stability: stabilityFactor(e.stability), inflation: inflationFactor(e.inflation), tax: taxFactor(e.taxRate) };
   const outputFactor = factors.conscription * factors.stability * factors.inflation * factors.tax;
@@ -379,7 +404,7 @@ export function economyView(w: Holdings & Pick<World, 'economies'>, country: str
 
   const steelNeed = milUsed * (1 + m.resourceNeed);
   const oilNeed = (e.lines.armour.factories + OIL_PER_ARMOUR_DIVISION * t.divisions.armour) * (1 + m.resourceNeed);
-  const ratio = (have: number, need: number) => (need <= 0 || e.imports ? 1 : clamp(have / need, 0, 1));
+  const ratio = (have: number, need: number) => (need <= 0 ? 1 : clamp((have + (e.imports ? Math.max(0, need - have) * (1 - blockade) : 0)) / need, 0, 1));
   const steel = { have: t.steel, need: steelNeed, ratio: ratio(t.steel, steelNeed) };
   const oil = { have: t.oil, need: oilNeed, ratio: ratio(t.oil, oilNeed) };
   const gap = (have: number, need: number) => Math.max(0, need - have);
@@ -388,7 +413,7 @@ export function economyView(w: Holdings & Pick<World, 'economies'>, country: str
 
   const taxes = e.taxRate * nominalGDP * (e.rationing ? 1 - BLACK_MARKET_TAX_LOSS * (1 + m.rationingCost) : 1) * (1 + m.taxRevenue);
   const government = GOVERNMENT_SHARE * nominalGDP;
-  const upkeep = UNIT_TYPES.reduce((a, k) => a + t.divisions[k] * UPKEEP[k], 0) * (atWar ? WAR_UPKEEP : 1) * p;
+  const upkeep = (UNIT_TYPES.reduce((a, k) => a + t.divisions[k] * UPKEEP[k], 0) + PLANE_KINDS.reduce((a, k) => a + t.wings[k] * FORCE_UPKEEP[k], 0) + SHIP_KINDS.reduce((a, k) => a + t.ships[k] * FORCE_UPKEEP[k], 0)) * (atWar ? WAR_UPKEEP : 1) * p;
   const military = FACTORY_COST * milUsed * p;
   const construction = FACTORY_COST * building * p;
   const interest = (e.debt * e.debtRate) / 100 / 12;
@@ -410,8 +435,8 @@ export function economyView(w: Holdings & Pick<World, 'economies'>, country: str
   const bondCapacity = BOND_APPETITE * nominalGDP * confidence * (1 + m.bondAppetite) * patriotism;
 
   const manpowerCap = t.population * 1000 * law.share * (1 + m.manpower);
-  const lineRate = { infantry: 0, armour: 0, artillery: 0 };
-  for (const k of UNIT_TYPES) lineRate[k] = (e.lines[k].factories * e.lines[k].efficiency * outputFactor * (1 + m.lineOutput) * steel.ratio * (k === 'armour' ? oil.ratio : 1)) / KIT_COST[k];
+  const lineRate = {} as Record<LineKind, number>;
+  for (const k of LINE_KINDS) lineRate[k] = (e.lines[k].factories * e.lines[k].efficiency * outputFactor * (1 + m.lineOutput) * steel.ratio * (k === 'armour' ? oil.ratio : 1)) / KIT_COST[k];
 
   // War support: where it is heading, and why.
   const attacked = enemies.some((x) => {
@@ -434,6 +459,7 @@ export function economyView(w: Holdings & Pick<World, 'economies'>, country: str
   support('war weariness', -e.weariness);
   support('inflation above 10% a year', -Math.min(15, 0.3 * Math.max(0, e.inflation - 10)));
   support('shortages in the shops', -25 * shortage);
+  support('enemy bombing of the cities', -Math.min(10, 40 * t.bombed));
   if (!atWar) support('mass conscription in peacetime', -5 * Math.max(0, e.conscription - 2));
   support('civil defence and national plans', m.warSupport);
   const warSupportTarget = clamp(warSupportReasons.reduce((a, r) => a + r.points, 0), 0, 100);
@@ -447,6 +473,7 @@ export function economyView(w: Holdings & Pick<World, 'economies'>, country: str
   minus('hyperinflation: money is losing its meaning', e.inflation > 100 ? 15 : 0);
   minus('prices are falling fast (deflation)', e.inflation < -5 ? 5 : 0);
   minus('shortages in the shops', 40 * shortage);
+  minus('enemy bombing of the cities', Math.min(8, 30 * t.bombed));
   minus('rationing and price controls', e.rationing ? 5 * (1 + m.rationingCost) : 0);
   minus('heavy conscription', 3 * Math.max(0, e.conscription - 2));
   minus('people do not want this war', atWar ? 0.5 * Math.max(0, UNWANTED_WAR - e.warSupport) : 0);
@@ -456,7 +483,7 @@ export function economyView(w: Holdings & Pick<World, 'economies'>, country: str
   const stabilityTarget = clamp(STABILITY_BASE + stabilityReasons.reduce((a, r) => a + r.points, 0), 0, 100);
 
   return {
-    atWar, civ: t.civ, mil: t.mil, milUsed, milFree: Math.floor(t.mil + 1e-9) - milUsed, building, consumer, goodsNeed, shortage, outputFactor, factors, buildFactor: outputFactor * (1 + m.buildSpeed), mods: m, realGDP, nominalGDP, steel, oil,
+    atWar, civ: t.civ, mil: t.mil, milUsed, milFree: Math.floor(t.mil + 1e-9) - milUsed, building, consumer, goodsNeed, shortage, outputFactor, factors, buildFactor: outputFactor * (1 + m.buildSpeed), mods: m, realGDP, nominalGDP, steel, oil, blockade,
     budget: { taxes, exports, government, upkeep, military, construction, plan, imports, interest, revenue, spending, balance: revenue - spending },
     debtRatio, marketRate, realRate, rateReasons, bondCapacity, confidence, patriotism, manpowerCap, lineRate, stabilityTarget, stabilityReasons,
     taxThreshold, warSupportTarget, warSupportReasons, attacked, morale: moraleOf(e.warSupport, atWar),
@@ -470,8 +497,9 @@ const START_TAX: Record<Government, number> = { democracy: 0.22, authoritarian: 
 const emptyEconomy = (): Economy => ({
   government: 'democracy',
   treasury: 0, debt: 0, debtRate: BASE_REAL_RATE + BANK_CREDIT, money: 0, priceLevel: 100, inflation: BANK_CREDIT, expected: BANK_CREDIT, taxRate: 0.22, bondShare: 1, rationing: false, imports: true,
-  conscription: 1, stability: 70, warSupport: 40, mood: 0, weariness: 0, crisisMonths: 0, governmentsFallen: 0, research: emptyResearch(1), plan: emptyPlan(), manpower: 0, stock: { infantry: 0, armour: 0, artillery: 0 },
-  lines: { infantry: { factories: 0, efficiency: LINE_START }, armour: { factories: 0, efficiency: LINE_START }, artillery: { factories: 0, efficiency: LINE_START } },
+  conscription: 1, stability: 70, warSupport: 40, mood: 0, weariness: 0, crisisMonths: 0, governmentsFallen: 0, research: emptyResearch(1), plan: emptyPlan(), manpower: 0, blockade: 0,
+  stock: Object.fromEntries(LINE_KINDS.map((k) => [k, 0])) as Record<LineKind, number>,
+  lines: Object.fromEntries(LINE_KINDS.map((k) => [k, { factories: 0, efficiency: LINE_START }])) as Record<LineKind, Economy['lines'][LineKind]>,
   constructionFactories: 0, construction: [], training: [], printedThisMonth: 0, borrowedThisMonth: 0, balanceThisMonth: 0, moneyAtMonthStart: 0,
   causes: { carry: 0.8 * BANK_CREDIT, expectations: 0, printing: 0, credit: 0.2 * BANK_CREDIT, growth: 0, shortage: 0 }, history: [],
 });
@@ -524,7 +552,7 @@ export function startEconomies(w: Holdings): Record<string, Economy> {
 const cloneEconomy = (e: Economy): Economy => ({
   ...e,
   stock: { ...e.stock },
-  lines: { infantry: { ...e.lines.infantry }, armour: { ...e.lines.armour }, artillery: { ...e.lines.artillery } },
+  lines: Object.fromEntries(LINE_KINDS.map((k) => [k, { ...e.lines[k] }])) as Economy['lines'],
   construction: e.construction.map((c) => ({ ...c })),
   training: e.training.map((t) => ({ ...t })),
   research: { slots: [...e.research.slots], progress: { ...e.research.progress }, done: [...e.research.done] },
@@ -611,10 +639,10 @@ export function giveEconomyOrder(d: Pick<World, 'economies' | 'controller' | 'fa
       break;
     }
     case 'setLine': {
-      if (!UNIT_TYPES.includes(o.unit) || !Number.isFinite(o.factories)) break;
+      if (!LINE_KINDS.includes(o.unit) || !Number.isFinite(o.factories)) break;
       const line = e.lines[o.unit];
       const mil = Math.floor((tallies(d).get(o.country)?.mil ?? 0) + 1e-9);
-      const others = UNIT_TYPES.reduce((a, k) => a + (k === o.unit ? 0 : e.lines[k].factories), 0);
+      const others = LINE_KINDS.reduce((a, k) => a + (k === o.unit ? 0 : e.lines[k].factories), 0);
       const n = clamp(Math.round(o.factories), 0, Math.max(0, mil - others));
       // Factories added to a line start at half speed, which pulls the line's average down.
       if (n > line.factories) line.efficiency = (line.efficiency * line.factories + LINE_START * (n - line.factories)) / n;
@@ -636,6 +664,8 @@ export function giveEconomyOrder(d: Pick<World, 'economies' | 'controller' | 'fa
     case 'cancelBuild':
       if (Number.isInteger(o.index) && o.index >= 0 && o.index < e.construction.length) e.construction.splice(o.index, 1);
       break;
+    case 'raiseWing':
+      break; // handled with the other air orders in world.ts, which knows where the wings are
     case 'raise':
       if (!UNIT_TYPES.includes(o.unit) || cannotRaise(e, o.unit)) break;
       e.stock[o.unit] -= 1;
@@ -704,6 +734,9 @@ export interface EconomyDraft {
   owner?: string[];
   diplomacy?: { tension: number };
   startDate: string;
+  fleets?: World['fleets'];
+  wings?: World['wings'];
+  bombed?: World['bombed'];
   units: Unit[];
   nextUnitId: number;
   controller: string[];
@@ -736,8 +769,8 @@ export function runEconomies(d: EconomyDraft, capitulated: string[]): Map<string
 
     // Lost factories: lines shrink to what is left, the biggest line first.
     const mil = Math.floor(t.mil + 1e-9);
-    for (let used = UNIT_TYPES.reduce((a, k) => a + e.lines[k].factories, 0); used > mil; used--) {
-      const big = UNIT_TYPES.reduce((a, k) => (e.lines[k].factories > e.lines[a].factories ? k : a));
+    for (let used = LINE_KINDS.reduce((a, k) => a + e.lines[k].factories, 0); used > mil; used--) {
+      const big = LINE_KINDS.reduce((a, k) => (e.lines[k].factories > e.lines[a].factories ? k : a));
       e.lines[big].factories--;
     }
     e.constructionFactories = Math.min(e.constructionFactories, Math.floor(t.civ + 1e-9));
@@ -770,7 +803,7 @@ export function runEconomies(d: EconomyDraft, capitulated: string[]): Map<string
     }
 
     // Production lines.
-    for (const k of UNIT_TYPES) {
+    for (const k of LINE_KINDS) {
       const line = e.lines[k];
       if (!line.factories) continue;
       e.stock[k] += v.lineRate[k];

@@ -1,5 +1,65 @@
 # Changelog
 
+## War game, Stage G: the navy and the air force (2026-11-14)
+
+- **Sea zones.** The sea around Europe is cut into 17 zones, from the Barents Sea to the
+  Eastern Mediterranean. The new **Air and sea** map mode shows who holds each one, the fleets
+  in it and the air wings at their bases.
+- **Fleets.** Three kinds of ship: capital ships, escort flotillas and submarine flotillas.
+  The navies of 1936 are in place at the start. You do not steer ships: give a fleet a sea
+  zone and a mission (patrol, escort convoys, raid convoys, stay in port). Fleets can be split
+  and joined.
+- **Control of the sea.** The side with twice the other's strength in a zone controls it.
+  Enemy fleets in the same zone fight every day; the weaker one is worn down and should leave.
+- **Convoys and blockade.** Each country's imports cross a route from the ocean to its home
+  waters. Raiders sink them, escorts protect them and hunt the submarines, and a zone the
+  enemy controls outright loses 90%. What is sunk never arrives: steel and oil for the
+  factories, goods for the shops. Britain depends on the sea entirely, Germany hardly at all.
+- **Troops by sea.** Select divisions on a coast, press B and click another coast. A friendly
+  shore takes a few days. An enemy shore is a landing: two weeks to prepare, control of the
+  sea off the beach, a limit on how many divisions can land at once, and the troops fight at
+  60% as they come ashore. Troops overseas need an open port for supply.
+- **Air wings.** Fighters and bombers, about a hundred aircraft to a wing, based in a province.
+  Fighters reach 400 km, bombers 800 km. Missions: air superiority, ground support, strategic
+  bombing, naval strike, rest.
+- **Control of the sky.** The side with 1.5 times the other's air strength over a battle hits
+  15% harder, and the other side 15% less hard. The battle outlook and battle reports say so.
+- **Strategic bombing** puts up to half of a province's factories out of action for a while
+  and wears down support for the war.
+- **Production.** Fighters, bombers and the three kinds of ship are built on production lines
+  by the same military factories. Finished aircraft repair your wings or form a new one; a
+  finished ship joins a fleet off your home coast.
+- **Research.** Two new branches, navy and air, of four technologies each (24 in all): sonar,
+  ocean-going submarines, naval radar, landing craft, monoplane fighters, fast medium bombers,
+  radar early warning and long-range aircraft. Research is a third faster, so the land
+  technologies arrive when they did before.
+- **The Navy and air force panel** (key F, or the Forces button on the rail): every fleet and
+  air base, the state of your trade by sea, and new wings. Click a sea zone, a fleet or an air
+  base on the map to open it in the sidebar. The news line reports naval battles, landings,
+  lost wings and how much of your imports are being sunk.
+- **AI countries use all of it.** They patrol their home waters, escort their own trade, send
+  submarines against the enemy's, move their wings up to the front, bomb, send an expedition
+  to an ally across the sea (Britain to France in 1939) and land on weakly held enemy coasts.
+- **Surrender.** A country whose capital has fallen now gives up at 40% of its victory points
+  instead of 60%. France asked for an armistice eight days after Paris fell.
+- A new German programme, **Armoured corps** (from 1938), so the German army of 1940 can still
+  break the French one now that part of its industry builds aircraft and submarines.
+- 9 new codex entries, among them sea zone, control of the sea, convoy, blockade, landing, air
+  wing and strategic bombing.
+- Engine: `sea.ts`, `navy.ts`, `air.ts`, `forces.ts` and `aiForces.ts`, pure TypeScript. 151
+  unit tests (22 new). `npm run balance` now writes `docs/balance-stage-g.md`, with tables for
+  the war at sea and in the air. `npm run build:sea` rebuilds the sea zones.
+- Saves from Stage F no longer load (a save now holds fleets, air wings and bomb damage).
+
+Not in this stage, and known weak spots: straits are not modelled, so a fleet can pass
+Gibraltar, the Bosporus or the Danish straits whoever holds the shore; you can see every fleet
+on the map but only your own and your allies' air bases, and aircraft do not yet scout for the
+army; ships are not repaired, only replaced; a player's aircraft and ship lines start empty
+and must be set by hand; France now falls in September or October 1940, three to four months
+late; the German-Soviet war still settles into a stalemate (no front-wide offensives, no
+winter); Norway, Greece, the Spanish Civil War, the Vienna Awards and Vichy France are not
+modelled; history cards come in Stage H; the Mac app build is not tested in the cloud.
+
 ## War game, Stage F: diplomacy, AI countries and peace (2026-11-13)
 
 - **Relations.** Every pair of countries has a relation from -100 to 100. It drifts 2 points a

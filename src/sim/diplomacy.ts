@@ -105,6 +105,8 @@ export const CONTAIN_TENSION = 50;
 export const ACCEPT = { alliance: 60, nonAggression: 20, call: 40 };
 /** A country surrenders when enemies hold this share of the victory points of its own land. */
 export const SURRENDER_SHARE = 0.6;
+/** Once its capital has fallen, a country gives up at this smaller share. France asked for an armistice eight days after Paris fell. */
+export const SURRENDER_SHARE_NO_CAPITAL = 0.4;
 
 /** A standing claim: a cause for war that never runs out, and (when it names a demand) the right to send an ultimatum. */
 export interface Claim {
@@ -1120,15 +1122,18 @@ export function surrenders(d: DipDraft): void {
   for (const loser of [...new Set(d.wars.flatMap((k) => k.split('|')))].sort()) {
     if (!alive(d, loser)) continue;
     let total = 0;
+    let capitalLost = false;
     const held = new Map<string, number>();
     for (const p of PROVINCES) {
       if (d.owner[p.id] !== loser) continue;
       total += p.victoryPoints;
       const holder = d.controller[p.id];
-      if (fighting(d, loser, holder)) held.set(holder, (held.get(holder) ?? 0) + p.victoryPoints);
+      if (!fighting(d, loser, holder)) continue;
+      held.set(holder, (held.get(holder) ?? 0) + p.victoryPoints);
+      if (p.capital && p.owner === loser) capitalLost = true;
     }
     const lost = [...held.values()].reduce((a, b) => a + b, 0);
-    if (!total || lost / total < SURRENDER_SHARE) continue;
+    if (!total || lost / total < (capitalLost ? SURRENDER_SHARE_NO_CAPITAL : SURRENDER_SHARE)) continue;
     const victor = [...held.entries()].sort((x, y) => y[1] - x[1] || (x[0] < y[0] ? -1 : 1))[0][0];
     capitulate(d, loser, victor);
   }

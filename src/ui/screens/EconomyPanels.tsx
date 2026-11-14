@@ -4,9 +4,10 @@
  */
 import type { ReactNode } from 'react';
 import {
-  BUILD_COST, BUILDERS_PER_PROJECT, cannotRaise, CONSCRIPTION, conscriptionBlocked, economyView, FACTORY_COST, KIT_COST, MEN_PER_DIVISION, musterPoint, TAX_MAX, TAX_MIN, TAX_STABILITY, TRAINING_DAYS, UNIT_TYPES, UPKEEP, WAR_UPKEEP,
+  BUILD_COST, BUILDERS_PER_PROJECT, cannotRaise, FORCE_UPKEEP, CONSCRIPTION, conscriptionBlocked, economyView, FACTORY_COST, KIT_COST, MEN_PER_DIVISION, musterPoint, TAX_MAX, TAX_MIN, TAX_STABILITY, TRAINING_DAYS, UNIT_TYPES, UPKEEP, WAR_UPKEEP,
   type EconomyView, type Reason,
 } from '../../sim/economy';
+import { cannotRaiseWing, MEN_PER_WING } from '../../sim/air';
 import { PROVINCES } from '../../sim/map';
 import type { Economy, UnitType, World } from '../../sim/types';
 import { Chart } from '../components/Chart';
@@ -24,6 +25,9 @@ const pct = (x: number, digits = 0) => `${x.toFixed(digits)}%`;
 const signed = (x: number, digits = 1) => `${x >= 0 ? '+' : '-'}${Math.abs(x).toFixed(digits)}`;
 const men = (thousands: number) => `${(Math.round(thousands) * 1000).toLocaleString('en-GB')} men`;
 const NAME: Record<UnitType, string> = { infantry: 'Infantry', armour: 'Armour', artillery: 'Artillery' };
+const FORCE_LINES = ['fighter', 'bomber', 'capital', 'escort', 'submarine'] as const;
+const FORCE_NAME: Record<(typeof FORCE_LINES)[number], string> = { fighter: 'Fighters', bomber: 'Bombers', capital: 'Capital ships', escort: 'Escorts', submarine: 'Submarines' };
+const FORCE_ONE: Record<(typeof FORCE_LINES)[number], string> = { fighter: 'wing of fighters', bomber: 'wing of bombers', capital: 'capital ship', escort: 'escort flotilla', submarine: 'submarine flotilla' };
 const year = (w: World, day: number) => {
   const d = new Date(`${w.startDate}T00:00:00Z`);
   d.setUTCDate(d.getUTCDate() + day);
@@ -354,6 +358,31 @@ export function ProductionPanel({ w, me }: { w: World; me: string }) {
           </div>
         );
       })}
+      <h3>Aircraft and ships</h3>
+      <p className="sb-fine">The same military factories build aircraft and warships. Finished aircraft repair your wings and wait in store for a new wing; a finished ship joins a fleet off your home coast by itself. Open Navy and air force (F) to use them.</p>
+      {FORCE_LINES.map((k) => {
+        const line = e.lines[k];
+        const rate = v.lineRate[k];
+        const plane = k === 'fighter' || k === 'bomber';
+        const blocked = plane ? cannotRaiseWing(e, k) : null;
+        return (
+          <div className="sb-prod" key={k}>
+            <div className="sb-line">
+              <b>{FORCE_NAME[k]}</b>
+              <Stepper label={`Factories on the ${FORCE_NAME[k].toLowerCase()} line`} value={line.factories} min={0} max={line.factories + v.milFree} onChange={(n) => order({ type: 'setLine', unit: k, factories: n })} />
+            </div>
+            <p>
+              {line.factories ? `Running at ${pct(line.efficiency * 100)} speed: one ${FORCE_ONE[k]} every ${rate > 0 ? Math.round(1 / rate) : '∞'} days.` : 'No factories on this line.'} {plane ? <>In store: aircraft for <b>{e.stock[k].toFixed(1)}</b> wings.</> : <>On the slip: <b>{pct(e.stock[k] * 100)}</b> of the next one.</>} {KIT_COST[k]} factory-days each.
+            </p>
+            {plane && (
+              <button className="sb-btn" disabled={!!blocked} onClick={() => order({ type: 'raiseWing', plane: k })}>
+                Form a {k} wing
+                <small>{blocked ? `Not yet: ${blocked}.` : `${MEN_PER_WING},000 men. It forms at your capital, then ${money(FORCE_UPKEEP[k] * p)} a month.`}</small>
+              </button>
+            )}
+          </div>
+        );
+      })}
       {e.training.length > 0 && (
         <>
           <h3>In training</h3>
@@ -399,6 +428,7 @@ export function ProductionPanel({ w, me }: { w: World; me: string }) {
       <h3>Steel and oil</h3>
       <div className="sb-rows">
         <Row label="Steel: have / need" value={`${v.steel.have.toFixed(1)} / ${v.steel.need.toFixed(1)}`} bar={v.steel.need > 0 ? Math.min(100, (v.steel.have / v.steel.need) * 100) : 100} warn={v.steel.have < v.steel.need} />
+        {v.blockade > 0.005 && <Row label="Imports sunk at sea" value={pct(v.blockade * 100)} bar={v.blockade * 100} warn />}
         <Row label="Oil: have / need" value={`${v.oil.have.toFixed(1)} / ${v.oil.need.toFixed(1)}`} bar={v.oil.need > 0 ? Math.min(100, (v.oil.have / v.oil.need) * 100) : 100} warn={v.oil.have < v.oil.need} />
       </div>
       <Toggle on={e.imports} onChange={(on) => order({ type: 'setImports', on })}>

@@ -1,6 +1,6 @@
 [package]
 name = "black-swan"
-version = "0.8.0"
+version = "0.9.0"
 description = "Black Swan: a grand-strategy game set in Europe from 1936"
 edition = "2024"
 rust-version = "1.90"

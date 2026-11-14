@@ -25,9 +25,9 @@ const knowing = (w: World, country: string, ...ids: string[]): World => withEcon
 const unit = (owner: string, at: number, type: Unit['type'] = 'infantry'): Unit => ({ id: 9000 + at, owner, type, at, strength: 100, organisation: 100, path: [], progress: 0, dugIn: 0, supply: 1 });
 
 describe('the list of technologies', () => {
-  it('has four branches of four technologies, in order of year, each with an effect and a history note', () => {
-    expect(TECHS).toHaveLength(16);
-    expect(new Set(TECHS.map((t) => t.id)).size).toBe(16);
+  it('has six branches of four technologies, in order of year, each with an effect and a history note', () => {
+    expect(TECHS).toHaveLength(24);
+    expect(new Set(TECHS.map((t) => t.id)).size).toBe(24);
     for (const b of BRANCHES) {
       const branch = TECHS.filter((t) => t.branch === b.id).sort((x, y) => x.tier - y.tier);
       expect(branch.map((t) => t.tier), b.name).toEqual([1, 2, 3, 4]);
@@ -137,12 +137,13 @@ describe('research', () => {
 });
 
 describe('the list of national plans', () => {
-  it('has twelve plans open to all and two real programmes for each major power', () => {
+  it('has twelve plans open to all and two real programmes for each major power (three for Germany)', () => {
     expect(PLANS.filter((p) => !p.country)).toHaveLength(12);
     for (const c of COUNTRIES) {
       const own = PLANS.filter((p) => p.country === c.name);
-      expect(own.length, c.name).toBe(c.major ? 2 : 0);
-      expect(plansFor(c.name).length, c.name).toBe(c.major ? 14 : 12);
+      const real = c.name === 'Germany' ? 3 : c.major ? 2 : 0;
+      expect(own.length, c.name).toBe(real);
+      expect(plansFor(c.name).length, c.name).toBe(12 + real);
     }
     for (const p of PLANS) {
       expect(p.days, p.name).toBeGreaterThanOrEqual(60);
@@ -367,7 +368,7 @@ describe('four years of peace with research and plans (bot playtest)', () => {
     for (const c of COUNTRIES) {
       const e = w.economies[c.name];
       expect(e.research.done.length, c.name).toBeGreaterThanOrEqual(c.major ? 8 : 4);
-      expect(e.research.done.length, c.name).toBeLessThanOrEqual(c.major ? 11 : 6);
+      expect(e.research.done.length, c.name).toBeLessThanOrEqual(c.major ? 15 : 8);
       expect(e.governmentsFallen, c.name).toBe(0);
       expect(e.warSupport, c.name).toBeGreaterThanOrEqual(20);
       expect(e.warSupport, c.name).toBeLessThanOrEqual(100);

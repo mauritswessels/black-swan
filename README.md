@@ -4,13 +4,14 @@ A grand-strategy game set in Europe from 1936. You lead a real country through t
 the war that followed, and face what its leaders faced: armies, factories, money, allies and
 public support. It is built to teach the history and the economics as you play.
 
-> **Status: Stage F of the war game.** Pick a country, run its economy, its research and its
-> home front, command its divisions on the Map table, and now deal with the rest of the world:
-> relations, alliances, guarantees, ultimatums, wars and peace. The other countries are led by
-> an AI that follows the real history of 1936 to 1941 unless what you do changes the situation.
-> The navy and air force come next (Stage G).
+> **Status: Stage G of the war game.** Pick a country, run its economy, its research and its
+> home front, command its divisions on the Map table, deal with the rest of the world, and now
+> fight at sea and in the air: fleets hold sea zones, guard or sink convoys and carry your
+> divisions across the water; air wings win the sky over a battle and bomb factories. The
+> other countries are led by an AI that follows the real history of 1936 to 1941 unless what
+> you do changes the situation. Story mode with history cards comes next (Stage H).
 
-## How to play (Stage F)
+## How to play (Stage G)
 
 1. Start a game and choose a country. The clock starts paused.
 2. Press **P** for Production. Your military factories are already making equipment. When a
@@ -37,8 +38,29 @@ public support. It is built to teach the history and the economics as you play.
    trackpad). If enemy divisions are in it, they attack. The sidebar shows the **outlook**.
 10. To end a war, open the enemy's sidebar and offer peace: back to the old borders, or each
     keeps what it holds. It shows the war score and whether they are likely to accept. A
-    country that loses 60% of its own land's victory points surrenders; you then choose to
+    country that loses 60% of its own land's victory points surrenders (40% once its capital
+    has fallen); you then choose to
     occupy it, annex it or set up a friendly government.
+
+11. Press **F** for the Navy and air force, and switch the map to **Air and sea** (bottom
+    left). You do not steer ships or aircraft: give each fleet a sea zone and a mission
+    (patrol, escort convoys, raid convoys, stay in port), and each air wing a base and a
+    mission (air superiority, ground support, strategic bombing, naval strike). Click a fleet
+    or an air base on the map to open it; right-click a sea zone or a province to send it
+    there.
+12. To cross the sea, select divisions standing on a coast, press **B** (Go by sea) and click
+    another coast. A friendly shore takes a few days. An enemy shore is a landing: it takes
+    two weeks to prepare, you must control the sea zone off the beach, and the troops fight at
+    60% as they come ashore.
+13. Aircraft and ships are built on production lines like everything else (Production, **P**).
+    Your lines for them start empty, so move some factories there before a war.
+
+Tips for the sea and the air: whoever has twice the other side's naval strength in a zone
+controls it. Control lets you land troops there and cuts the enemy's trade through it by 90%.
+If you live by imports, as Britain does, keep a fleet on Escort along your trade route or
+submarines will starve your factories and shops; the news line warns you. Fighters reach 400
+km and bombers 800 km from their base, so move your wings forward as the front moves. The side
+with 1.5 times the other's air strength over a battle hits 15% harder.
 
 Tips for diplomacy: in Story mode you need a cause for war (a claim, a case you have built, a
 refused ultimatum, or a promise to keep). A democracy can only build a case against a country
@@ -135,6 +157,9 @@ Apple Developer account.
 | N | National plan |
 | W | Home front: stability and war support |
 | D | Diplomacy: tension, treaties, wars and world news |
+| F | Navy and air force: fleets, air wings, your trade by sea |
+| B | Selected divisions: go by sea (then click a coast) |
+| G | With a fleet or an air base open: choose where it goes on the map |
 | X | Codex |
 | S | Save and load (3 slots plus an autosave) |
 | M | Sound on or off |
@@ -154,10 +179,15 @@ src/sim/          the game engine: pure TypeScript, no UI, fully testable
                   surrender and what happens to a conquered country
   agenda.ts       what each AI country wants and when (the real timetable of 1936 to 1941),
                   and the conditions that let the player change it
+  sea.ts          the 17 sea zones, coasts, trade routes and who controls each zone
+  navy.ts         fleets and missions, naval battles, convoys and blockade, troops by sea
+  air.ts          air wings and missions, control of the sky, bombing
+  forces.ts       ties the navy and the air force into the day
+  aiForces.ts     how AI countries use their fleets, wings and transports
   economy.ts      factories, production lines, manpower, the budget, debt and inflation,
                   and the home front: stability and war support
-  research.ts     the 16 technologies, research teams and how fast they work
-  plans.ts        the 24 national plans
+  research.ts     the 24 technologies, research teams and how fast they work
+  plans.ts        the 25 national plans
   mods.ts         adds up what research and finished plans change
   aiEconomy.ts    a simple finance minister for AI countries (it also picks research and plans)
   testeconomy.ts  finance playtests, used by the balance report
@@ -177,6 +207,7 @@ src/ui/           React screens, widgets, sound and the War Room theme
   screens/        title, choose your country, the Map table, sidebar, overlays
 src-tauri/        the Mac app wrapper (Tauri); you rarely need to touch this
 scripts/          build-map.mjs turns modern map data into 1936 provinces;
+                  build-sea.mjs draws the sea zones and works out the coasts;
                   update.mjs is `npm run update`
 tests/            unit tests
 CHANGELOG.md      what each stage added
@@ -205,8 +236,8 @@ the middle of a modern region are therefore approximate:
 
 ## Plan
 
-See CHANGELOG.md for what is done. Next is Stage G (navy and air), then H (Story mode) and
-I (polish).
+See CHANGELOG.md for what is done. Next is Stage H (Story mode with the 1936 and 1939 starts
+and history cards), then I (polish).
 
 ## History and symbols
 

@@ -10,12 +10,16 @@ import { techById } from '../sim/research';
 import type { EconomyOrder } from '../sim/economy';
 import type { Mode, Order, World } from '../sim/types';
 import { atWar } from '../sim/war';
+import { shipPlan } from '../sim/navy';
+import { cannotBase, REBASE_DAYS } from '../sim/air';
+import { DAYS_PER_ZONE, zoneById, ZONE_INDEX, zonePath } from '../sim/sea';
+import { picturesOf } from './forces';
 import { applyOrders, dateLabel, newWorld } from '../sim/world';
 import { readSave, writeSave, type Slot } from '../save/storage';
 import { sound } from './audio/sound';
 
 export type Screen = 'title' | 'setup' | 'game';
-export type MapMode = 'political' | 'terrain' | 'supply' | 'diplomacy';
+export type MapMode = 'political' | 'terrain' | 'supply' | 'diplomacy' | 'airsea';
 
 /** What the sidebar is showing. */
 export type Selection =
@@ -34,7 +38,11 @@ export type Selection =
   | { kind: 'plan'; id: string }
   | { kind: 'politics' }
   | { kind: 'diplomacy' }
-  | { kind: 'decision'; id: number };
+  | { kind: 'decision'; id: number }
+  | { kind: 'forces' }
+  | { kind: 'zone'; id: string }
+  | { kind: 'fleet'; id: number }
+  | { kind: 'wings'; province: number };
 
 /** An economic order before the player's country is filled in. */
 export type EconomyAction = EconomyOrder extends infer O ? (O extends { country: string } ? Omit<O, 'country'> : never) : never;
@@ -65,6 +73,8 @@ interface Store {
   selection: Selection | null;
   /** True after pressing Move: the next province clicked is the destination. */
   ordering: boolean;
+  /** With `ordering` and divisions selected: the destination is reached by sea. */
+  bySea: boolean;
   mapMode: MapMode;
   news: News[];
   /** A short message about the last order, shown in the sidebar. */
@@ -95,6 +105,15 @@ interface Store {
   /** Send the selected divisions to a province. */
   marchTo: (province: number) => void;
   halt: () => void;
+  setBySea: (on: boolean) => void;
+  /** Send the selected divisions to a province by sea: a transport to a friendly shore, a landing on an enemy one. */
+  shipTo: (province: number) => void;
+  /** Give an order to one of your fleets or air wings. It takes effect at once. */
+  force: (order: Order) => void;
+  /** Send the selected fleet to a sea zone. */
+  sailTo: (zone: string) => void;
+  /** Move the selected air wings (of one kind, or all) to a new base. */
+  rebaseTo: (province: number) => void;
   /** Give a diplomatic order as your country (declare war, propose a pact, answer a decision). It takes effect at once. */
   act: (order: Order) => void;
   cycleArmy: (step: 1 | -1) => void;
@@ -139,6 +158,7 @@ function headlines(before: World, after: World): News[] {
     if (fighting.has(b.id) || !me || !b.defenders.includes(me)) continue;
     add(`${list(b.attackers)} ${b.attackers.length > 1 ? 'attack' : 'attacks'} ${PROVINCES[b.province].name}`, 'bad', b.province, { kind: 'battle', id: b.id });
   }
+  out.push(...forceNews(before, after));
   out.push(...diplomaticNews(before, after));
   // Capitals changing hands.
   for (const p of PROVINCES) {
@@ -171,6 +191,11 @@ function headlines(before: World, after: World): News[] {
       if (after.wars.some((k) => k.split('|').includes(me)) && earlier && earlier.warSupport >= 40 && month.warSupport < 40) add('War support has fallen below 40: people are turning against the war', 'bad', undefined, { kind: 'politics' });
       if (earlier && earlier.stability >= 20 && month.stability < 20) add('Crisis: stability is below 20. Three months of this and the government falls', 'bad', undefined, { kind: 'politics' });
     }
+    // The war on your trade.
+    const sinking = (x: number) => was.blockade < x && now.blockade >= x;
+    if (sinking(0.5)) add(`Half of your imports are being sunk at sea. Factories and shops will run short`, 'bad', undefined, { kind: 'forces' });
+    else if (sinking(0.15)) add(`Enemy raiders are sinking ${Math.round(now.blockade * 100)}% of your imports: put fleets on Escort along your trade route`, 'bad', undefined, { kind: 'forces' });
+    else if (was.blockade >= 0.15 && now.blockade < 0.15) add('Your convoys are getting through again', 'good', undefined, { kind: 'forces' });
     // Research, national plans and the government itself.
     for (const id of now.research.done) {
       if (was.research.done.includes(id)) continue;
@@ -183,6 +208,21 @@ function headlines(before: World, after: World): News[] {
       if (plan) add(`National plan carried out: ${plan.name}. Choose the next one`, 'good', undefined, { kind: 'plans' });
     }
     if (now.governmentsFallen > was.governmentsFallen) add('The government has fallen. A new one takes office, and the national plan is abandoned', 'bad', undefined, { kind: 'politics' });
+  }
+  return out;
+}
+
+/** Headlines from the war at sea and in the air that involve the player. */
+function forceNews(before: World, after: World): News[] {
+  const out: News[] = [];
+  const me = after.player;
+  const last = before.forceLog.length ? before.forceLog[before.forceLog.length - 1].id : -1;
+  for (const e of after.forceLog) {
+    if (e.id <= last || (me && !e.countries.includes(me))) continue;
+    const loss = /loses|destroyed|called off/.test(e.text);
+    const tone: News['tone'] = !me || (e.kind === 'sea' && !loss) ? 'plain' : (e.countries[0] === me) === loss ? 'bad' : 'good';
+    const open: Selection | undefined = e.zone ? { kind: 'zone', id: e.zone } : e.province !== undefined ? { kind: 'province', id: e.province } : { kind: 'forces' };
+    out.push({ id: newsId++, day: e.day, text: e.text, tone, province: e.province, open });
   }
   return out;
 }
@@ -208,7 +248,7 @@ function diplomaticNews(before: World, after: World): News[] {
   return out;
 }
 
-const fresh = { running: false, selection: null, ordering: false, news: [] as News[], notice: '', focus: null, defeated: false };
+const fresh = { running: false, selection: null, ordering: false, bySea: false, news: [] as News[], notice: '', focus: null, defeated: false };
 let focusN = 0;
 
 export const useGame = create<Store>((set, get) => {
@@ -309,8 +349,85 @@ export const useGame = create<Store>((set, get) => {
       if (dateLabel(next).startsWith('1 ')) writeSave('auto', summaryOf(next), next);
     },
 
-    select: (selection) => set({ selection, ordering: false, notice: '' }),
-    setOrdering: (ordering) => set({ ordering: ordering && selectedUnits().length > 0, notice: '' }),
+    select: (selection) => {
+      // Fleets, wings and sea zones only show on the air and sea map.
+      const sea = selection?.kind === 'zone' || selection?.kind === 'fleet' || selection?.kind === 'wings';
+      set({ selection, ordering: false, bySea: false, notice: '', ...(sea ? { mapMode: 'airsea' as MapMode } : {}) });
+    },
+    setOrdering: (ordering) => {
+      const k = get().selection?.kind;
+      set({ ordering: ordering && (selectedUnits().length > 0 || k === 'fleet' || k === 'wings'), bySea: false, notice: '' });
+    },
+    setBySea: (on) => set({ ordering: on && selectedUnits().length > 0, bySea: on && selectedUnits().length > 0, notice: '' }),
+
+    shipTo: (province) => {
+      const { world } = get();
+      const ids = selectedUnits();
+      if (!world?.player || !ids.length) return;
+      const { sea, friends } = picturesOf(world);
+      const p = PROVINCES[province];
+      let sent = 0;
+      let days = 0;
+      let landing = false;
+      let why = '';
+      let w: World = world;
+      // One at a time, because ships can only land so many divisions on one shore at once.
+      for (const id of ids) {
+        const u = w.units.find((x) => x.id === id);
+        if (!u) continue;
+        const plan = shipPlan(w, sea, friends, u, province);
+        if ('why' in plan) {
+          why = plan.why;
+          continue;
+        }
+        w = applyOrders(w, [{ type: 'ship', unit: id, to: province }]);
+        sent++;
+        days = Math.max(days, plan.days);
+        landing = plan.landing;
+      }
+      if (sent) {
+        set({ world: w });
+        if (!get().muted) sound.click();
+      }
+      const notice = sent
+        ? `${plural(sent, 'division')} ${landing ? `preparing to land at ${p.name}: ${days} days. They attack at 60% strength as they come ashore` : `embarking for ${p.name}: ${days} days`}.${sent < ids.length ? ` The others cannot go: ${why}.` : ''}`
+        : `Cannot go to ${p.name} by sea: ${why || 'no way'}.`;
+      set({ notice, ordering: false, bySea: false });
+    },
+
+    force: (order) => {
+      const { world } = get();
+      if (!world?.player || world.capitulated.includes(world.player)) return;
+      give(ownOrders(world, [order]));
+    },
+
+    sailTo: (zone) => {
+      const { world, selection } = get();
+      if (!world?.player || selection?.kind !== 'fleet') return;
+      const fleet = world.fleets.find((f) => f.id === selection.id && f.owner === world.player);
+      const target = zoneById(zone);
+      if (!fleet || !target) return;
+      if (fleet.zone === zone) return set({ notice: `Already in the ${target.name}.`, ordering: false });
+      const path = zonePath(ZONE_INDEX[fleet.zone], ZONE_INDEX[zone]);
+      if (!path) return set({ notice: `No way by sea to the ${target.name}.`, ordering: false });
+      give(ownOrders(world, [{ type: 'fleet', fleet: fleet.id, zone }]));
+      if (!get().muted) sound.click();
+      set({ notice: `Sailing to the ${target.name}: ${(path.length - 1) * DAYS_PER_ZONE} days.`, ordering: false });
+    },
+
+    rebaseTo: (province) => {
+      const { world, selection } = get();
+      if (!world?.player || selection?.kind !== 'wings') return;
+      const me = world.player;
+      const wings = world.wings.filter((x) => x.owner === me && x.base === selection.province);
+      if (!wings.length) return;
+      const no = cannotBase(world, me, province, picturesOf(world).friends.get(me));
+      if (no) return set({ notice: `Cannot move there: ${no}.`, ordering: false });
+      if (province === selection.province) return set({ notice: 'Already based there.', ordering: false });
+      give(ownOrders(world, wings.map((x) => ({ type: 'wing', wing: x.id, base: province }) as Order)));
+      if (!get().muted) sound.click();
+      set({ selection: { kind: 'wings', province }, notice: `${plural(wings.length, 'wing')} moving to ${PROVINCES[province].name}. They fly again in ${REBASE_DAYS} days.`, ordering: false });
+    },
     setMapMode: (mapMode) => set({ mapMode }),
     focusOn: (province) => set({ focus: { province, n: ++focusN } }),
 
@@ -333,7 +450,7 @@ export const useGame = create<Store>((set, get) => {
       } else if (already) notice = `Already in ${p.name}.`;
       else if (holder !== world.player && !atWar(world, world.player, holder)) notice = `${p.name} belongs to ${holder}, which is neutral. Divisions may only enter your own land or a country you are at war with.`;
       else notice = `No way to ${p.name} by land through your own or enemy territory.`;
-      set({ notice, ordering: false });
+      set({ notice, ordering: false, bySea: false });
     },
 
     halt: () => {

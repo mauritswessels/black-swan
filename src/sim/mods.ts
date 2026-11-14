@@ -48,6 +48,21 @@ export interface Mods {
   /** Points added to where stability and war support settle. */
   stability: number;
   warSupport: number;
+  /** How hard surface warships hit. */
+  navalPower: number;
+  /** How many merchant ships submarines sink. */
+  subRaiding: number;
+  /** How well escorts protect convoys and hunt submarines. */
+  antiSub: number;
+  /** Taken off the 40% penalty for attacking from the sea (0.15 = fifteen points). */
+  amphibious: number;
+  /** Days of preparation a landing needs. */
+  landingPrep: number;
+  fighterPower: number;
+  bomberPower: number;
+  airRange: number;
+  /** Extra fighter strength over your own home provinces (radar and ground control). */
+  airDefence: number;
 }
 
 export type ModKey = keyof Mods;
@@ -82,6 +97,15 @@ const EFFECT_TEXT: Record<ModKey, (x: number) => string> = {
   taxThreshold: (x) => `Taxes can be ${Math.round(x * 100)} points higher before stability falls`,
   stability: (x) => `Stability ${pts(x)}`,
   warSupport: (x) => `War support ${pts(x)}`,
+  navalPower: (x) => `Warships hit ${pct(x)} harder`,
+  subRaiding: (x) => `Submarines sink ${pct(x)} merchant ships`,
+  antiSub: (x) => `Escorts protect convoys and hunt submarines ${pct(x)} better`,
+  amphibious: (x) => `Penalty for attacking from the sea ${Math.round(x * 100)} points smaller`,
+  landingPrep: (x) => `Landings take ${pct(x)} time to prepare`,
+  fighterPower: (x) => `Fighters ${pct(x)} stronger`,
+  bomberPower: (x) => `Bombers ${pct(x)} stronger`,
+  airRange: (x) => `Aircraft range ${pct(x)}`,
+  airDefence: (x) => `Fighters ${pct(x)} stronger over your home provinces`,
 };
 
 export const KEYS = Object.keys(EFFECT_TEXT) as ModKey[];
@@ -110,6 +134,9 @@ export function modsOf(e: Pick<Economy, 'research' | 'plan'> | undefined): Mods 
   return out;
 }
 
+/** A division attacking from the sea keeps this share of its hitting power. */
+export const AMPHIBIOUS = 0.6;
+
 /** How much harder a division hits, or holds, than the basic figures in combat.ts (1 = no change). */
 export interface Edges {
   attack(u: Unit): number;
@@ -127,7 +154,8 @@ export function combatEdges(economies: Record<string, Economy>): Edges {
     return m;
   };
   return {
-    attack: (u) => 1 + of(u.owner)[`attack${CAP[u.type]}`],
+    // A division storming a beach fights at 60% (see AMPHIBIOUS), a little better with landing craft.
+    attack: (u) => (1 + of(u.owner)[`attack${CAP[u.type]}`]) * (u.landing ? Math.min(1, AMPHIBIOUS + of(u.owner).amphibious) : 1),
     defence: (u, province) => (1 + of(u.owner)[`defence${CAP[u.type]}`]) * (PROVINCES[province].owner === u.owner ? 1 + of(u.owner).homeDefence : 1),
   };
 }

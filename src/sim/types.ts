@@ -4,6 +4,11 @@ export type Terrain = 'plains' | 'forest' | 'hills' | 'mountains' | 'marsh' | 'd
 export type Government = 'democracy' | 'authoritarian' | 'fascist' | 'communist';
 export type UnitType = 'infantry' | 'armour' | 'artillery';
 export type Mode = 'story' | 'freeForAll';
+/** Warships are counted by kind: capital ships (battleships and carriers), escorts (cruisers and destroyers) and submarines. */
+export type ShipKind = 'capital' | 'escort' | 'submarine';
+export type PlaneKind = 'fighter' | 'bomber';
+/** Everything a production line can make: equipment for a division, aircraft for a wing, or a warship. */
+export type LineKind = UnitType | PlaneKind | ShipKind;
 
 /** One piece of the map. This never changes during a game, so it is not stored in saves. */
 export interface Province {
@@ -36,6 +41,64 @@ export interface Country {
   startArmy: [number, number, number];
   /** Factories, people and raw materials at the start (see countries.ts). */
   industry: Industry;
+}
+
+/**
+ * What a fleet is doing in its sea zone:
+ *   patrol  fight any enemy fleet, hold the zone and cover landings;
+ *   escort  guard merchant convoys and hunt submarines;
+ *   raid    avoid battle and sink the enemy's merchant ships;
+ *   port    stay in harbour: safe, but it controls nothing.
+ */
+export type FleetMission = 'patrol' | 'escort' | 'raid' | 'port';
+
+/** A group of warships in one sea zone. Ship counts can be fractions: 2.5 means two ships and one badly damaged. */
+export interface Fleet {
+  id: number;
+  owner: string;
+  name: string;
+  /** The id of the sea zone it is in, or sailing to (see sea.ts). */
+  zone: string;
+  mission: FleetMission;
+  ships: Record<ShipKind, number>;
+  /** The day it arrives in `zone`. Until then it is at sea and does nothing. */
+  arrives: number;
+}
+
+/**
+ * What an air wing is doing:
+ *   superiority  fighters: win control of the sky over every province in range;
+ *   ground       bombers: help the army in battles in range;
+ *   strategic    bombers: bomb the enemy's factories in range;
+ *   naval        bombers: attack enemy ships in the sea zones in range;
+ *   rest         stand down and repair.
+ */
+export type WingMission = 'superiority' | 'ground' | 'strategic' | 'naval' | 'rest';
+
+/** About a hundred aircraft of one kind, flying from one province. */
+export interface Wing {
+  id: number;
+  owner: string;
+  type: PlaneKind;
+  /** The province its airfields are in. */
+  base: number;
+  mission: WingMission;
+  /** Aircraft and crews, 0 to 100. */
+  strength: number;
+  /** The day it can fly again after moving to a new base. */
+  ready: number;
+}
+
+/** One line of news from the war at sea and in the air. */
+export interface ForceEvent {
+  id: number;
+  day: number;
+  kind: 'sea' | 'air' | 'landing';
+  text: string;
+  /** The countries it involves. */
+  countries: string[];
+  zone?: string;
+  province?: number;
 }
 
 /** A country's economy on 1 January 1936, in rough figures scaled for play. */
@@ -147,9 +210,11 @@ export interface Economy {
   plan: PlanState;
   /** Men available to recruit, in thousands. */
   manpower: number;
-  /** Finished equipment waiting for a division, in division-sets, by type. */
-  stock: Record<UnitType, number>;
-  lines: Record<UnitType, Line>;
+  /** Finished equipment waiting to be used, by kind: division-sets, wings of aircraft, or ships. */
+  stock: Record<LineKind, number>;
+  lines: Record<LineKind, Line>;
+  /** Share of the imports that have to come by sea which enemy raiders and blockade are sinking, 0 to 1 (see navy.ts). */
+  blockade: number;
   /** Civilian factories set aside for construction. They only leave consumer goods while there is something to build. */
   constructionFactories: number;
   construction: { kind: FactoryKind; province: number; done: number }[];
@@ -182,6 +247,10 @@ export interface Unit {
   dugIn: number;
   /** How much of its daily supply arrived, from 0 (cut off) to 1 (all of it). */
   supply: number;
+  /** Getting ready to go by sea to province `to`. `landing` means the far shore is in enemy hands. */
+  sea?: { to: number; daysLeft: number; landing: boolean };
+  /** It is storming a beach: its path leads across the sea, and it attacks at a disadvantage. */
+  landing?: boolean;
 }
 
 /** A battle being fought right now for one province. */
@@ -225,6 +294,10 @@ export interface BattleTally {
   /** How much research, plans and forts multiplied each side's hitting power (1 = not at all). */
   attackerEdge: number;
   defenderEdge: number;
+  /** The attackers' multiplier from control of the sky: 1.15, 1 or 0.85 (the defenders get the opposite). */
+  air: number;
+  /** Share of the attacking divisions that came ashore from the sea. */
+  landing: number;
 }
 
 /** One reason for how a battle ended, e.g. "attacking into mountains". */
@@ -286,6 +359,18 @@ export interface World {
   economies: Record<string, Economy>;
   /** Factories standing in each province, by province id. Whoever controls the province uses them. */
   factories: { civ: number[]; mil: number[] };
+  /** Navy and air (Stage G). */
+  fleets: Fleet[];
+  wings: Wing[];
+  /** The next id for a fleet or a wing. */
+  nextForceId: number;
+  /** Share of the factories in a province put out of action by bombing, by province id, 0 to 0.5. Only bombed provinces are listed. */
+  bombed: Record<number, number>;
+  /** Sea zones where fleets fought yesterday. */
+  clashes: string[];
+  /** The most recent news from the sea and the air, oldest first (the last 60 are kept). */
+  forceLog: ForceEvent[];
+  nextForceEventId: number;
 }
 
 export type PactKind = 'alliance' | 'guarantee' | 'nonAggression';
@@ -399,6 +484,15 @@ export interface Diplomacy {
 export type Order =
   | { type: 'move'; unit: number; to: number }
   | { type: 'halt'; unit: number }
+  // Navy and air (Stage G).
+  /** Send a division by sea to a coastal province: a transport to friendly land, a landing on an enemy shore. */
+  | { type: 'ship'; unit: number; to: number }
+  /** Send a fleet to a sea zone, give it a mission, or both. */
+  | { type: 'fleet'; fleet: number; zone?: string; mission?: FleetMission }
+  /** Move ships from one fleet to another in the same zone, or (with `to` null) into a new fleet. */
+  | { type: 'transfer'; fleet: number; to: number | null; kind: ShipKind; count: number }
+  /** Move a wing to a new base, give it a mission, or both. */
+  | { type: 'wing'; wing: number; base?: number; mission?: WingMission }
   // Diplomacy (Stage F). `by` is the country giving the order.
   | { type: 'declareWar'; by: string; on: string }
   /** Sign a white peace at once. Used by treaties and tests; players and AI countries use offerPeace. */
@@ -428,13 +522,15 @@ export type Order =
   | { type: 'setImports'; country: string; on: boolean }
   | { type: 'setConscription'; country: string; level: number }
   /** Put this many military factories on the line for one kind of division. */
-  | { type: 'setLine'; country: string; unit: UnitType; factories: number }
+  | { type: 'setLine'; country: string; unit: LineKind; factories: number }
   /** Set aside this many civilian factories for construction. */
   | { type: 'setConstruction'; country: string; factories: number }
   | { type: 'build'; country: string; kind: FactoryKind; province: number }
   | { type: 'cancelBuild'; country: string; index: number }
   /** Form a new division from finished equipment and recruits. */
   | { type: 'raise'; country: string; unit: UnitType }
+  /** Form a new air wing from finished aircraft. */
+  | { type: 'raiseWing'; country: string; plane: PlaneKind }
   // Research and national plans (Stage E).
   /** Put a research team (0 or 1) on a technology, or stand it down with null. */
   | { type: 'setResearch'; country: string; slot: number; tech: string | null }

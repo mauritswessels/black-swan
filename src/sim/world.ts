@@ -8,8 +8,9 @@
  * same result, because all randomness comes from the seeded generator stored in the world.
  *
  * Each day, in order: orders (military, economic and diplomatic), the day's diplomacy
- * (diplomacy.ts), the economy with research and national plans (economy.ts), supply, battles
- * (combat.ts), marching, rest and attrition, and finally any surrenders. Divisions may only
+ * (diplomacy.ts), the economy with research and national plans (economy.ts), the war at sea
+ * and in the air (forces.ts), supply, battles (combat.ts), marching, rest and attrition, and
+ * finally any surrenders. Divisions may only
  * enter their own land, the land of an ally, or the land of a country they are at war with.
  */
 import { DIG_IN_MAX_DAYS, fightBattles, type Draft } from './combat';
@@ -17,7 +18,9 @@ import { COUNTRIES } from './countries';
 import { carryOutAim } from './agenda';
 import { allianceMap, cloneDiplomacy, giveDiplomacyOrder, isDiplomacyOrder, onGovernmentFell, runDiplomacy, startDiplomacy, surrenders, type DipDraft } from './diplomacy';
 import { cloneEconomies, giveEconomyOrder, isEconomyOrder, monthEnds, moraleOf, onBattleEnded, reinforce, runEconomies, startEconomies, startFactories } from './economy';
+import { disband, giveForceOrder, isForceOrder, pictures, runForces, startForces, type Pictures } from './forces';
 import { combatEdges, modsOf } from './mods';
+import type { ForceDraft } from './navy';
 import { daysToEnter, findRoute, PROVINCES } from './map';
 import { Rng, seedFrom } from './rng';
 import { DEPOTS, linkedProvinces, supplyCapacity, supplyLevels } from './supply';
@@ -97,8 +100,9 @@ export function newWorld(mode: Mode, seedText: string, startDate = '1936-01-01',
   const units = startingUnits(rng);
   const controller = PROVINCES.map((p) => p.owner);
   const factories = startFactories();
-  const economies = startEconomies({ controller, factories, units, wars: [] });
-  return { mode, player, seed, rng: rng.state, day: 0, startDate, units, nextUnitId: units.length, controller, owner: [...controller], diplomacy: startDiplomacy(economies), wars: [], declaredBy: {}, capitulated: [], battles: [], nextBattleId: 0, reports: [], economies, factories };
+  const forces = startForces();
+  const economies = startEconomies({ controller, factories, units, wars: [], fleets: forces.fleets, wings: forces.wings });
+  return { mode, player, seed, rng: rng.state, day: 0, startDate, units, nextUnitId: units.length, controller, owner: [...controller], diplomacy: startDiplomacy(economies), wars: [], declaredBy: {}, capitulated: [], battles: [], nextBattleId: 0, reports: [], economies, factories, ...forces };
 }
 
 /** Organisation regained per day of rest with full supply. */
@@ -109,8 +113,10 @@ export const ATTRITION_STRENGTH = 2;
 export { SURRENDER_SHARE } from './diplomacy';
 
 /** A copy of the world that orders and diplomacy may change freely. */
-function draftOf(world: World): DipDraft {
+function draftOf(world: World): DipDraft & ForceDraft {
   return {
+    fleets: world.fleets.map((f) => ({ ...f, ships: { ...f.ships } })), wings: world.wings.map((x) => ({ ...x })), nextForceId: world.nextForceId, bombed: { ...world.bombed },
+    clashes: world.clashes, forceLog: world.forceLog, nextForceEventId: world.nextForceEventId,
     day: world.day, startDate: world.startDate, mode: world.mode, player: world.player,
     units: world.units.map((u) => ({ ...u, path: [...u.path] })), nextUnitId: world.nextUnitId,
     controller: [...world.controller], owner: [...world.owner], wars: [...world.wars], declaredBy: { ...world.declaredBy }, capitulated: [...world.capitulated],
@@ -119,11 +125,18 @@ function draftOf(world: World): DipDraft {
 }
 
 /** Carry out orders on a world that is being changed. Orders that make no sense are ignored. */
-function giveOrders(d: DipDraft, orders: Order[]): void {
+function giveOrders(d: DipDraft & ForceDraft, orders: Order[]): void {
+  let seas: Pictures | null = null;
   let units: Unit[] | null = null;
   let byId = new Map<number, Unit>();
   let friends: Map<string, Set<string>> | null = null;
   for (const order of orders) {
+    if (isForceOrder(order)) {
+      friends ??= allianceMap(d.diplomacy);
+      giveForceOrder(d, order, friends, () => (seas ??= pictures(d, friends!)).sea);
+      if (order.type !== 'ship') seas = null; // fleets and wings may have moved
+      continue;
+    }
     if (isEconomyOrder(order)) {
       giveEconomyOrder(d, d.capitulated, order);
       continue;
@@ -132,6 +145,7 @@ function giveOrders(d: DipDraft, orders: Order[]): void {
       if (order.type === 'aim') carryOutAim(d, order.id, order.go);
       else giveDiplomacyOrder(d, order);
       friends = null; // pacts and wars may have changed
+      seas = null;
       continue;
     }
     if (units !== d.units) {
@@ -140,9 +154,12 @@ function giveOrders(d: DipDraft, orders: Order[]): void {
     }
     const u = byId.get(order.unit);
     if (!u) continue; // an order for a unit that no longer exists is ignored
+    // A new order on land cancels a crossing that has not sailed yet.
+    u.sea = undefined;
     if (order.type === 'halt') {
       u.path = [];
       u.progress = 0;
+      u.landing = undefined;
     } else {
       friends ??= allianceMap(d.diplomacy);
       const mine = friends.get(u.owner);
@@ -151,12 +168,13 @@ function giveOrders(d: DipDraft, orders: Order[]): void {
       // Keep the progress already made if the new route starts the same way.
       if (route[0] !== u.path[0]) u.progress = 0;
       u.path = route;
+      u.landing = undefined;
     }
   }
 }
 
-const fromDraft = (world: World, d: DipDraft): World => ({
-  ...world, units: d.units, nextUnitId: d.nextUnitId, controller: d.controller, owner: d.owner, wars: d.wars, declaredBy: d.declaredBy, capitulated: d.capitulated, economies: d.economies, factories: d.factories, diplomacy: d.diplomacy,
+const fromDraft = (world: World, d: DipDraft & ForceDraft): World => ({
+  ...world, fleets: d.fleets, wings: d.wings, nextForceId: d.nextForceId, bombed: d.bombed, clashes: d.clashes, forceLog: d.forceLog, nextForceEventId: d.nextForceEventId, units: d.units, nextUnitId: d.nextUnitId, controller: d.controller, owner: d.owner, wars: d.wars, declaredBy: d.declaredBy, capitulated: d.capitulated, economies: d.economies, factories: d.factories, diplomacy: d.diplomacy,
 });
 
 /**
@@ -198,8 +216,16 @@ export function step(world: World, orders: Order[] = []): World {
   const friends = d.friends!;
   const economies = dd.economies;
 
+  // 1c. The war at sea and in the air: who controls each sea zone and the sky, sea battles,
+  // convoys, air losses, bombing, and divisions sailing.
+  dd.forceLog = [...dd.forceLog];
+  const seen = pictures(dd, friends);
+  runForces(dd, rng, seen, friends);
+  d.units = dd.units;
+  d.air = seen.air.battle;
+
   // 2. Supply, from where everyone stands this morning.
-  const levels = supplyLevels(d, friends);
+  const levels = supplyLevels(d, friends, seen.sea);
   d.units.forEach((u, i) => {
     u.supply = levels[i];
     // Tanks without fuel: a country short of oil cannot keep its armour fully supplied.
@@ -231,7 +257,8 @@ export function step(world: World, orders: Order[] = []): World {
         u.progress = 0;
         break;
       }
-      const need = daysToEnter(u.at, next, u.type);
+      // A landing crosses in a day: the weeks of preparation are already behind it.
+      const need = u.landing ? 1 : daysToEnter(u.at, next, u.type);
       if (blocked(u, next)) {
         // It fights for the province instead (see combat.ts), pressing forward as it does, so
         // that it can step in as soon as the defenders give way.
@@ -273,6 +300,7 @@ export function step(world: World, orders: Order[] = []): World {
   };
   for (const u of d.units) {
     u.dugIn = u.path.length ? 0 : Math.min(DIG_IN_MAX_DAYS, u.dugIn + 1);
+    if (u.landing && !u.path.length) u.landing = undefined; // ashore, or the landing was beaten off
     // Supply sets a ceiling on organisation: a division getting 70% of its supply cannot stay
     // above 70 organisation. A division that is cut off sinks to zero and then starts to starve.
     const ceiling = 100 * u.supply;
@@ -290,6 +318,7 @@ export function step(world: World, orders: Order[] = []): World {
   dd.controller = d.controller;
   dd.wars = d.wars;
   surrenders(dd);
+  disband(dd, (name) => dd.capitulated.includes(name) || name in dd.diplomacy.conquered);
 
   return { ...fromDraft(world, dd), day: world.day + 1, rng: rng.state, battles: d.battles, nextBattleId: d.nextBattleId, reports: d.reports };
 }

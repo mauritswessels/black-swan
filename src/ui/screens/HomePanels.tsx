@@ -7,7 +7,7 @@ import { CONSCRIPTION, CONSCRIPTION_SUPPORT, conscriptionBlocked, CRISIS_MONTHS,
 import { countryByName } from '../../sim/countries';
 import { describeEffects } from '../../sim/mods';
 import { cannotStartPlan, describeGrant, planById, plansFor, type Plan } from '../../sim/plans';
-import { AHEAD_PENALTY, BRANCHES, cannotResearch, daysToFinish, LATER_BRANCHES, researchSpeed, techById, TECHS, yearAt, type Tech } from '../../sim/research';
+import { AHEAD_PENALTY, BRANCHES, cannotResearch, daysToFinish, researchSpeed, techById, TECHS, yearAt, type Tech } from '../../sim/research';
 import type { Economy, World } from '../../sim/types';
 import { Chart } from '../components/Chart';
 import { Term } from '../components/bits';
@@ -104,12 +104,6 @@ export function ResearchPanel({ w, me }: { w: World; me: string }) {
               );
             })}
           </ol>
-        </div>
-      ))}
-      {LATER_BRANCHES.map((b) => (
-        <div key={b.name} className="sb-branch later">
-          <h3>{b.name}</h3>
-          <p className="sb-fine">Four more technologies arrive with ships and aircraft in Stage {b.stage}.</p>
         </div>
       ))}
       <p className="sb-fine">✓ known · ▸ in progress · ○ can be researched · · needs the one before it</p>

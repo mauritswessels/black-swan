@@ -5,8 +5,10 @@
  *
  *   1. A link home. The province must connect, through land you control, to one of your
  *      depots. A depot is your capital, or the biggest city of each separate piece of your
- *      home territory (it stands for a port; real ports and sea routes come with the navy
- *      in Stage G). No link means no supply at all: the division is cut off.
+ *      home territory. Supply also comes by sea: any coastal province you or an ally hold is
+ *      a port, as long as the enemy does not control every sea zone off it (sea.ts). A depot
+ *      overseas works only while ships can reach it. No link means no supply at all: the
+ *      division is cut off.
  *   2. Room. A province can feed only so many divisions, depending on its roads and
  *      railways. Above that number everyone there goes short.
  *
@@ -14,6 +16,7 @@
  *   supply = min(1, capacity / divisions there) otherwise
  */
 import { PROVINCES } from './map';
+import { COAST, type SeaPicture } from './sea';
 import type { Province, Terrain, World } from './types';
 
 /** Roads and railways by terrain, on the design document's scale of 0 to 5. */
@@ -60,11 +63,15 @@ export const DEPOTS: Record<string, number[]> = (() => {
  * For one country: which provinces have a link back to a depot. With allies (`friends`), the
  * link may run through allied land and end at an ally's depot: allies feed each other's armies.
  */
-export function linkedProvinces(controller: string[], country: string, friends?: Set<string>): boolean[] {
+export function linkedProvinces(controller: string[], country: string, friends?: Set<string>, sea?: SeaPicture): boolean[] {
   const linked = new Array<boolean>(PROVINCES.length).fill(false);
   const ours = (c: string) => c === country || !!friends?.has(c);
-  const queue = (DEPOTS[country] ?? []).filter((d) => controller[d] === country);
-  for (const f of friends ?? []) for (const d of DEPOTS[f] ?? []) if (controller[d] === f) queue.push(d);
+  // The capital's depot always works. One overseas needs ships to reach it.
+  const works = (d: number, of: string) => controller[d] === of && (!sea || PROVINCES[d].capital || !COAST[d].length || sea.port(country, d));
+  const queue = (DEPOTS[country] ?? []).filter((d) => works(d, country));
+  for (const f of friends ?? []) for (const d of DEPOTS[f] ?? []) if (works(d, f)) queue.push(d);
+  // Ports: with somewhere to ship from, every friendly coast the enemy has not sealed off.
+  if (sea && queue.length) for (const p of PROVINCES) if (COAST[p.id].length && ours(controller[p.id]) && !queue.includes(p.id) && sea.port(country, p.id)) queue.push(p.id);
   for (const d of queue) linked[d] = true;
   while (queue.length) {
     for (const n of PROVINCES[queue.pop()!].neighbours) {
@@ -78,13 +85,13 @@ export function linkedProvinces(controller: string[], country: string, friends?:
 }
 
 /** The supply level, 0 to 1, of every unit in the world, in the same order as world.units. */
-export function supplyLevels(w: Pick<World, 'units' | 'controller'>, friends?: Map<string, Set<string>>): number[] {
+export function supplyLevels(w: Pick<World, 'units' | 'controller'>, friends?: Map<string, Set<string>>, sea?: SeaPicture): number[] {
   const count = new Array<number>(PROVINCES.length).fill(0);
   for (const u of w.units) count[u.at]++;
   const links = new Map<string, boolean[]>();
   return w.units.map((u) => {
     let linked = links.get(u.owner);
-    if (!linked) links.set(u.owner, (linked = linkedProvinces(w.controller, u.owner, friends?.get(u.owner))));
+    if (!linked) links.set(u.owner, (linked = linkedProvinces(w.controller, u.owner, friends?.get(u.owner), sea)));
     return linked[u.at] ? Math.min(1, supplyCapacity(u.at) / count[u.at]) : 0;
   });
 }

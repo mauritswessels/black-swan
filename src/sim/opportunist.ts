@@ -10,6 +10,8 @@
  *             another country that borders the same danger. The usual rules decide whether
  *             the other accepts (diplomacy.ts).
  *
+ * Nothing happens in the first 90 days of a game.
+ *
  * The dice are seeded from the world's seed, the day and the country, so the same game always
  * goes the same way.
  */
@@ -18,6 +20,7 @@ import { alive, allied, alliesOf, governmentOf, hasPact, oddsAgainst, relation, 
 import { monthEnds } from './economy';
 import { PROVINCES } from './map';
 import { Rng, seedFrom } from './rng';
+import { FREE_FOR_ALL_DAYS } from './story';
 import type { Government, Order, World } from './types';
 import { warKey } from './war';
 
@@ -26,6 +29,8 @@ export const APPETITE: Record<Government, number> = { fascist: 0.25, communist: 
 export const ATTACK_ODDS = 1.8;
 /** A neighbour this many times stronger, and on bad terms, is a danger. */
 export const DANGER = 1.5;
+/** Nobody attacks in the first months of a game, so that a player can look around first. */
+export const QUIET_DAYS = 90;
 
 /** Countries whose land touches this one's today. */
 function neighbours(w: World, name: string): string[] {
@@ -35,7 +40,7 @@ function neighbours(w: World, name: string): string[] {
 }
 
 export function opportunistOrders(w: World): Order[] {
-  if (!w.story.opportunist || !monthEnds(w.startDate, w.day - 1)) return [];
+  if (!w.story.opportunist || w.day < w.story.endDay - FREE_FOR_ALL_DAYS + QUIET_DAYS || !monthEnds(w.startDate, w.day - 1)) return [];
   const orders: Order[] = [];
   const s = strengths(w.units);
   const dip = w.diplomacy;

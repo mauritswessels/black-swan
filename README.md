@@ -4,16 +4,20 @@ A grand-strategy game set in Europe from 1936. You lead a real country through t
 the war that followed, and face what its leaders faced: armies, factories, money, allies and
 public support. It is built to teach the history and the economics as you play.
 
-> **Status: Stage G of the war game.** Pick a country, run its economy, its research and its
-> home front, command its divisions on the Map table, deal with the rest of the world, and now
-> fight at sea and in the air: fleets hold sea zones, guard or sink convoys and carry your
-> divisions across the water; air wings win the sky over a battle and bomb factories. The
-> other countries are led by an AI that follows the real history of 1936 to 1941 unless what
-> you do changes the situation. Story mode with history cards comes next (Stage H).
+> **Status: Stage H of the war game.** Story mode is in: start in 1936 or on the morning of
+> 1 September 1939, lead one of six countries, and get a history card on each real date that
+> says what really happened and how your game compares. Decisions arrive on their real dates,
+> three chapters give you your country's real aims, and an end report sets your game beside
+> history. Free-for-all tears up every treaty and lets every country look after itself. The
+> last stage is polish, a tutorial and the finished Mac app (Stage I).
 
-## How to play (Stage G)
+## How to play (Stage H)
 
-1. Start a game and choose a country. The clock starts paused.
+1. Choose **Story** or **Free-for-all**, then a start (1 January 1936, or 1 September 1939)
+   and a country. The clock starts paused. In Story mode press **C** for the Chronicle: your
+   chapter, its objectives and the history cards. A card stops the clock when it arrives;
+   press Space to carry on. Press **O** at any time for the report that sets your game beside
+   the real history.
 2. Press **P** for Production. Your military factories are already making equipment. When a
    line has enough for a division, press **Raise**. Set some civilian factories aside and
    build a military factory.
@@ -96,12 +100,12 @@ You need [Node.js](https://nodejs.org) 20 or newer. Then, in this folder:
 npm install          # once
 npm run dev          # opens the game in your browser
 npm test             # run the unit tests
-npm run balance      # run the bot playtests (wars and finance) and write docs/balance-stage-d.md
+npm run balance      # run the bot playtests (wars and finance) and write docs/balance-stage-h.md
 npm run build:map    # rebuild the 1936 map from Natural Earth data (rarely needed)
 ```
 
 The rules and every number behind them are in [MODEL.md](MODEL.md). The latest balance report
-is [docs/balance-stage-d.md](docs/balance-stage-d.md).
+is [docs/balance-stage-h.md](docs/balance-stage-h.md).
 
 ## Running it as a Mac app
 
@@ -160,6 +164,8 @@ Apple Developer account.
 | F | Navy and air force: fleets, air wings, your trade by sea |
 | B | Selected divisions: go by sea (then click a coast) |
 | G | With a fleet or an air base open: choose where it goes on the map |
+| C | Chronicle: chapters, objectives and history cards (Standings in Free-for-all) |
+| O | Report: your game beside the real history |
 | X | Codex |
 | S | Save and load (3 slots plus an autosave) |
 | M | Sound on or off |
@@ -179,6 +185,12 @@ src/sim/          the game engine: pure TypeScript, no UI, fully testable
                   surrender and what happens to a conquered country
   agenda.ts       what each AI country wants and when (the real timetable of 1936 to 1941),
                   and the conditions that let the player change it
+  story.ts        Story mode: history cards, decisions on real dates, Spain, Vichy,
+                  Lend-Lease, surprise and the purge, chapters, how a game ends
+  scenario.ts     starting a game: the 1936 and September 1939 starts, and Free-for-all
+  chapters.ts     the three chapters and each country's objectives
+  opportunist.ts  Free-for-all: AI countries that look after themselves
+  report.ts       the end report: this game beside the real history, and the scoreboard
   sea.ts          the 17 sea zones, coasts, trade routes and who controls each zone
   navy.ts         fleets and missions, naval battles, convoys and blockade, troops by sea
   air.ts          air wings and missions, control of the sky, bombing
@@ -200,7 +212,7 @@ src/sim/          the game engine: pure TypeScript, no UI, fully testable
   types.ts        the shapes of all engine data
   rng.ts          seeded random numbers (same seed = same game)
 src/content/map/  the 1936 map data (built by scripts/build-map.mjs)
-src/content/      the codex
+src/content/      the codex and the history cards (history.ts)
 src/save/         save slots (whole game state as JSON)
 src/ui/           React screens, widgets, sound and the War Room theme
   map/            the Map table: shapes, colours and the map itself
@@ -236,11 +248,13 @@ the middle of a modern region are therefore approximate:
 
 ## Plan
 
-See CHANGELOG.md for what is done. Next is Stage H (Story mode with the 1936 and 1939 starts
-and history cards), then I (polish).
+See CHANGELOG.md for what is done. Next and last is Stage I: polish, a tutorial, the codex
+and the finished Mac app.
 
 ## History and symbols
 
 The game uses real countries, borders and leaders as historical facts. It shows no Nazi or
 fascist symbols, never makes atrocities a game mechanic, and describes them honestly in the
-codex and history cards.
+codex and history cards. The history cards (`src/content/history.ts`) use the well-established
+dates and figures; where numbers are estimates or historians disagree, the card says so. If
+you find a mistake in one, it is a bug: please fix it.

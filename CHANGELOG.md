@@ -1,5 +1,79 @@
 # Changelog
 
+## War game, Stage H: Story mode, history cards and Free-for-all (2026-11-16)
+
+- **Two starts for Story mode.** The full campaign from 1 January 1936, and a short scenario
+  that starts on the morning of 1 September 1939 and runs to January 1942. The 1939 world is
+  not scripted: the game plays 1936 to 1939 with the AI leading every country (a few seconds,
+  with a progress bar) and then hands you a country, so its armies, debts and treaties are the
+  ones the engine itself produced. It is the same world every time.
+- **History cards.** 53 cards, from the Rhineland in March 1936 to the end of the war in Europe
+  in May 1945. Each comes up on its real date, says what really happened and why it mattered,
+  and adds a line on how your game compares ("Czechoslovakia has kept its border districts").
+  Six are about how the war was paid for (the Matignon agreements, the German Four Year Plan,
+  rationing, Keynes's "How to Pay for the War", Lend-Lease). The clock stops for a new card;
+  you can switch that off.
+- **The crimes of the time are told honestly and never played.** Cards cover Ethiopia,
+  Guernica, the Great Terror, the November pogrom, occupied Poland, Katyn, Leningrad, Babi Yar,
+  the Wannsee conference, the ghetto uprising, the Warsaw rising and Auschwitz. The game does
+  not model any of it, and nothing you do causes or rewards it. Each of these cards says so.
+- **Decisions on real dates.** France can answer the Rhineland by marching in (Germany backs
+  down and its whole timetable slips by ten months). Germany decides whether to enter the
+  Rhineland, whether to land in Norway, whether to give the order on 1 September 1939 and what
+  to do with a beaten France. Five powers decide whether to send help to Spain. Britain is
+  asked to guarantee Poland on 31 March 1939. Each choice says what really happened.
+- **Events that were missing.** The Spanish Civil War is fought off the map and decided by
+  who sends help. The two Vienna Awards and the Treaty of Craiova move land to Hungary and
+  Bulgaria. Germany lands at Oslo by surprise and Norway falls. Italy invades Greece, and
+  Britain guarantees Greece. A beaten France signs an armistice: Germany holds the north and
+  the coast, and a neutral French government keeps the south and the colonies until Paris is
+  freed.
+- **Lend-Lease.** From March 1941 Britain, and from October 1941 the Soviet Union, receives
+  American equipment every month while it is fighting Germany. The United States is not on
+  the map.
+- **Surprise, the purge and winter.** A great power attacked in breach of a non-aggression
+  pact, and fighting nobody else, fights at 60% for 150 days. The Red Army fights at 85% in
+  attack and 90% in defence from June 1937 to mid 1942, after its officers were shot. An army
+  from outside attacks at 75% in the Soviet Union and the Nordic countries from December to
+  February. France and Belgium fight at 65% for 120 days after Germany attacks through the
+  Low Countries: their generals expected 1914 again. Before a planned attack on a great power
+  the AI moves its army to that border. Germany renounces its 1934 pact with Poland on 28
+  April 1939, as it did.
+- **A common enemy.** A great power that is attacked becomes the ally of every great power
+  already fighting the attacker (Britain and the Soviet Union in 1941). And a country keeping
+  a promise is not expected to take on a second great power at once: in 1939 Britain may leave
+  the Soviet Union alone at no cost.
+- **Chapters.** Three chapters (the road to war, the storm breaks, world war), each with a few
+  objectives for your country, checked on the chapter's last day.
+- **The Chronicle** (key C, and a button on the rail): the current chapter and its objectives,
+  past chapters, every history card filed so far, and anything weakening your army.
+- **The end report** (key O at any time): your game beside the real history, row by row; the
+  chapters; what the war cost you; battle losses by country; who holds what; and a timeline of
+  every card. Story mode ends on 8 May 1945, or when the great powers are at peace again, or
+  when you are beaten. You can keep playing afterwards.
+- **How closely the AI keeps to history** is now a setting for the 1936 campaign: closely (the
+  real dates) or loosely (each aim up to six weeks early or five months late).
+- **Free-for-all is now its own game.** Every treaty is torn up and the timetable is gone. AI
+  countries attack a neighbour when their odds are 1.8 to 1 or better (dictatorships far more
+  often than democracies) and look for allies against a stronger hostile neighbour. Now and
+  then a harvest, a strike wave, a laboratory breakthrough or a bank failure happens. After
+  ten years the country with the most victory points wins. Key C shows the standings.
+- 7 new codex entries: history card, chapter, armistice, Lend-Lease, surprise
+  attack, winter, free-for-all.
+- Engine: `story.ts`, `scenario.ts`, `chapters.ts`, `opportunist.ts` and `report.ts`, pure
+  TypeScript; the cards are in `src/content/history.ts`. 170 unit tests (19 new).
+  `npm run balance` now writes `docs/balance-stage-h.md`, with tables for Story mode and
+  Free-for-all.
+- Saves from Stage G no longer load (a save now holds the story's record).
+
+Not in this stage, and known weak spots: the German-Soviet war moves a little now but still
+settles into a stalemate, because the army AI has no front-wide offensives; with no player
+there is still no second front in the west; France falls about two months late (late August
+to early September 1940); Greece usually holds out against Italy and Germany and makes peace;
+the Pacific war and the United States are off the map, so the cards for 1942 to 1945 describe
+events the game can only partly reach; Italy never changes sides; the Mac build is untested
+in this stage (the app is built from the same web code).
+
 ## War game, Stage G: the navy and the air force (2026-11-14)
 
 - **Sea zones.** The sea around Europe is cut into 17 zones, from the Barents Sea to the

@@ -56,10 +56,14 @@ export function CardView({ w, id }: { w: World; id: string }) {
         <p>{card.why}</p>
         {card.note && <p className="st-card-note">{card.note}</p>}
       </article>
-      <div className="st-yours">
-        <h3>In your game, on that day</h3>
+      {card.kind === 'atrocity' ? (
         <p className="sb-note">{rec.inGame}</p>
-      </div>
+      ) : (
+        <div className="st-yours">
+          <h3>In your game, on that day</h3>
+          <p className="sb-note">{rec.inGame}</p>
+        </div>
+      )}
       <div className="st-nav">
         <button className="sb-btn" disabled={i === 0} onClick={() => select({ kind: 'card', id: filed[i - 1].id })}>
           ← Earlier

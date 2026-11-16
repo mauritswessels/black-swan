@@ -174,6 +174,8 @@ function headlines(before: World, after: World): News[] {
     const card = cardById(c.id);
     if (card) add(`History, ${card.title}`, 'plain', undefined, { kind: 'card', id: c.id });
   }
+  // Something new is weakening your army (surprise, the shock of 1940).
+  if (me) for (const x of after.story.effects) if (x.country === me && !before.story.effects.some((y) => y.id === x.id && y.country === me)) add(`Your army is weakened for a time: ${x.why}`, 'bad', undefined, { kind: 'chronicle' });
   // A chapter of the story has closed.
   for (const c of after.story.chapters.slice(before.story.chapters.length)) {
     const met = c.met.filter(Boolean).length;

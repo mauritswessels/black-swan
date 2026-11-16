@@ -187,15 +187,15 @@ export const CARDS: HistoryCard[] = [
     why: 'The war spread to the Mediterranean and to Africa, where Italy\'s colonies bordered Britain\'s.',
   },
   {
+    id: 'baltic', date: '1940-06-15', kind: 'event', title: 'The Soviet Union takes the Baltic states',
+    text: 'While the world watched France, the Red Army occupied Lithuania, Latvia and Estonia. After rigged elections all three were annexed in August. Romania handed over Bessarabia to a Soviet ultimatum at the end of June.',
+    why: 'Stalin collected what the secret protocol with Hitler had promised him. Mass arrests and deportations followed.',
+  },
+  {
     id: 'armistice', date: '1940-06-22', kind: 'event', title: 'France signs an armistice',
     text: 'France signed at Compiègne, in the same railway carriage where Germany had signed in 1918. Germany occupied the north and the Atlantic coast. A French government under Marshal Pétain, at the spa town of Vichy, kept the south and the colonies. From London, General de Gaulle called on the French to fight on.',
     why: 'In six weeks the strongest army in western Europe had been beaten. Britain now stood alone.',
     note: 'The Vichy government brought in its own laws against Jews in October 1940 and later helped to deport about 75,000 Jews from France. Few came back.',
-  },
-  {
-    id: 'baltic', date: '1940-06-15', kind: 'event', title: 'The Soviet Union takes the Baltic states',
-    text: 'While the world watched France, the Red Army occupied Lithuania, Latvia and Estonia. After rigged elections all three were annexed in August. Romania handed over Bessarabia to a Soviet ultimatum at the end of June.',
-    why: 'Stalin collected what the secret protocol with Hitler had promised him. Mass arrests and deportations followed.',
   },
   {
     id: 'vienna-2', date: '1940-08-30', kind: 'event', title: 'The Second Vienna Award',

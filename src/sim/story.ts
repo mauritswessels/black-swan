@@ -46,6 +46,8 @@ export const DRIFT_DAYS: [number, number] = [-45, 150];
 export const RHINELAND_DELAY = 300;
 /** The Red Army after the Terror, from June 1937 to the middle of 1942. */
 export const PURGE = { from: '1937-06-11', to: '1942-06-30', attack: 0.85, defence: 0.9 };
+/** France in the weeks after Germany attacks through the Low Countries. */
+export const SHOCK = { days: 120, power: 0.65 };
 export const LEND_LEASE = { britain: '1941-03-11', soviet: '1941-10-01' };
 /** Sets of equipment, wings of aircraft and ships that arrive each month under Lend-Lease. */
 export const LEND_LEASE_GOODS: Record<string, Partial<Record<LineKind, number>>> = {
@@ -514,6 +516,16 @@ export function runStory(d: DipDraft, monthEnd: boolean, seed: number): void {
   if (on('1939-03-31') && me !== 'United Kingdom' && did(d, 'prague') && alive(d, 'United Kingdom') && alive(d, 'Poland') && governmentOf(d, 'United Kingdom') === 'democracy' && !hasPact(d.diplomacy, 'guarantee', 'United Kingdom', 'Poland') && !allied(d.diplomacy, 'United Kingdom', 'Poland') && !fighting(d, 'United Kingdom', 'Poland')) {
     addPact(d, 'guarantee', 'United Kingdom', 'Poland');
     note(d, 'pact', 'The United Kingdom guarantees the independence of Poland', ['United Kingdom', 'Poland']);
+  }
+  // 28 April 1939: Germany tears up its 1934 pact with Poland. (An AI Germany that has taken Prague; a player decides for themselves.)
+  if (on('1939-04-28') && me !== 'Germany' && did(d, 'prague') && hasPact(d.diplomacy, 'nonAggression', 'Germany', 'Poland')) {
+    d.diplomacy.pacts = d.diplomacy.pacts.filter((p) => !(p.kind === 'nonAggression' && ((p.a === 'Germany' && p.b === 'Poland') || (p.a === 'Poland' && p.b === 'Germany'))));
+    note(d, 'pact', 'Germany renounces its non-aggression pact with Poland', ['Germany', 'Poland']);
+  }
+  // May 1940: the attack through the Low Countries finds the French command expecting 1914 again.
+  if (!s.fired.includes('sickle-cut') && fighting(d, 'Germany', 'France') && alive(d, 'France') && ['Belgium', 'Netherlands'].some((x) => fighting(d, 'Germany', x))) {
+    s.fired = [...s.fired, 'sickle-cut'];
+    for (const name of ['France', 'Belgium']) if (alive(d, name)) effect(d, { id: 'shock', country: name, until: d.day + SHOCK.days, attack: SHOCK.power, defence: SHOCK.power, why: 'its generals expected the war of 1914 again, and the armour came through the Ardennes' });
   }
   // The Red Army after the Terror.
   if (on(PURGE.from) && alive(d, 'Soviet Union') && governmentOf(d, 'Soviet Union') === 'communist')

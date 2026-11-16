@@ -4,7 +4,7 @@
  * years of AI peace, to check research, national plans and the home front; and three runs of
  * the whole story with every country led by the AI, to check that it follows real history.
  *
- *   npm run balance            200 wars, 24 finance runs, a peace run and three history runs, writes docs/balance-stage-g.md
+ *   npm run balance            200 wars, 24 finance runs, a peace run and three history runs, writes docs/balance-stage-h.md
  *   npm run balance -- 40      a quicker run with fewer wars
  *
  * Every war uses the real 1936 map and starting armies, with both sides led by the simple AI
@@ -12,11 +12,15 @@
  */
 import fs from 'node:fs';
 import { quiet } from '../src/sim/agenda';
+import { PROVINCES } from '../src/sim/map';
+import { scores } from '../src/sim/report';
+import { newGame } from '../src/sim/scenario';
 import { COUNTRIES } from '../src/sim/countries';
 import { economyView } from '../src/sim/economy';
 import { advance } from '../src/sim/game';
 import { planById } from '../src/sim/plans';
 import { dateLabel, newWorld } from '../src/sim/world';
+import type { World } from '../src/sim/types';
 import { POLICIES, runFinance } from '../src/sim/testeconomy';
 import { runWar, SCENARIOS, type WarResult } from '../src/sim/testwar';
 
@@ -68,10 +72,13 @@ for (const c of COUNTRIES.filter((k) => k.major)) {
 // The whole story, every country led by the AI: does it follow real history?
 const EVENTS: [string, string, RegExp][] = [
   ['Germany moves troops into the Rhineland', '7 March 1936', /Rhineland/],
+  ['Civil war begins in Spain', '17 July 1936', /Civil war in Spain/],
   ['Germany annexes Austria', '12 March 1938', /Austria gives in/],
   ['Munich: Czechoslovakia gives up its border districts', '30 September 1938', /Czechoslovakia gives in/],
   ['Germany occupies the rest of Czechoslovakia', '15 March 1939', /Germany (occupies|annexes) .*Czechoslovakia|Czechoslovakia (gives in: it is annexed|is annexed)/],
+  ['The First Vienna Award', '2 November 1938', /First Vienna Award/],
   ['Britain guarantees Poland', '31 March 1939', /United Kingdom guarantees the independence of Poland/],
+  ['Franco wins in Spain', '1 April 1939', /Franco wins the civil war/],
   ['Italy annexes Albania', '7 April 1939', /Albania gives in/],
   ['Germany and Italy sign the Pact of Steel', '22 May 1939', /Pact of Steel/],
   ['German-Soviet non-aggression pact', '23 August 1939', /Germany and the Soviet Union sign a non-aggression pact/],
@@ -82,22 +89,39 @@ const EVENTS: [string, string, RegExp][] = [
   ['The Winter War begins', '30 November 1939', /Soviet Union declares war on Finland/],
   ['The Winter War ends', '13 March 1940', /Peace between the Soviet Union and Finland/],
   ['Germany occupies Denmark', '9 April 1940', /Denmark (gives in|surrenders)/],
+  ['Germany lands in Norway', '9 April 1940', /Germany declares war on Norway/],
+  ['Norway falls', '10 June 1940', /Norway surrenders/],
   ['Germany attacks in the west', '10 May 1940', /Germany declares war on Belgium/],
   ['Italy declares war on France', '10 June 1940', /Italy declares war on France/],
   ['France falls', '22 June 1940', /France surrenders/],
+  ['France signs an armistice (Vichy)', '22 June 1940', /France signs an armistice/],
   ['The Soviet Union annexes the Baltic states', 'June to August 1940', /Estonia gives in/],
+  ['The Second Vienna Award', '30 August 1940', /Second Vienna Award/],
+  ['Italy invades Greece', '28 October 1940', /Italy declares war on Greece/],
+  ['Lend-Lease reaches Britain', '11 March 1941', /Lend-Lease: American equipment begins to reach the United Kingdom/],
   ['Germany invades Yugoslavia', '6 April 1941', /Germany declares war on Yugoslavia/],
   ['Germany invades the Soviet Union', '22 June 1941', /Germany declares war on the Soviet Union|Germany declares war on Soviet Union/],
+  ['Britain and the Soviet Union become allies', '12 July 1941', /Soviet Union and the United Kingdom become allies/],
+  ['Lend-Lease reaches the Soviet Union', '1 October 1941', /Lend-Lease: American equipment begins to reach the Soviet Union/],
 ];
 const SEEDS = ['history-1', 'history-2', 'history-3'];
-const histories = SEEDS.map((seed) => {
-  let w = newWorld('story', seed);
-  for (let d = 0; d < 365 * 6 + 2; d++) w = advance(w);
+// The world keeps only its latest news, so the whole of each run's news is gathered here as it happens.
+const allNews = new Map<World, { day: number; text: string }[]>();
+const played = (start: World, days: number): World => {
+  let w = start;
+  const news: { day: number; text: string }[] = [];
+  let last = -1;
+  for (let d = 0; d < days; d++) {
+    w = advance(w);
+    for (const e of w.diplomacy.log) if (e.id > last) { last = e.id; news.push({ day: e.day, text: e.text }); }
+  }
+  allNews.set(w, news);
   return w;
-});
+};
+const histories = SEEDS.map((seed) => played(newWorld('story', seed), 365 * 6 + 2));
 const historyRows = EVENTS.map(([what, real, text]) => {
   const when = histories.map((w) => {
-    const e = w.diplomacy.log.find((x) => text.test(x.text));
+    const e = allNews.get(w)!.find((x) => text.test(x.text));
     return e ? dateLabel({ startDate: w.startDate, day: e.day }) : 'did not happen';
   });
   return `| ${what} | ${real} | ${when.join(' | ')} |`;
@@ -114,12 +138,30 @@ const forceRows = histories.flatMap((w, i) =>
   }),
 );
 const seaRows = histories.map((w, i) => `| ${SEEDS[i]} | ${w.forceLog.filter((e) => /^Naval battle/.test(e.text)).length} | ${w.forceLog.filter((e) => /is destroyed/.test(e.text)).length} | ${w.forceLog.filter((e) => / lands /.test(e.text)).length} | ${w.forceLog.filter((e) => /loses a (fighter|bomber) wing/.test(e.text)).length} | ${Object.keys(w.bombed).length} |`);
+// Story mode's own record in the same runs, and the eastern front.
+const storyRows = histories.map((w, i) => {
+  const soviet = PROVINCES.filter((p) => p.owner === 'Soviet Union');
+  const lost = soviet.filter((p) => w.controller[p.id] !== 'Soviet Union');
+  const top = Object.entries(w.story.losses).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([k, v]) => `${k} ${Math.round(v)}`).join(', ');
+  return `| ${SEEDS[i]} | ${w.story.cards.length} | ${w.story.spain.state === 'nationalist' ? 'Franco' : w.story.spain.state} | ${w.story.armistice.join(', ') || 'none'} | ${lost.length} of ${soviet.length}${lost.length ? ` (${lost.map((p) => p.name).join(', ')})` : ''} | ${top} |`;
+});
+// Free-for-all: no treaties, no timetable, five years.
+const FFA_SEEDS = ['ffa-1', 'ffa-2', 'ffa-3'];
+const ffaRows = FFA_SEEDS.map((seed) => {
+  const w = played(newGame({ mode: 'freeForAll', start: '1936', player: null, seed }), 365 * 5 + 1);
+  const table = scores(w);
+  const wars = allNews.get(w)!.filter((e) => /declares war on/.test(e.text)).length;
+  const first = allNews.get(w)!.find((e) => /declares war on/.test(e.text));
+  return `| ${seed} | ${first ? dateLabel({ startDate: w.startDate, day: first.day }) : 'none'} | ${wars} | ${w.capitulated.length} | ${w.diplomacy.pacts.filter((p) => p.kind === 'alliance').length} | ${table.slice(0, 3).map((r) => `${r.country} ${r.points} (${r.change >= 0 ? '+' : ''}${r.change})`).join(', ')} | ${COUNTRIES.filter((c) => c.major && w.capitulated.includes(c.name)).map((c) => c.name).join(', ') || 'none'} |`;
+});
+console.log(storyRows.join('\n'));
+console.log(ffaRows.join('\n'));
 console.log(forceRows.join('\n'));
 console.log(seaRows.join('\n'));
 console.log(historyRows.join('\n'));
 console.log(endRows.join('\n'));
 
-const report = `# Balance report, Stage G: ${all.length} AI against AI wars, ${financeRows.length} finance playtests, four years of peace and three runs of history
+const report = `# Balance report, Stage H: ${all.length} AI against AI wars, ${financeRows.length} finance playtests, four years of peace, three runs of history and three free-for-alls
 
 Made by \`npm run balance\`. Do not edit the tables by hand; run the command again instead.
 
@@ -179,6 +221,23 @@ How each run stood on 1 January 1942:
 | --- | --- | --- | --- |
 ${endRows.join('\n')}
 
+## Story mode in the same runs
+
+How each run stood on 1 January 1942. "Soviet provinces lost" shows how far the eastern front
+has moved; losses are in divisions' worth of men and equipment.
+
+| Run | History cards filed | Spain | Armistice signed by | Soviet provinces lost | Heaviest battle losses |
+| --- | --- | --- | --- | --- | --- |
+${storyRows.join('\n')}
+
+## Free-for-all
+
+Every treaty torn up, no timetable, every country led by the AI, 1 January 1936 to 1 January 1941.
+
+| Run | First war | Declarations of war | Countries fallen | Alliances at the end | Top three by victory points (change since 1936) | Major powers fallen |
+| --- | --- | --- | --- | --- | --- | --- |
+${ffaRows.join('\n')}
+
 ## The war at sea and in the air
 
 The same three runs on 1 January 1942. Ships are capital ships / escort flotillas / submarine
@@ -196,10 +255,10 @@ Over the six years of each run:
 ${seaRows.join('\n')}
 `;
 fs.mkdirSync('docs', { recursive: true });
-const file = 'docs/balance-stage-g.md';
+const file = 'docs/balance-stage-h.md';
 // Keep the hand-written notes below the tables when the numbers are refreshed.
 const marker = '\n## What the results say';
 const old = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
 const notes = old.includes(marker) ? old.slice(old.indexOf(marker)) : '';
 fs.writeFileSync(file, report + notes);
-console.log(`\n${all.length} wars, ${financeRows.length} finance runs, a peace run and ${histories.length} history runs in ${((Date.now() - t0) / 1000).toFixed(1)} s. Report written to ${file}`);
+console.log(`\n${all.length} wars, ${financeRows.length} finance runs, a peace run and ${histories.length} history runs and three free-for-alls in ${((Date.now() - t0) / 1000).toFixed(1)} s. Report written to ${file}`);

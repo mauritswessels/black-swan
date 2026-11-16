@@ -9,7 +9,7 @@
 import { PLANS } from './plans';
 import { TECHS } from './research';
 import { PROVINCES } from './map';
-import type { Economy, Unit } from './types';
+import type { ArmyEffect, Economy, Unit } from './types';
 
 /** Every number research and plans can move. All start at 0; see EFFECT_TEXT for what each one means. */
 export interface Mods {
@@ -145,8 +145,39 @@ export interface Edges {
 
 const CAP = { infantry: 'Infantry', armour: 'Armour', artillery: 'Artillery' } as const;
 
-/** The edges every country's divisions have today, from its research and plans. */
-export function combatEdges(economies: Record<string, Economy>): Edges {
+/** What story.ts adds to a battle: passing conditions on whole armies, and the season. */
+export interface EdgeContext {
+  effects: ArmyEffect[];
+  day: number;
+  startDate: string;
+}
+
+/** Countries where an invader fights the cold as well as the defenders. */
+export const WINTER_LANDS = new Set(['Soviet Union', 'Finland', 'Norway', 'Sweden']);
+/** From December to February an army attacking into one of those countries, other than its own, keeps this share of its hitting power. */
+export const WINTER_ATTACK = 0.75;
+export function isWinter(startDate: string, day: number): boolean {
+  const d = new Date(`${startDate}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + day);
+  const m = d.getUTCMonth();
+  return m === 11 || m <= 1;
+}
+
+/** The edges every country's divisions have today, from its research and plans, and (with `ctx`) from surprise, lost officers and winter. */
+export function combatEdges(economies: Record<string, Economy>, ctx?: EdgeContext): Edges {
+  const attackOf = new Map<string, number>();
+  const defenceOf = new Map<string, number>();
+  for (const x of ctx?.effects ?? []) {
+    if (x.until < ctx!.day) continue;
+    attackOf.set(x.country, (attackOf.get(x.country) ?? 1) * x.attack);
+    defenceOf.set(x.country, (defenceOf.get(x.country) ?? 1) * x.defence);
+  }
+  const winter = !!ctx && isWinter(ctx.startDate, ctx.day);
+  const cold = (u: Unit): number => {
+    if (!winter || !u.path.length) return 1;
+    const land = PROVINCES[u.path[0]].owner;
+    return WINTER_LANDS.has(land) && !WINTER_LANDS.has(u.owner) ? WINTER_ATTACK : 1;
+  };
   const cache = new Map<string, Mods>();
   const of = (owner: string): Mods => {
     let m = cache.get(owner);
@@ -155,7 +186,7 @@ export function combatEdges(economies: Record<string, Economy>): Edges {
   };
   return {
     // A division storming a beach fights at 60% (see AMPHIBIOUS), a little better with landing craft.
-    attack: (u) => (1 + of(u.owner)[`attack${CAP[u.type]}`]) * (u.landing ? Math.min(1, AMPHIBIOUS + of(u.owner).amphibious) : 1),
-    defence: (u, province) => (1 + of(u.owner)[`defence${CAP[u.type]}`]) * (PROVINCES[province].owner === u.owner ? 1 + of(u.owner).homeDefence : 1),
+    attack: (u) => (1 + of(u.owner)[`attack${CAP[u.type]}`]) * (u.landing ? Math.min(1, AMPHIBIOUS + of(u.owner).amphibious) : 1) * (attackOf.get(u.owner) ?? 1) * cold(u),
+    defence: (u, province) => (1 + of(u.owner)[`defence${CAP[u.type]}`]) * (PROVINCES[province].owner === u.owner ? 1 + of(u.owner).homeDefence : 1) * (defenceOf.get(u.owner) ?? 1),
   };
 }

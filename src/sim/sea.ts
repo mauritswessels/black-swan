@@ -40,6 +40,12 @@ export const zoneById = (id: string): SeaZone | undefined => ZONES[ZONE_INDEX[id
 
 /** For each province: the indexes of the sea zones it has a coast on. Empty for inland provinces. */
 export const COAST: number[][] = PROVINCES.map((p) => (data.coast as Record<string, number[]>)[p.id] ?? []);
+// A correction by hand: the Oslofjord opens onto the Skagerrak, which belongs to the Danish Straits zone here.
+{
+  const oslo = PROVINCES.find((p) => p.name === 'Oslo');
+  const straits = ZONE_INDEX.kattegat;
+  if (oslo && straits !== undefined && !COAST[oslo.id].includes(straits)) COAST[oslo.id] = [...COAST[oslo.id], straits].sort((a, b) => a - b);
+}
 /** For each zone: the provinces with a coast on it. */
 export const SHORES: number[][] = ZONES.map((_, z) => PROVINCES.filter((p) => COAST[p.id].includes(z)).map((p) => p.id));
 export const isCoastal = (province: number): boolean => COAST[province].length > 0;

@@ -23,6 +23,7 @@ import { combatEdges, modsOf } from './mods';
 import type { ForceDraft } from './navy';
 import { daysToEnter, findRoute, PROVINCES } from './map';
 import { Rng, seedFrom } from './rng';
+import { cloneStory, runStory, startStory } from './story';
 import { DEPOTS, linkedProvinces, supplyCapacity, supplyLevels } from './supply';
 import type { Mode, Order, Unit, UnitType, World } from './types';
 import { atWar, canEnter, enemiesOf } from './war';
@@ -102,7 +103,7 @@ export function newWorld(mode: Mode, seedText: string, startDate = '1936-01-01',
   const factories = startFactories();
   const forces = startForces();
   const economies = startEconomies({ controller, factories, units, wars: [], fleets: forces.fleets, wings: forces.wings });
-  return { mode, player, seed, rng: rng.state, day: 0, startDate, units, nextUnitId: units.length, controller, owner: [...controller], diplomacy: startDiplomacy(economies), wars: [], declaredBy: {}, capitulated: [], battles: [], nextBattleId: 0, reports: [], economies, factories, ...forces };
+  return { mode, player, seed, rng: rng.state, day: 0, startDate, units, nextUnitId: units.length, controller, owner: [...controller], diplomacy: startDiplomacy(economies), wars: [], declaredBy: {}, capitulated: [], battles: [], nextBattleId: 0, reports: [], economies, factories, ...forces, story: startStory('1936', 'close', seed) };
 }
 
 /** Organisation regained per day of rest with full supply. */
@@ -120,7 +121,7 @@ function draftOf(world: World): DipDraft & ForceDraft {
     day: world.day, startDate: world.startDate, mode: world.mode, player: world.player,
     units: world.units.map((u) => ({ ...u, path: [...u.path] })), nextUnitId: world.nextUnitId,
     controller: [...world.controller], owner: [...world.owner], wars: [...world.wars], declaredBy: { ...world.declaredBy }, capitulated: [...world.capitulated],
-    economies: cloneEconomies(world.economies), factories: { civ: [...world.factories.civ], mil: [...world.factories.mil] }, diplomacy: cloneDiplomacy(world.diplomacy),
+    economies: cloneEconomies(world.economies), factories: { civ: [...world.factories.civ], mil: [...world.factories.mil] }, diplomacy: cloneDiplomacy(world.diplomacy), story: cloneStory(world.story),
   };
 }
 
@@ -174,7 +175,7 @@ function giveOrders(d: DipDraft & ForceDraft, orders: Order[]): void {
 }
 
 const fromDraft = (world: World, d: DipDraft & ForceDraft): World => ({
-  ...world, fleets: d.fleets, wings: d.wings, nextForceId: d.nextForceId, bombed: d.bombed, clashes: d.clashes, forceLog: d.forceLog, nextForceEventId: d.nextForceEventId, units: d.units, nextUnitId: d.nextUnitId, controller: d.controller, owner: d.owner, wars: d.wars, declaredBy: d.declaredBy, capitulated: d.capitulated, economies: d.economies, factories: d.factories, diplomacy: d.diplomacy,
+  ...world, fleets: d.fleets, wings: d.wings, nextForceId: d.nextForceId, bombed: d.bombed, clashes: d.clashes, forceLog: d.forceLog, nextForceEventId: d.nextForceEventId, units: d.units, nextUnitId: d.nextUnitId, controller: d.controller, owner: d.owner, wars: d.wars, declaredBy: d.declaredBy, capitulated: d.capitulated, economies: d.economies, factories: d.factories, diplomacy: d.diplomacy, story: d.story,
 });
 
 /**
@@ -197,6 +198,8 @@ export function step(world: World, orders: Order[] = []): World {
   giveOrders(dd, orders);
   const monthEnd = monthEnds(world.startDate, world.day);
   runDiplomacy(dd, monthEnd);
+  // 1a. The story: history cards, events with choices, chapters and the end of the game (story.ts).
+  runStory(dd, monthEnd, world.seed);
 
   // 1b. The economy: taxes and bills, production lines, construction, training. New divisions appear.
   const fallen = new Map(Object.entries(dd.economies).map(([name, e]) => [name, [e.governmentsFallen, e.government] as const]));
@@ -233,9 +236,13 @@ export function step(world: World, orders: Order[] = []): World {
   });
 
   // 3. Battles. Research, plans and forts give each side its edge; results move the mood at home.
-  d.edges = combatEdges(economies);
+  d.edges = combatEdges(economies, { effects: dd.story.effects, day: world.day, startDate: world.startDate });
   const known = new Set(d.reports.map((r) => r.id));
   const fought = fightBattles(d, rng);
+  for (const r of d.reports) {
+    if (known.has(r.id)) continue;
+    for (const [side, lost] of [[r.attackers, r.attackerLosses], [r.defenders, r.defenderLosses + r.surrendered]] as const) for (const name of side) dd.story.losses[name] = (dd.story.losses[name] ?? 0) + lost / side.length;
+  }
   for (const r of d.reports) if (!known.has(r.id)) onBattleEnded(economies, r.winner === 'attacker' ? r.attackers : r.defenders, r.winner === 'attacker' ? r.defenders : r.attackers);
 
   // 4. Marching. A division cannot walk into a province while enemy divisions stand in it.

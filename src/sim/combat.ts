@@ -208,12 +208,12 @@ export function outlook(attackers: Unit[], defenders: Unit[], province: number, 
 }
 
 /** The outlook for a battle being fought now, or for the units already ordered into a province. */
-export function outlookAt(w: Pick<World, 'units' | 'wars'> & { economies?: Record<string, Economy> }, province: number, air?: Draft['air']): Outlook | null {
+export function outlookAt(w: Pick<World, 'units' | 'wars'> & { economies?: Record<string, Economy>; story?: World['story']; day?: number; startDate?: string }, province: number, air?: Draft['air']): Outlook | null {
   const here = w.units.filter((u) => u.at === province);
   const attackers = w.units.filter((u) => u.path[0] === province && here.some((e) => atWar(w, u.owner, e.owner)));
   const defenders = here.filter((u) => attackers.some((a) => atWar(w, a.owner, u.owner)));
   const sky = air && attackers.length && defenders.length ? air(byCount(attackers), byCount(defenders), province) : 1;
-  return outlook(attackers, defenders, province, w.economies && combatEdges(w.economies), sky);
+  return outlook(attackers, defenders, province, w.economies && combatEdges(w.economies, w.story && { effects: w.story.effects, day: w.day ?? 0, startDate: w.startDate ?? '1936-01-01' }), sky);
 }
 
 /** Fight one day of every battle. Returns the ids of the units that took part today. */

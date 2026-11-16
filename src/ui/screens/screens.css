@@ -36,3 +36,47 @@
 .setup-list b { font: 600 20px var(--f-cond); letter-spacing: 0.08em; color: var(--white); text-transform: uppercase; }
 .setup-list span { font-size: 13px; color: #a9b6cb; }
 .setup-list em { font-style: normal; font-size: 14px; color: var(--txt); }
+
+/* Stage H: choices on the setup screen, and the wait while 1936 to 1939 is played out. */
+.setup-choices { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 14px; margin-top: 18px; }
+.setup-choice { margin: 0; padding: 0; border: 0; display: grid; gap: 8px; align-content: start; }
+.setup-choice legend { padding: 0 0 6px; font: 600 12.5px var(--f-cond); letter-spacing: 0.18em; text-transform: uppercase; color: var(--ice); }
+.setup-choice label { display: grid; grid-template-columns: 18px 1fr; column-gap: 10px; row-gap: 2px; padding: 10px 12px; border: 1px solid var(--edge); border-radius: 3px; background: var(--glass); cursor: pointer; }
+.setup-choice label.on { border-color: var(--gold); background: rgba(255, 196, 107, 0.1); }
+.setup-choice label:focus-within { outline: 2px solid var(--ice); outline-offset: 2px; }
+.setup-choice input { grid-row: 1 / span 2; margin: 3px 0 0; accent-color: var(--gold); }
+.setup-choice b { font: 600 17px var(--f-cond); letter-spacing: 0.06em; color: var(--white); }
+.setup-choice span { grid-column: 2; font-size: 13.5px; line-height: 1.4; color: #a9b6cb; }
+.setup-wait { text-align: center; padding-top: 16vh; }
+.setup-wait progress { width: min(520px, 90%); height: 10px; accent-color: var(--gold); margin: 10px 0 18px; }
+.setup-wait p { max-width: 560px; margin: 0 auto; }
+
+/* The end report. */
+.st-report { overflow-y: auto; padding: 4px 22px 22px; display: flex; flex-direction: column; gap: 10px; }
+.st-report h3 { margin: 12px 0 0; font: 600 13px var(--f-cond); letter-spacing: 0.18em; text-transform: uppercase; color: var(--ice); }
+.st-report h4 { margin: 6px 0 4px; font: 600 16px var(--f-cond); letter-spacing: 0.05em; color: var(--white); }
+.st-report p { margin: 0; line-height: 1.5; }
+.st-verdict { font: 400 22px/1.3 var(--f-serif); color: var(--white); }
+.st-report-actions { display: flex; gap: 10px; margin-top: 10px; }
+.st-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.st-table th, .st-table td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--edge); vertical-align: top; font-weight: 400; }
+.st-table thead th { font: 600 11.5px var(--f-cond); letter-spacing: 0.14em; text-transform: uppercase; color: #8fa0bb; }
+.st-table tbody th { color: var(--white); font-weight: 600; white-space: nowrap; }
+.st-table tr.me th, .st-table tr.me td { background: rgba(255, 196, 107, 0.08); }
+.st-goals { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.st-goals li { display: grid; grid-template-columns: 20px 1fr auto; gap: 8px; align-items: baseline; font-size: 14px; line-height: 1.35; }
+.st-goals em { font-style: normal; font: 600 12px var(--f-cond); letter-spacing: 0.08em; text-transform: uppercase; color: #8fa0bb; white-space: nowrap; }
+.st-mark { font-style: normal; font-weight: 700; text-align: center; }
+.st-mark.met { color: var(--ok); }
+.st-mark.missed { color: var(--hot); }
+.st-mark.open { color: #8fa0bb; }
+.st-losses { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; }
+.st-losses li { display: grid; grid-template-columns: 130px 1fr 48px; gap: 10px; align-items: center; font-size: 13.5px; }
+.st-losses i { height: 8px; background: rgba(156, 200, 255, 0.1); border-radius: 2px; overflow: hidden; }
+.st-losses i b { display: block; height: 100%; background: var(--ice); }
+.st-losses em { font-style: normal; text-align: right; color: var(--white); font-variant-numeric: tabular-nums; }
+.st-timeline { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.st-timeline li { display: grid; grid-template-columns: 128px 1fr; column-gap: 12px; font-size: 13.5px; line-height: 1.4; }
+.st-timeline small { grid-row: 1 / span 2; color: #8fa0bb; font-size: 12.5px; }
+.st-timeline b { color: var(--white); font-weight: 600; }
+.st-timeline span { color: #a9b6cb; }

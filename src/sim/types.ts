@@ -371,6 +371,70 @@ export interface World {
   /** The most recent news from the sea and the air, oldest first (the last 60 are kept). */
   forceLog: ForceEvent[];
   nextForceEventId: number;
+  /** Story mode's history cards, chapters and events; Free-for-all's clock (see story.ts). */
+  story: StoryState;
+}
+
+/** Which start a game uses: the full campaign from 1 January 1936, or the short scenario that opens on 1 September 1939. */
+export type StartId = '1936' | '1939';
+
+/** A passing condition that makes one country's divisions hit harder or less hard for a while, e.g. an army caught by surprise. */
+export interface ArmyEffect {
+  id: string;
+  country: string;
+  /** The last day it applies. */
+  until: number;
+  /** Multipliers for its divisions' attack and defence (0.75 = a quarter weaker). */
+  attack: number;
+  defence: number;
+  /** One line for the player. */
+  why: string;
+}
+
+/** A history card that has been shown, with what the game looked like on that day. */
+export interface CardRecord {
+  id: string;
+  day: number;
+  /** "In your game: ..." as it stood when the card came up. */
+  inGame: string;
+}
+
+/** How a chapter ended for the player: one true or false per objective, in the chapter's order. */
+export interface ChapterRecord {
+  id: string;
+  day: number;
+  met: boolean[];
+}
+
+/** Everything Story mode remembers, plus the few things Free-for-all needs (losses, the clock). */
+export interface StoryState {
+  start: StartId;
+  /** How closely AI governments keep to the real timetable. */
+  history: 'close' | 'loose';
+  /** Days by which each entry of the AI's historical agenda is shifted (all zero when history is 'close'). */
+  drift: Record<string, number>;
+  cards: CardRecord[];
+  /** Story events that have been dealt with, and what the player chose (the option's number). */
+  fired: string[];
+  choices: Record<string, number>;
+  /** The Spanish Civil War, fought off the map: who is ahead (above zero: the Nationalists) and how it stands. */
+  spain: { state: 'peace' | 'war' | 'nationalist' | 'republic'; balance: number };
+  effects: ArmyEffect[];
+  /** Countries that signed an armistice and live on as a neutral rump state (France under the Vichy government). */
+  armistice: string[];
+  chapters: ChapterRecord[];
+  /** Strength lost in battle so far by each country, in division-equivalents. */
+  losses: Record<string, number>;
+  /** The player's own wars: the first day at war, the last, and how many days in all. */
+  playerWar: { first: number | null; last: number | null; days: number };
+  /** The day a war between two great powers first broke out, or null. */
+  greatWar: number | null;
+  /** When and why the game reached its end. The player may keep playing afterwards. */
+  ended: { day: number; why: string } | null;
+  /** The day the clock runs out. */
+  endDay: number;
+  /** Free-for-all games started from the menu: AI countries attack weak neighbours and look for allies on their own (opportunist.ts). */
+  opportunist: boolean;
 }
 
 export type PactKind = 'alliance' | 'guarantee' | 'nonAggression';
@@ -426,6 +490,10 @@ export interface Decision {
   pact?: PactKind;
   terms?: PeaceTerms;
   aim?: string;
+  /** For kind 'honour': saying no costs nothing, because the promise would mean a second great war. */
+  excused?: boolean;
+  /** For kind 'event': which story event this is (story.ts). */
+  event?: string;
   title: string;
   text: string;
   options: { label: string; effect: string }[];

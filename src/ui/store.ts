@@ -8,13 +8,15 @@ import { PROVINCES } from '../sim/map';
 import { planById } from '../sim/plans';
 import { techById } from '../sim/research';
 import type { EconomyOrder } from '../sim/economy';
-import type { Mode, Order, World } from '../sim/types';
+import type { Mode, Order, StartId, World } from '../sim/types';
+import { cardById } from '../content/history';
+import { prepareGame, type GameOptions } from '../sim/scenario';
 import { atWar } from '../sim/war';
 import { shipPlan } from '../sim/navy';
 import { cannotBase, REBASE_DAYS } from '../sim/air';
 import { DAYS_PER_ZONE, zoneById, ZONE_INDEX, zonePath } from '../sim/sea';
 import { picturesOf } from './forces';
-import { applyOrders, dateLabel, newWorld } from '../sim/world';
+import { applyOrders, dateLabel } from '../sim/world';
 import { readSave, writeSave, type Slot } from '../save/storage';
 import { sound } from './audio/sound';
 
@@ -42,7 +44,9 @@ export type Selection =
   | { kind: 'forces' }
   | { kind: 'zone'; id: string }
   | { kind: 'fleet'; id: number }
-  | { kind: 'wings'; province: number };
+  | { kind: 'wings'; province: number }
+  | { kind: 'chronicle' }
+  | { kind: 'card'; id: string };
 
 /** An economic order before the player's country is filled in. */
 export type EconomyAction = EconomyOrder extends infer O ? (O extends { country: string } ? Omit<O, 'country'> : never) : never;
@@ -63,7 +67,12 @@ export const SPEED_MS = [1400, 700, 350, 160, 60];
 interface Store {
   screen: Screen;
   setupMode: Mode;
-  overlay: null | 'codex' | 'saves' | 'help';
+  overlay: null | 'codex' | 'saves' | 'help' | 'report';
+  /** While a September 1939 game is being prepared: how far along, 0 to 1. */
+  preparing: number | null;
+  /** Stop the clock when a history card arrives. */
+  pauseOnCard: boolean;
+  togglePauseOnCard: () => void;
   world: World | null;
   muted: boolean;
 
@@ -90,7 +99,7 @@ interface Store {
   go: (screen: Screen) => void;
   setOverlay: (o: Store['overlay']) => void;
   chooseMode: (mode: Mode) => void;
-  startGame: (mode: Mode, player: string) => void;
+  startGame: (options: { mode: Mode; start: StartId; player: string; history?: 'close' | 'loose' }) => void;
   load: (slot: Slot) => boolean;
   save: (slot: Slot) => boolean;
   toggleMute: () => void;
@@ -160,6 +169,18 @@ function headlines(before: World, after: World): News[] {
   }
   out.push(...forceNews(before, after));
   out.push(...diplomaticNews(before, after));
+  // History cards filed today.
+  for (const c of after.story.cards.slice(before.story.cards.length)) {
+    const card = cardById(c.id);
+    if (card) add(`History, ${card.title}`, 'plain', undefined, { kind: 'card', id: c.id });
+  }
+  // Something new is weakening your army (surprise, the shock of 1940).
+  if (me) for (const x of after.story.effects) if (x.country === me && !before.story.effects.some((y) => y.id === x.id && y.country === me)) add(`Your army is weakened for a time: ${x.why}`, 'bad', undefined, { kind: 'chronicle' });
+  // A chapter of the story has closed.
+  for (const c of after.story.chapters.slice(before.story.chapters.length)) {
+    const met = c.met.filter(Boolean).length;
+    add(`A chapter ends: you met ${met} of ${c.met.length} objectives`, met * 2 >= c.met.length ? 'good' : 'bad', undefined, { kind: 'chronicle' });
+  }
   // Capitals changing hands.
   for (const p of PROVINCES) {
     if (!p.capital || before.controller[p.id] === after.controller[p.id] || after.capitulated.includes(p.owner)) continue;
@@ -276,6 +297,9 @@ export const useGame = create<Store>((set, get) => {
     mapMode: 'political',
     pauseOnAttack: true,
     togglePauseOnAttack: () => set((s) => ({ pauseOnAttack: !s.pauseOnAttack })),
+    preparing: null,
+    pauseOnCard: true,
+    togglePauseOnCard: () => set((s) => ({ pauseOnCard: !s.pauseOnCard })),
     ...fresh,
 
     go: (screen) => {
@@ -286,12 +310,30 @@ export const useGame = create<Store>((set, get) => {
     setOverlay: (overlay) => set({ overlay }),
     chooseMode: (mode) => set({ setupMode: mode, screen: 'setup', overlay: null }),
 
-    startGame: (mode, player) => {
-      const world = newWorld(mode, String(Date.now()), '1936-01-01', player);
-      const capital = PROVINCES.find((p) => p.owner === player && p.capital);
-      set({ ...fresh, world, screen: 'game', overlay: null, focus: capital ? { province: capital.id, n: ++focusN } : null });
-      writeSave('auto', summaryOf(world), world);
-      if (!get().muted) sound.startAmbient();
+    startGame: ({ mode, start, player, history }) => {
+      if (get().preparing !== null) return;
+      const options: GameOptions = { mode, start, player, seed: String(Date.now()), history };
+      const begin = (world: World) => {
+        const capital = PROVINCES.find((p) => p.owner === player && p.capital);
+        set({ ...fresh, world, preparing: null, screen: 'game', overlay: null, focus: capital ? { province: capital.id, n: ++focusN } : null });
+        writeSave('auto', summaryOf(world), world);
+        if (!get().muted) sound.startAmbient();
+      };
+      // The 1939 start plays three and a half years first. Do it in slices so the screen can show progress.
+      const steps = prepareGame(options);
+      set({ preparing: 0 });
+      const work = () => {
+        const until = Date.now() + 40;
+        for (;;) {
+          const r = steps.next();
+          if (r.done) return begin(r.value);
+          if (Date.now() > until) {
+            set({ preparing: r.value });
+            return void setTimeout(work, 0);
+          }
+        }
+      };
+      setTimeout(work, 0);
     },
 
     load: (slot) => {
@@ -343,8 +385,13 @@ export const useGame = create<Store>((set, get) => {
       const decision = added.find((n) => n.open?.kind === 'decision');
       if (decision) sel = decision.open!;
       else if (sel?.kind === 'decision' && !next.diplomacy.decisions.some((d) => d.id === (sel as { id: number }).id)) sel = { kind: 'diplomacy' };
+      // A history card stops the clock too (unless switched off) and opens, but never over a decision.
+      const card = get().pauseOnCard ? added.find((n) => n.open?.kind === 'card') : undefined;
+      if (card && !decision) sel = card.open!;
+      // The end of the game: stop and show the report. You may play on afterwards.
+      const ended = !world.story.ended && !!next.story.ended;
       if ((attacked || decision) && get().running && !get().muted) sound.alert();
-      set({ world: next, selection: sel, news: added.length ? [...news, ...added].slice(-40) : news, defeated, running: get().running && !defeated && !attacked && !decision });
+      set({ world: next, selection: sel, news: added.length ? [...news, ...added].slice(-40) : news, defeated, running: get().running && !defeated && !attacked && !decision && !card && !ended, ...(ended ? { overlay: 'report' as const } : {}) });
       // Autosave on the first of each month.
       if (dateLabel(next).startsWith('1 ')) writeSave('auto', summaryOf(next), next);
     },

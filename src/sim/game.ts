@@ -6,13 +6,14 @@
  * Its army commander (ai.ts), admirals and air marshals (aiForces.ts) give orders only while
  * the country is at war.
  */
-import { aiDiplomacyOrders } from './agenda';
-import { aiOrders } from './ai';
+import { aiDiplomacyOrders, plannedWars } from './agenda';
+import { aiOrders, massOrders } from './ai';
 import { aiForceOrders } from './aiForces';
 import { allianceMap, isDiplomacyOrder } from './diplomacy';
 import { pictures } from './forces';
 import { allAiEconomyOrders } from './aiEconomy';
 import { isEconomyOrder } from './economy';
+import { opportunistOrders } from './opportunist';
 import type { Order, World } from './types';
 import { step } from './world';
 
@@ -44,6 +45,8 @@ export function advance(w: World, playerOrders: Order[] = []): World {
   const friends = fighting.length ? allianceMap(w.diplomacy) : null;
   const seen = friends ? pictures(w, friends) : undefined;
   const ai = fighting.flatMap((c) => [...aiOrders(w, c, { sea: seen?.sea, air: seen?.air.battle }), ...(seen && friends ? aiForceOrders(w, c, seen.sea, friends) : [])]);
+  // An army moves up to the border in the weeks before a war its government has planned.
+  for (const [by, on] of plannedWars(w)) ai.push(...massOrders(w, by, on));
   // Every other country runs its own economy and its own diplomacy, at peace or at war.
-  return step(w, [...ownOrders(w, playerOrders), ...ai, ...allAiEconomyOrders(w), ...aiDiplomacyOrders(w)]);
+  return step(w, [...ownOrders(w, playerOrders), ...ai, ...allAiEconomyOrders(w), ...aiDiplomacyOrders(w), ...opportunistOrders(w)]);
 }

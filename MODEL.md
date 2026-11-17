@@ -472,6 +472,68 @@ Two rules are general rather than dated. The major democracies guarantee the cou
 aggressor still claims once it has broken the peace three times (or once, when tension is 50
 or more). And every month each AI country at war asks whether peace would serve it better.
 
+## Story mode (`src/sim/story.ts`, `src/sim/scenario.ts`)
+
+**History cards** (`src/content/history.ts`) are filed on their real dates whatever has
+happened. Each card's "in your game" line is worked out that day from the world as it stands
+and saved with the card. Cards about crimes carry one fixed line instead: the game does not
+model them.
+
+**Decisions on real dates** reach the player as ordinary decisions with a deadline; if it runs
+out, the answer is what the country really did. Marching into the Rhineland as France costs
+Germany 10 stability and pushes every later German aim back 300 days.
+
+**Spain** is fought off the map from 17 July 1936. Each great power that sends help adds to a
+balance: Germany +1, Italy +1, the Soviet Union -1, France -2, Britain -2 (the last two never
+did). On 1 April 1939 the Nationalists win if the balance is above zero, otherwise the
+Republic survives. AI governments do what theirs really did, so the balance is +1 unless the
+player changes it.
+
+**The armistice.** When France falls to Germany, an AI Germany signs an armistice (a player
+chooses): Germany keeps the north and the Atlantic coast; France gets back the south, Corsica,
+North Africa and Syria, an authoritarian government, part of its army and a five-year truce
+with Germany and Italy. If Paris is ever French again, the old government returns.
+
+**Army effects** multiply a whole army's attack and defence for a time:
+
+| Effect | Attack | Defence | When |
+| --- | --- | --- | --- |
+| Lost officers (Soviet Union) | x 0.85 | x 0.90 | 11 June 1937 to 30 June 1942 |
+| Caught by surprise | x 0.60 | x 0.60 | 150 days, for a great power attacked in breach of a non-aggression pact while at peace with everyone else |
+| The shock of 1940 (France, Belgium) | x 0.65 | x 0.65 | 120 days from the day Germany, at war with France, attacks Belgium or the Netherlands |
+| Surprise landing (Oslo) | x 0.60 | x 0.60 | 30 days, for the defender |
+| Winter | x 0.75 | | December to February, for an outsider attacking into the Soviet Union, Finland, Norway or Sweden |
+
+**Lend-Lease** adds equipment to the stock each month, free: to Britain from 11 March 1941
+(0.6 infantry sets, 0.2 artillery, 0.2 armour, 0.3 fighter wings, 0.15 bomber wings, 0.3 escort
+flotillas) and to the Soviet Union from 1 October 1941 (0.6 infantry, 0.3 armour, 0.3 fighter),
+while each is at war with Germany.
+
+**History kept loosely** shifts every AI aim by a fixed number of days drawn from the seed,
+between 45 days early and 150 days late.
+
+**The September 1939 start** runs the engine from 1 January 1936 for 1,339 days with every
+country led by the AI and the fixed seed `prelude-1939`, then gives one country to the player.
+
+**Chapters** (`chapters.ts`) check their objectives on their last day: 31 August 1939, 21 June
+1941 and 8 May 1945.
+
+**The end.** Story mode ends when the player surrenders; on 8 May 1945; when the great powers
+have been at war and are at peace again for 90 days; or, in the 1939 scenario, on 1 January
+1942. The report (`report.ts`) only reads the world; victory points are those of the provinces
+a country controls.
+
+## Free-for-all (`src/sim/opportunist.ts`)
+
+All pacts are removed and every historical aim is dropped. After a quiet first 90 days, at the end of each month every AI
+country at peace rolls seeded dice: a fascist government looks for a war with a chance of 25%,
+a communist one 20%, an authoritarian one 10% and a democracy 2%. It attacks the neighbour it
+has the best odds against, if those odds are 1.8 to 1 or better (the same odds formula as
+above, protectors included). A country with a hostile neighbour 1.5 times its strength
+proposes an alliance to another neighbour of that danger. Each month a major power has a 5%
+chance, and a small country 2%, of one random event: stability +4 or -4, 40 days of research,
+or a bank failure costing 15% of a month's output. The game ends after 3,653 days.
+
 ## Surrender and occupation
 
 A country surrenders when its enemies control 60% of the victory points of its own land, or

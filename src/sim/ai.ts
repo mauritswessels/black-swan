@@ -22,12 +22,12 @@
  * counts as friendly ground.
  */
 import { ATTACK_WIDTH, ATTACK_WIDTH_PER_EXTRA_DIRECTION, attackPower, defencePower, DEFENCE_WIDTH } from './combat';
-import { daysToEnter, findRoute, PROVINCES } from './map';
+import { daysToEnter, distanceKm, findRoute, PROVINCES } from './map';
 import { combatEdges } from './mods';
 import { supplyCapacity } from './supply';
 import type { Order, Unit, World } from './types';
 import { seaOrders } from './aiForces';
-import { allianceMap } from './diplomacy';
+import { allianceMap, isMajor } from './diplomacy';
 import { musterPoint } from './economy';
 import { navalPicture } from './navy';
 import { COAST, seaRoute, type SeaPicture } from './sea';
@@ -56,7 +56,7 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
   if (!everyone.length) return [];
   // Divisions getting ready to sail, or coming ashore, already have their orders.
   const mine = everyone.filter((u) => !u.sea && !u.landing);
-  const edges = combatEdges(w.economies);
+  const edges = combatEdges(w.economies, { effects: w.story.effects, day: w.day, startDate: w.startDate });
 
   const at = new Map<number, Unit[]>();
   for (const u of w.units) {
@@ -271,5 +271,54 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
   }
   // 5. Divisions with no way to the front on foot go by sea, if the sea allows.
   if (stranded.length) orders.push(...seaOrders({ w, country, sea: sea(), enemies, allies, edges, boldness, stranded, front: frontList, crowd }));
+  return orders;
+}
+
+/** Share of its free divisions a country brings up to the border before a war it has planned. */
+export const MASS_SHARE = 0.8;
+/** Divisions given marching orders in one day, at most. */
+const MASS_PER_DAY = 30;
+
+/**
+ * Deployment before a planned war: in the weeks before an AI government attacks, its army
+ * moves up to the border with the target, as real armies did. Divisions already facing a
+ * current enemy stay where they are, and one in five stays behind as a reserve.
+ */
+export function massOrders(w: World, country: string, target: string): Order[] {
+  const allies = allianceMap(w.diplomacy).get(country);
+  const friendly = (p: number) => w.controller[p] === country || !!allies?.has(w.controller[p]);
+  const enemies = new Set(enemiesOf(w, country));
+  const border: number[] = [];
+  const busy = new Set<number>();
+  for (const p of PROVINCES) {
+    if (!friendly(p.id)) continue;
+    if (p.neighbours.some((n) => w.controller[n] === target)) border.push(p.id);
+    if (p.neighbours.some((n) => enemies.has(w.controller[n]))) {
+      busy.add(p.id);
+      // An army already fighting a great power on land keeps its reserves for that front.
+      if (p.neighbours.some((n) => enemies.has(w.controller[n]) && isMajor(w.controller[n]))) return [];
+    }
+  }
+  if (!border.length) return [];
+  const crowd = new Map<number, number>();
+  for (const u of w.units) {
+    if (u.owner !== country && !allies?.has(u.owner)) continue;
+    const dest = u.path.length ? u.path[u.path.length - 1] : u.at;
+    crowd.set(dest, (crowd.get(dest) ?? 0) + 1);
+  }
+  const orders: Order[] = [];
+  for (const u of w.units) {
+    if (orders.length >= MASS_PER_DAY) break;
+    if (u.owner !== country || u.path.length || u.sea || u.landing || u.id % 5 === 0 || busy.has(u.at) || border.includes(u.at)) continue;
+    const here = PROVINCES[u.at].centre;
+    const to = border
+      .filter((b) => supplyCapacity(b) - (crowd.get(b) ?? 0) > 0)
+      .sort((a, b) => distanceKm(here, PROVINCES[a].centre) - distanceKm(here, PROVINCES[b].centre) || a - b)
+      .slice(0, 3)
+      .find((b) => findRoute(u.at, b, u.type, (q) => canEnter(w, country, q, allies) && !enemies.has(w.controller[q])));
+    if (to === undefined) continue;
+    crowd.set(to, (crowd.get(to) ?? 0) + 1);
+    orders.push({ type: 'move', unit: u.id, to });
+  }
   return orders;
 }

@@ -113,6 +113,7 @@ function TopBar() {
 function Rail() {
   const { setOverlay, go, toggleMute, select } = useGame.getState();
   const muted = useGame((s) => s.muted);
+  const story = useGame((s) => s.world?.mode === 'story');
   // A gold dot on a panel that is waiting for a decision: an idle research team, or no plan under way.
   const e = useGame((s) => (s.world?.player && !s.world.capitulated.includes(s.world.player) ? s.world.economies[s.world.player] : undefined));
   const alerts: Record<string, string> = {};
@@ -138,6 +139,10 @@ function Rail() {
           </button>
         ),
       )}
+      <button onClick={() => select({ kind: 'chronicle' })} title={story ? 'Chronicle: chapters and history cards (C)' : 'Standings (C)'}>
+        <Icon d="M6 3h9l4 4v14H6zM15 3v4h4M9 12h7M9 16h7M9 8h3" />
+        <span>{story ? 'Chronicle' : 'Standings'}</span>
+      </button>
       <button onClick={() => select({ kind: 'reports' })} title="Battle reports (R)">
         <Icon d="M5 5l14 14M19 5L5 19M4 8l4-4M20 8l-4-4" />
         <span>Battles</span>
@@ -262,6 +267,9 @@ function Defeat() {
         </button>
         <button className="btn" onClick={() => useGame.getState().select({ kind: 'reports' })}>
           Battle reports
+        </button>
+        <button className="btn" onClick={() => useGame.getState().setOverlay('report')}>
+          End report
         </button>
         <button className="btn" onClick={() => setOpen(false)}>
           Look at the map

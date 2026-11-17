@@ -22,7 +22,7 @@
 import { COUNTRIES } from './countries';
 import { DECLARATION_COST } from './economy';
 import { PROVINCES } from './map';
-import type { Decision, Demand, DipEvent, Diplomacy, Economy, Government, Mode, Order, Pact, PactKind, PeaceTerms, Ultimatum, Unit, UnitType, World } from './types';
+import type { Decision, Demand, DipEvent, Diplomacy, Economy, Government, Mode, Order, Pact, PactKind, PeaceTerms, StoryState, Ultimatum, Unit, UnitType, World } from './types';
 import { warKey } from './war';
 
 export type DiplomacyOrder = Extract<Order, { type: 'declareWar' | 'makePeace' | 'offerPeace' | 'propose' | 'guarantee' | 'endPact' | 'justify' | 'ultimatum' | 'mission' | 'callAlly' | 'decide' | 'settle' }>;
@@ -45,7 +45,14 @@ export interface DipDraft {
   economies: Record<string, Economy>;
   factories: World['factories'];
   diplomacy: Diplomacy;
+  story: StoryState;
 }
+
+/** Story events (story.ts) settle their own decisions. story.ts registers itself here, so that this file need not import it. */
+let eventHook: (d: DipDraft, x: Decision, option: number) => void = () => {};
+export const setEventHook = (hook: typeof eventHook): void => {
+  eventHook = hook;
+};
 
 type View = Pick<World, 'units' | 'controller' | 'owner' | 'wars' | 'capitulated' | 'economies' | 'diplomacy' | 'day' | 'mode' | 'player'> & { declaredBy: Record<string, string> };
 
@@ -103,6 +110,9 @@ export const CONTAIN_AGGRESSION = 3;
 export const CONTAIN_TENSION = 50;
 /** An AI accepts a pact when its score reaches these. */
 export const ACCEPT = { alliance: 60, nonAggression: 20, call: 40 };
+/** A great power attacked in breach of a non-aggression pact is caught unready: for this many days its divisions fight at this share of their power. */
+export const SURPRISE_DAYS = 150;
+export const SURPRISE_POWER = 0.6;
 /** A country surrenders when enemies hold this share of the victory points of its own land. */
 export const SURRENDER_SHARE = 0.6;
 /** Once its capital has fallen, a country gives up at this smaller share. France asked for an armistice eight days after Paris fell. */
@@ -574,6 +584,10 @@ export function startWar(d: DipDraft, by: string, on: string, kind: 'attack' | '
     if (hasPact(dip, 'nonAggression', by, on)) {
       blame(d, by, -10);
       note(d, 'pact', `${by} breaks its non-aggression pact with ${on}`, [by, on]);
+      // A great power that trusted the pact is caught unready (the Soviet Union in June 1941).
+      if (isMajor(on) && !enemies(d, on).some((x) => x !== by)) {
+        d.story.effects = [...d.story.effects.filter((x) => !(x.id === 'surprise' && x.country === on)), { id: 'surprise', country: on, until: d.day + SURPRISE_DAYS, attack: SURPRISE_POWER, defence: SURPRISE_POWER, why: `caught by surprise: ${by} broke its non-aggression pact` }];
+      }
     }
     note(d, 'war', `${by} declares war on ${on}${cause ? '' : ' without a cause'}`, [by, on]);
   } else {
@@ -597,26 +611,60 @@ export function startWar(d: DipDraft, by: string, on: string, kind: 'attack' | '
       note(d, 'pact', `${protector}, allied to ${by}, abandons ${on}`, [protector, on, by]);
       continue;
     }
+    // Already fighting one great power, and this would add a second, separate one (Britain and the Soviet
+    // Union over Poland in 1939): nobody expects the promise to stretch that far.
+    const waiting = protector === d.player ? dip.decisions.filter((x) => x.kind === 'honour' && x.country === protector && isMajor(x.from)).map((x) => x.from) : [];
+    const busy = [...new Set([...enemies(d, protector).filter(isMajor), ...waiting])];
+    const sameWar = busy.some((x) => allied(dip, x, by));
+    const stretched = busy.length > 0 && isMajor(by) && !sameWar;
     if (protector === d.player) {
       ask(d, {
-        country: protector, kind: 'honour', from: by, about: on, title: `${by} has attacked ${on}`,
-        text: `You promised to defend ${on}. ${by} has now declared war on it. Keeping your word means war with ${by}. Breaking it keeps you out, but nobody will trust your promises again.`,
-        options: [
-          { label: `Declare war on ${by}`, effect: `You are at war with ${by}, as an ally of ${on}. Your people see it as a just war.` },
-          { label: 'Break your word', effect: `Your promise to ${on} ends. Stability -10, and every country thinks 15 points less of you.` },
-        ],
-        fallback: 0,
+        country: protector, kind: 'honour', from: by, about: on, title: `${by} has attacked ${on}`, excused: stretched,
+        text: stretched
+          ? `You promised to defend ${on}, and ${by} has now declared war on it too. You already have ${list(busy)} to fight. Nobody expects your promise to mean war with a second great power at the same time: in 1939 Britain and France did not declare war on the Soviet Union.`
+          : `You promised to defend ${on}. ${by} has now declared war on it. Keeping your word means war with ${by}. Breaking it keeps you out, but nobody will trust your promises again.`,
+        options: stretched
+          ? [
+              { label: `Declare war on ${by} as well`, effect: `You are at war with ${by} too, as an ally of ${on}.` },
+              { label: 'One war at a time', effect: `You stay at peace with ${by}. Your promise to ${on} stands against your other enemies, and nobody holds this against you.` },
+            ]
+          : [
+              { label: `Declare war on ${by}`, effect: `You are at war with ${by}, as an ally of ${on}. Your people see it as a just war.` },
+              { label: 'Break your word', effect: `Your promise to ${on} ends. Stability -10, and every country thinks 15 points less of you.` },
+            ],
+        fallback: stretched ? 1 : 0,
       });
       continue;
     }
-    // An AI keeps its word, unless it is already fighting one great power and this would add a second, separate one.
-    const busy = enemies(d, protector).filter(isMajor);
-    const sameWar = busy.some((x) => allied(dip, x, by));
-    if (busy.length && isMajor(by) && !sameWar) {
+    // An AI keeps its word, with the same exception.
+    if (stretched) {
       note(d, 'pact', `${protector} is already at war with ${list(busy)} and does not declare war on ${by}`, [protector, by, on]);
       continue;
     }
     honour(d, protector, by, on);
+  }
+  // A common enemy: a great power that is attacked joins hands with every great power already fighting the
+  // attacker (Britain and the Soviet Union in 1941). Small countries rely on the guarantees they were given.
+  for (const power of isMajor(on) ? NAMES : []) {
+    if (!isMajor(power) || power === on || power === by || !alive(d, power) || !fighting(d, power, by) || fighting(d, power, on) || allied(dip, power, on)) continue;
+    if (alliesOf(dip, power).some((x) => fighting(d, x, on)) || alliesOf(dip, on).some((x) => fighting(d, x, power))) continue;
+    const asked = power === d.player ? power : on === d.player ? on : null;
+    if (!asked) {
+      addPact(d, 'alliance', power, on);
+      note(d, 'pact', `${on} and ${power} become allies against ${by}`, [on, power, by]);
+      continue;
+    }
+    const from = asked === power ? on : power;
+    if (dip.decisions.some((x) => x.kind === 'proposal' && x.from === from && x.pact === 'alliance')) continue;
+    ask(d, {
+      country: asked, kind: 'proposal', from, pact: 'alliance', title: `${from} proposes an alliance against ${by}`,
+      text: `${by} has attacked ${on}. You and ${from} now have the same enemy, and ${from} proposes an alliance: your armies may use each other's land and ports, and neither makes peace lightly without the other.`,
+      options: [
+        { label: 'Sign', effect: `You and ${from} are allies against ${by}.` },
+        { label: 'Decline', effect: `You each fight your own war. Relations with ${from} fall by 5.` },
+      ],
+      fallback: 0,
+    });
   }
 }
 
@@ -710,7 +758,9 @@ export function capitulate(d: DipDraft, loser: string, victor: string): void {
     if (first === loser) continue;
     const annexed = d.owner[p.id] === loser;
     const occupied = d.diplomacy.conquered[first] === loser && d.owner[p.id] === first;
-    if (!annexed && !occupied) continue;
+    // Land of a country that signed an armistice with the loser (occupied France) goes back to it as well.
+    const zone = d.owner[p.id] === first && d.controller[p.id] === loser && d.story.armistice.includes(first);
+    if (!annexed && !occupied && !zone) continue;
     const holder = d.controller[p.id];
     if (holder !== loser && !foes.has(holder) && holder !== first) continue; // someone else's business now
     if (d.capitulated.includes(first) && d.diplomacy.conquered[first] !== loser) continue; // conquered by a third country since
@@ -871,6 +921,7 @@ function resolveDecision(d: DipDraft, x: Decision, option: number): void {
   switch (x.kind) {
     case 'honour':
       if (option === 0 && x.about && alive(d, x.about) && alive(d, x.from)) honour(d, me, x.from, x.about);
+      else if (x.excused) note(d, 'pact', `${me} does not declare war on ${x.from}`, [me, x.from]);
       else if (x.about) {
         dropPacts(d, between(me, x.about));
         const e = d.economies[me];
@@ -912,6 +963,7 @@ function resolveDecision(d: DipDraft, x: Decision, option: number): void {
       } else shift(dip, x.from, me, -10);
       break;
     case 'event':
+      eventHook(d, x, option);
       break;
   }
 }

@@ -4,7 +4,7 @@ import { GLOSSARY } from '../../content/glossary';
 import { readSave, SLOTS, type Slot } from '../../save/storage';
 import { useGame } from '../store';
 
-function Shell({ title, children }: { title: string; children: React.ReactNode }) {
+export function Shell({ title, children }: { title: string; children: React.ReactNode }) {
   const close = () => useGame.getState().setOverlay(null);
   return (
     <div className="overlay" role="dialog" aria-modal="true" aria-label={title} onClick={close}>
@@ -106,6 +106,8 @@ export function Help() {
     ['D', 'Diplomacy: allies, promises, war and peace'],
     ['F', 'Navy and air force: fleets, air wings, your trade by sea'],
     ['B', 'Selected divisions: go by sea (then click a coast)'],
+    ['C', 'Chronicle: chapters, objectives and history cards (Standings in Free-for-all)'],
+    ['O', 'Report: your game beside the real history'],
     ['X', 'Codex'],
     ['S', 'Save and load'],
     ['M', 'Sound on or off'],

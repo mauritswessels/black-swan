@@ -295,3 +295,29 @@
 .sb-goto select { min-height: 44px; width: 100%; padding: 8px 10px; border: 1px solid rgba(156, 200, 255, 0.55); border-radius: 3px; background: rgba(10, 15, 26, 0.95); color: #fff; font: 500 14px var(--f-body); }
 label.sb-goto { display: flex; flex-direction: column; gap: 6px; font-size: 13.5px; color: #cfd9e8; }
 .sb-note b.warn { color: var(--gold); }
+
+/* Stage H: the chronicle and history cards. A card is a sheet of paper lying on the map table. */
+.st-card-side { gap: 14px; }
+.st-card { background: var(--paper); color: #1d2430; padding: 18px 20px 16px; border-radius: 2px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); display: flex; flex-direction: column; gap: 8px; border-top: 4px solid #5b6b85; }
+.st-card.economy { border-top-color: #a8782a; }
+.st-card.atrocity { border-top-color: #1d2430; }
+.st-card small { font: 600 11.5px var(--f-cond); letter-spacing: 0.16em; text-transform: uppercase; color: #5a6475; }
+.st-card time { font: 600 14px var(--f-cond); letter-spacing: 0.08em; color: #5a6475; }
+.sb .st-card h2 { font: 700 23px/1.2 var(--f-serif); color: #10151e; margin: 0 0 2px; }
+.sb .st-card h3 { margin: 6px 0 -4px; color: #5a6475; }
+.st-card p { margin: 0; font: 400 15px/1.55 var(--f-serif); color: #1d2430; }
+.st-card .st-card-note { font-size: 13px; line-height: 1.45; color: #4a5364; border-top: 1px solid rgba(29, 36, 48, 0.2); padding-top: 8px; margin-top: 4px; }
+.st-yours { border-left: 3px solid var(--gold); padding: 2px 0 2px 12px; display: flex; flex-direction: column; gap: 8px; }
+.sb .st-yours h3 { margin: 0; color: var(--gold); }
+.st-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.st-list { margin: 0; padding-left: 18px; font-size: 13.5px; line-height: 1.45; color: #dce4f1; }
+.st-list b { color: var(--gold); font-weight: 600; }
+.st-cards { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.st-cards button { width: 100%; display: grid; grid-template-columns: 118px 1fr; gap: 10px; text-align: left; padding: 7px 10px; border: 1px solid rgba(156, 200, 255, 0.18); border-radius: 3px; background: rgba(156, 200, 255, 0.04); color: #dce4f1; cursor: pointer; font-size: 13.5px; }
+.st-cards button:hover { background: rgba(156, 200, 255, 0.12); }
+.st-cards small { color: #8fa0bb; font-size: 12.5px; }
+.st-cards b { font-weight: 600; color: #fff; }
+.st-toggle { align-self: flex-start; }
+.sb .st-table { font-size: 13px; }
+.sb .st-table th, .sb .st-table td { padding: 5px 6px; }
+.sb .st-goals em { color: #8fa0bb; }

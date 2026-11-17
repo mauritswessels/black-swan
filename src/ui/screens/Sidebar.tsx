@@ -1,4 +1,5 @@
 /** The details sidebar: opens for whatever you click on the map. All numbers come from the engine. */
+import { CardView, ChroniclePanel } from './StoryPanels';
 import { useRef, type ReactNode } from 'react';
 import { DIG_IN_PER_DAY, outlook, outlookAt, type Outlook } from '../../sim/combat';
 import { combatEdges } from '../../sim/mods';
@@ -326,7 +327,7 @@ function ForeignStack({ w, province, owner }: { w: World; province: number; owne
   const c = countryByName(owner);
   // What it would look like if every division of yours next door attacked.
   const next = me ? w.units.filter((u) => u.owner === me && PROVINCES[province].neighbours.includes(u.at)) : [];
-  const o = enemy ? outlook(next.map((u) => ({ ...u, path: [province] })), units, province, combatEdges(w.economies)) : null;
+  const o = enemy ? outlook(next.map((u) => ({ ...u, path: [province] })), units, province, combatEdges(w.economies, { effects: w.story.effects, day: w.day, startDate: w.startDate })) : null;
   if (!units.length) return <Frame kicker="Intelligence report" title="Nothing here now" sub={PROVINCES[province].name}>{null}</Frame>;
   return (
     <Frame kicker="Intelligence report" title={`${c.adjective} forces in ${PROVINCES[province].name}`} sub={enemy ? 'At war with you' : me && allianceMap(w.diplomacy).get(me)?.has(owner) ? 'Your ally' : 'Neutral'}>
@@ -548,5 +549,9 @@ export function Sidebar() {
       return <FleetView w={w} id={sel.id} />;
     case 'wings':
       return <WingsView w={w} province={sel.province} />;
+    case 'chronicle':
+      return <ChroniclePanel w={w} />;
+    case 'card':
+      return <CardView w={w} id={sel.id} />;
   }
 }

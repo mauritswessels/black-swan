@@ -14,13 +14,16 @@
  * countries offer and accept peace by the war score, and a protector keeps its promises
  * (diplomacy.ts).
  *
- * Simplified for now: the war in Spain, the Vienna Awards, Vichy France, Norway and Greece
- * (which need ships, Stage G) are not in the agenda.
+ * Since Stage H the agenda also holds Norway (a surprise landing from the sea), Italy's attack
+ * on Greece and Germany's rescue of it, and the Vienna Awards (land handed from one small
+ * country to another by Germany's order). The war in Spain and the armistice with France are
+ * story events (story.ts). In a game with loose history each date is shifted by a few weeks or
+ * months (`world.story.drift`).
  */
 import { COUNTRIES } from './countries';
 import {
   addPact, alive, isolated, allied, alliesOf, ask, cannotGuarantee, claimOf, CLAIMS, CONTAIN_AGGRESSION, CONTAIN_TENSION, governmentOf, hasPact, isMajor, note, oddsAgainst, peaceAnswer, raiseTension, sendUltimatum, shift,
-  owedBy, startWar, strengths, warScore, type DipDraft,
+  owedBy, sendHome, startWar, strengths, warScore, type DipDraft,
 } from './diplomacy';
 import { monthEnds } from './economy';
 import { PROVINCES } from './map';
@@ -30,7 +33,9 @@ import { warKey } from './war';
 type Act =
   | { do: 'event'; tension: number; relations?: [string, string, number][]; cause?: { by: string; on: string; days: number; why: string } }
   | { do: 'ultimatum'; on: string; demand?: Demand; warOdds: number }
-  | { do: 'war'; on: string; limited?: number[]; cause?: string }
+  | { do: 'war'; on: string; limited?: number[]; cause?: string; surprise?: { province: number; divisions: number } }
+  /** Germany, as the strongest power on the continent, makes `from` hand these provinces to the country of the aim. */
+  | { do: 'award'; from: string; provinces: number[] }
   | { do: 'pact'; kind: 'alliance' | 'nonAggression'; with: string };
 
 export interface Aim {
@@ -54,7 +59,8 @@ export interface Aim {
 
 const P = (name: string): number => PROVINCES.find((q) => q.name === name)!.id;
 const fighting = (w: World, a: string, b: string): boolean => w.wars.includes(warKey(a, b));
-const gone = (w: World, name: string): boolean => w.capitulated.includes(name);
+/** Beaten: surrendered and occupied, or living on under an armistice (Vichy France). */
+const gone = (w: World, name: string): boolean => w.capitulated.includes(name) || w.story.armistice.includes(name);
 const did = (w: World, id: string): boolean => w.diplomacy.agenda[id] === 'done';
 /** Share of a country's own victory points in enemy hands. */
 const lost = (w: World, name: string): number => {
@@ -126,6 +132,12 @@ export const AGENDA: Aim[] = [
     needs: (w) => first(!fighting(w, 'Germany', 'United Kingdom') && !fighting(w, 'Germany', 'France') && 'it is not at war in the west', fighting(w, 'Germany', 'Poland') && 'Poland is not beaten yet'),
     history: 'Denmark was occupied in six hours on 9 April 1940. Norway was invaded by sea the same day.',
   },
+  {
+    id: 'norway', country: 'Germany', date: '1940-04-09', regime: 'fascist', news: 'German troops land at Oslo: Germany invades Norway',
+    act: { do: 'war', on: 'Norway', cause: 'the iron ore route from Sweden and bases against Britain', surprise: { province: P('Oslo'), divisions: 8 } },
+    needs: (w) => first(!fighting(w, 'Germany', 'United Kingdom') && !fighting(w, 'Germany', 'France') && 'it is not at war in the west', fighting(w, 'Germany', 'Poland') && 'Poland is not beaten yet'),
+    history: 'On 9 April 1940 German ships and aircraft landed troops at Oslo and several other Norwegian ports at once. Norway fought for two months with British and French help.',
+  },
   ...(['Netherlands', 'Belgium', 'Luxembourg'] as const).map(
     (on): Aim => ({
       id: `west-${on.toLowerCase()}`, country: 'Germany', date: '1940-05-10', regime: 'fascist', news: `Germany invades ${on === 'Netherlands' ? 'the Netherlands' : on}`,
@@ -139,6 +151,12 @@ export const AGENDA: Aim[] = [
     act: { do: 'war', on: 'Yugoslavia', cause: 'a coup in Belgrade against the pact with Germany' }, odds: 1.5,
     needs: (w) => first(westQuiet(w), !did(w, 'poland') && 'the war has not gone its way'),
     history: 'After a coup in Belgrade overthrew the government that had joined the Axis, Germany and its allies overran Yugoslavia in eleven days.',
+  },
+  {
+    id: 'greece-germany', country: 'Germany', date: '1941-04-06', regime: 'fascist', news: 'Germany invades Greece',
+    act: { do: 'war', on: 'Greece', cause: 'to rescue its ally Italy and close the Balkans to Britain' },
+    needs: (w) => first(!did(w, 'greece') && 'Italy has not attacked Greece', !allied(w.diplomacy, 'Germany', 'Italy') && 'it has no alliance with Italy', westQuiet(w)),
+    history: 'Germany attacked Greece on 6 April 1941, the same day as Yugoslavia, to rescue the Italian army stuck in Albania. Athens fell three weeks later.',
   },
   {
     id: 'barbarossa', country: 'Germany', date: '1941-06-22', regime: 'fascist', news: 'Germany invades the Soviet Union',
@@ -170,6 +188,12 @@ export const AGENDA: Aim[] = [
     needs: (w) => first(!fighting(w, 'Italy', 'United Kingdom') && 'it is not at war with Britain'),
     history: 'Italy invaded Egypt from Libya in September 1940. A much smaller British force threw it back that winter.',
   },
+  {
+    id: 'greece', country: 'Italy', date: '1940-10-28', regime: 'fascist', news: 'Italy invades Greece from Albania',
+    act: { do: 'war', on: 'Greece' },
+    needs: (w) => first(w.controller[P('Albania')] !== 'Italy' && 'it does not hold Albania', !fighting(w, 'Italy', 'United Kingdom') && 'it is not at war with Britain'),
+    history: 'Italy attacked Greece from Albania on 28 October 1940. The Greek army threw the Italians back within weeks.',
+  },
   // ----- The Soviet Union -----
   {
     id: 'east-poland', country: 'Soviet Union', date: '1939-09-17', regime: 'communist', news: 'The Red Army crosses into eastern Poland',
@@ -198,6 +222,24 @@ export const AGENDA: Aim[] = [
     history: 'Romania gave up Bessarabia to a Soviet ultimatum on 28 June 1940, and turned to Germany for protection.',
   },
   // ----- The smaller Axis countries -----
+  {
+    id: 'vienna-1', country: 'Hungary', date: '1938-11-02', regime: 'authoritarian', news: 'The First Vienna Award: Germany and Italy give Hungary the south of Slovakia and Ruthenia',
+    act: { do: 'award', from: 'Czechoslovakia', provinces: [P('Ruthenia')] },
+    needs: (w) => first(!did(w, 'munich') && 'Czechoslovakia has not given way to Germany'),
+    history: 'On 2 November 1938 Germany and Italy awarded Hungary the southern edge of Slovakia and Ruthenia. Hungary took the rest of Ruthenia in March 1939.',
+  },
+  {
+    id: 'vienna-2', country: 'Hungary', date: '1940-08-30', regime: 'authoritarian', news: 'The Second Vienna Award: Germany and Italy give Hungary northern Transylvania',
+    act: { do: 'award', from: 'Romania', provinces: [P('Crișana')] },
+    needs: (w) => first(!gone(w, 'France') && 'France is not beaten', fighting(w, 'Germany', 'Soviet Union') && 'Germany is busy in the east'),
+    history: 'On 30 August 1940 Germany and Italy ordered Romania to give northern Transylvania to Hungary.',
+  },
+  {
+    id: 'craiova', country: 'Bulgaria', date: '1940-09-07', regime: 'authoritarian', news: 'Romania returns southern Dobruja to Bulgaria, on Germany\'s advice',
+    act: { do: 'award', from: 'Romania', provinces: [P('Dobruja')] },
+    needs: (w) => first(!gone(w, 'France') && 'France is not beaten', fighting(w, 'Germany', 'Soviet Union') && 'Germany is busy in the east'),
+    history: 'By the Treaty of Craiova of 7 September 1940 Romania gave southern Dobruja back to Bulgaria.',
+  },
   ...([['Hungary', '1940-11-20'], ['Romania', '1940-11-23'], ['Bulgaria', '1941-03-01']] as const).map(
     ([country, date]): Aim => ({
       id: `axis-${country.toLowerCase()}`, country, date, regime: 'authoritarian', news: `${country} joins the Axis`,
@@ -224,19 +266,65 @@ export const quiet = <W extends Pick<World, 'diplomacy'>>(w: W): W => isolated(w
 const RETRY_DAYS = 7;
 /** An aim is given up this long after its historical date. */
 const GIVE_UP_DAYS = 3 * 365;
-const dayOf = (startDate: string, date: string): number => Math.round((Date.parse(`${date}T00:00:00Z`) - Date.parse(`${startDate}T00:00:00Z`)) / 86400000);
+export const dayOf = (startDate: string, date: string): number => Math.round((Date.parse(`${date}T00:00:00Z`) - Date.parse(`${startDate}T00:00:00Z`)) / 86400000);
+/** The day the AI first looks at an aim in this game: its real date, shifted when history is loose or an earlier event pushed it back. */
+export const aimDay = (w: Pick<World, 'startDate' | 'story'>, aim: Aim): number => dayOf(w.startDate, aim.date) + (w.story.drift[aim.id] ?? 0);
+
+/** May Germany's order hand this land over? Not if Germany is gone or changed, or the loser has a great power fighting Germany at its side. */
+const awardBlocked = (w: Pick<World, 'capitulated' | 'economies' | 'wars' | 'diplomacy' | 'owner' | 'controller'>, aim: Aim, act: Extract<Act, { do: 'award' }>): string | null =>
+  first(
+    (!alive(w, 'Germany') || governmentOf(w, 'Germany') !== 'fascist') && 'Germany no longer gives the orders',
+    w.wars.includes(warKey(act.from, 'Germany')) && `${act.from} is at war with Germany`,
+    w.wars.includes(warKey(act.from, aim.country)) && 'they are at war',
+    alliesOf(w.diplomacy, act.from).some((x) => isMajor(x) && alive(w, x) && w.wars.includes(warKey(x, 'Germany'))) && `${act.from} has an ally at war with Germany`,
+    !act.provinces.some((p) => w.owner[p] === act.from && w.controller[p] === act.from) && 'the land has already changed hands',
+  );
+
+/**
+ * A surprise landing on the first morning of a war: rested infantry from the attacker's home
+ * provinces comes ashore at one port before the defenders are ready. They fight at the usual
+ * disadvantage of a landing. This is how Germany took Oslo on 9 April 1940.
+ */
+/** After a surprise landing the defenders fight at this share of their power for this many days. */
+export const SURPRISE_LANDING_DAYS = 30;
+export const SURPRISE_LANDING_POWER = 0.6;
+export function surpriseLanding(d: DipDraft, by: string, province: number, divisions: number): number {
+  const front = new Set<number>();
+  for (const p of PROVINCES) if (d.controller[p.id] === by && p.neighbours.some((n) => d.wars.includes(warKey(by, d.controller[n])))) front.add(p.id);
+  const picked = d.units
+    .filter((u) => u.owner === by && u.type === 'infantry' && !u.path.length && !u.sea && !u.landing && u.organisation >= 60 && PROVINCES[u.at].owner === by && d.controller[u.at] === by && !front.has(u.at))
+    .sort((a, b) => b.organisation - a.organisation || a.id - b.id)
+    .slice(0, divisions);
+  // The defenders are caught half asleep for the first weeks.
+  const victim = d.controller[province];
+  if (picked.length) d.story.effects = [...d.story.effects.filter((x) => !(x.id === 'surprise' && x.country === victim)), { id: 'surprise', country: victim, until: d.day + SURPRISE_LANDING_DAYS, attack: SURPRISE_LANDING_POWER, defence: SURPRISE_LANDING_POWER, why: `caught by surprise by ${by}'s landing` }];
+  for (const u of picked) {
+    u.path = [province];
+    u.progress = 0;
+    u.landing = true;
+  }
+  return picked.length;
+}
 
 /** Where an aim stands today: what the AI is waiting for, or that it is ready. Used by the AI and shown in tests and reports. */
 export function aimStatus(w: World, aim: Aim): { state: 'done' | 'dropped' | 'early' | 'waiting' | 'ready'; why?: string } {
   const mark = w.diplomacy.agenda[aim.id];
   if (mark === 'done' || mark === 'dropped') return { state: mark };
-  if (w.day < dayOf(w.startDate, aim.date)) return { state: 'early' };
+  if (w.day < aimDay(w, aim)) return { state: 'early' };
   if (typeof mark === 'number' && mark > w.day) return { state: 'waiting', why: 'it looked recently and will look again' };
   if (aim.country === w.player) return { state: 'waiting', why: 'this is your country: the choice is yours' };
   if (!alive(w, aim.country)) return { state: 'dropped' };
   if (governmentOf(w, aim.country) !== aim.regime) return { state: 'dropped' };
+  if (aim.act.do === 'award') {
+    const no = awardBlocked(w, aim, aim.act);
+    if (no) return w.day - aimDay(w, aim) > 365 ? { state: 'dropped' } : { state: 'waiting', why: no };
+    const more = aim.needs?.(w);
+    return more ? { state: 'waiting', why: more } : { state: 'ready' };
+  }
   const target = aim.act.do === 'event' ? null : aim.act.do === 'pact' ? aim.act.with : aim.act.on;
   if (target && !alive(w, target)) return { state: 'dropped' };
+  // A country that has signed an armistice is left alone by those it signed with.
+  if (target && aim.act.do !== 'pact' && w.story.armistice.includes(target)) return { state: 'dropped' };
   if (target && aim.act.do !== 'pact' && (fighting(w, aim.country, target) || allied(w.diplomacy, aim.country, target))) return { state: 'dropped' };
   if (target && aim.act.do !== 'pact' && (w.diplomacy.truces[warKey(aim.country, target)] ?? 0) > w.day) return { state: 'waiting', why: 'a truce holds' };
   const why = aim.needs?.(w);
@@ -247,6 +335,7 @@ export function aimStatus(w: World, aim: Aim): { state: 'done' | 'dropped' | 'ea
 
 /** Is this aim pointless now (the country or its target is gone, or the government has changed)? */
 function aimStatusDropped(d: DipDraft, aim: Aim): boolean {
+  if (aim.act.do === 'award') return !alive(d, aim.country) || governmentOf(d, aim.country) !== aim.regime || !alive(d, aim.act.from) || d.day - aimDay(d, aim) > 365;
   const target = aim.act.do === 'event' ? null : aim.act.do === 'pact' ? aim.act.with : aim.act.on;
   return !alive(d, aim.country) || governmentOf(d, aim.country) !== aim.regime || (!!target && !alive(d, target)) || (!!target && aim.act.do !== 'pact' && (d.wars.includes(warKey(aim.country, target)) || allied(d.diplomacy, aim.country, target)));
 }
@@ -257,7 +346,7 @@ export function carryOutAim(d: DipDraft, id: string, go: boolean): void {
   const dip = d.diplomacy;
   if (!aim || dip.agenda[id] === 'done' || dip.agenda[id] === 'dropped' || aim.country === d.player) return;
   if (!go) {
-    dip.agenda[id] = d.day - dayOf(d.startDate, aim.date) > GIVE_UP_DAYS || aimStatusDropped(d, aim) ? 'dropped' : d.day + RETRY_DAYS;
+    dip.agenda[id] = d.day - aimDay(d, aim) > GIVE_UP_DAYS || aimStatusDropped(d, aim) ? 'dropped' : d.day + RETRY_DAYS;
     return;
   }
   const act = aim.act;
@@ -282,7 +371,23 @@ export function carryOutAim(d: DipDraft, id: string, go: boolean): void {
       if (act.cause) dip.causes.push({ by: aim.country, on: act.on, until: d.day + 30, why: act.cause });
       startWar(d, aim.country, act.on, 'attack');
       if (act.limited?.length) dip.aims[warKey(aim.country, act.on)] = { by: aim.country, provinces: act.limited };
+      if (act.surprise && d.wars.includes(warKey(aim.country, act.on))) surpriseLanding(d, aim.country, act.surprise.province, act.surprise.divisions);
       break;
+    case 'award': {
+      for (const p of act.provinces) {
+        if (d.owner[p] !== act.from || d.controller[p] !== act.from) continue;
+        d.owner[p] = aim.country;
+        d.controller[p] = aim.country;
+      }
+      const e = d.economies[act.from];
+      if (e) e.stability = Math.max(0, e.stability - 8);
+      shift(dip, act.from, aim.country, -20);
+      shift(dip, aim.country, 'Germany', 15);
+      raiseTension(d, 2);
+      note(d, 'crisis', aim.news, [aim.country, act.from, 'Germany']);
+      sendHome(d);
+      break;
+    }
     case 'pact': {
       const words = act.kind === 'alliance' ? 'an alliance' : 'a non-aggression pact';
       if (act.with === d.player) {
@@ -303,6 +408,26 @@ export function carryOutAim(d: DipDraft, id: string, go: boolean): void {
       break;
     }
   }
+}
+
+/** An AI army starts moving to the border this many days before a war its government has planned. */
+export const MASS_DAYS = 45;
+/** The wars AI governments are about to start: [attacker, target]. Their armies deploy to the border first (ai.ts). */
+export function plannedWars(w: World): [string, string][] {
+  const out: [string, string][] = [];
+  for (const aim of AGENDA) {
+    // Only the great campaigns: a small neighbour is attacked with whatever stands near.
+    if (aim.act.do !== 'war' || aim.country === w.player || !isMajor(aim.act.on) || aim.act.limited) continue;
+    const mark = w.diplomacy.agenda[aim.id];
+    if (mark === 'done' || mark === 'dropped') continue;
+    const left = aimDay(w, aim) - w.day;
+    if (left > MASS_DAYS || left < -GIVE_UP_DAYS) continue;
+    if (!alive(w, aim.country) || !alive(w, aim.act.on) || governmentOf(w, aim.country) !== aim.regime || fighting(w, aim.country, aim.act.on) || allied(w.diplomacy, aim.country, aim.act.on)) continue;
+    // Before the date it deploys in any case; after it, only while it is still weighing its odds.
+    if (left <= 0 && aim.needs?.(w)) continue;
+    out.push([aim.country, aim.act.on]);
+  }
+  return out;
 }
 
 /** Today's diplomatic orders for every country the AI leads. */

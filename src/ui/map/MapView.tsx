@@ -17,6 +17,7 @@ import { shipPlan } from '../../sim/navy';
 import { shipCount, ZONE_INDEX, ZONES, type SeaStatus } from '../../sim/sea';
 import { picturesOf, skyOver } from '../forces';
 import { useGame, type MapMode } from '../store';
+import { lessonById } from '../../tutorial/lessons';
 import { countryColour, landColour, TERRAIN_COLOUR, tint } from './colours';
 import { COAST, COUNTRY_POINTS, countryLines, GRATICULE, POINTS, PROVINCE_LINES, SEAS, SHAPES, TABLE_H, TABLE_W, ZONE_POINTS, ZONE_SHAPES } from './geo';
 
@@ -102,6 +103,8 @@ export function MapView() {
   const mapMode = useGame((s) => s.mapMode);
   const ordering = useGame((s) => s.ordering);
   const focus = useGame((s) => s.focus);
+  // The province a lesson step is about, ringed in gold.
+  const lessonProvince = useGame((s) => (s.lesson && !s.lesson.finished ? lessonById(s.lesson.id)?.steps[s.lesson.step]?.province : undefined));
   const me = world.player;
 
   const box = useRef<HTMLDivElement>(null);
@@ -159,6 +162,7 @@ export function MapView() {
     };
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
+      useGame.getState().bumpMoves();
       const [cx, cy] = point(e);
       zoomAt(Math.exp(-e.deltaY * (e.ctrlKey ? 0.01 : 0.0018)), cx, cy);
     };
@@ -172,6 +176,7 @@ export function MapView() {
       e.preventDefault();
       const g = e as unknown as { scale: number; clientX: number; clientY: number };
       const [cx, cy] = point(g);
+      useGame.getState().bumpMoves();
       zoomAt(g.scale / last, cx, cy);
       last = g.scale;
     };
@@ -208,6 +213,7 @@ export function MapView() {
       const dy = e.clientY - d.y;
       if (!d.moved && Math.hypot(dx, dy) < 5) return;
       d.moved = true;
+      useGame.getState().bumpMoves();
       setView((v) => clamp({ k: v.k, x: d.vx + dx, y: d.vy + dy }));
       return;
     }
@@ -292,6 +298,7 @@ export function MapView() {
     else if (e.key === '-' || e.key === '_') zoomAt(1 / 1.3, w / 2, h / 2);
     else if (e.key === 'Tab') useGame.getState().cycleArmy(e.shiftKey ? -1 : 1);
     else return;
+    if (e.key !== 'Tab') useGame.getState().bumpMoves();
     e.preventDefault();
   };
 
@@ -420,6 +427,7 @@ export function MapView() {
           {[...ends].map((p) => (
             <path key={p} d={SHAPES[p]} className="mt-target" />
           ))}
+          {lessonProvince !== undefined && <path d={SHAPES[lessonProvince]} className="mt-lesson" />}
 
           <g className="mt-labels">
             {!airsea &&
@@ -571,10 +579,10 @@ export function MapView() {
       </svg>
       <HoverLine province={hover} zone={hoverZone} />
       <div className="mt-zoom">
-        <button className="mt-icon" aria-label="Zoom in" onClick={() => zoomAt(1.4, size.w / 2, size.h / 2)} onPointerDown={(e) => e.stopPropagation()}>
+        <button className="mt-icon" aria-label="Zoom in" onClick={() => (useGame.getState().bumpMoves(), zoomAt(1.4, size.w / 2, size.h / 2))} onPointerDown={(e) => e.stopPropagation()}>
           +
         </button>
-        <button className="mt-icon" aria-label="Zoom out" onClick={() => zoomAt(1 / 1.4, size.w / 2, size.h / 2)} onPointerDown={(e) => e.stopPropagation()}>
+        <button className="mt-icon" aria-label="Zoom out" onClick={() => (useGame.getState().bumpMoves(), zoomAt(1 / 1.4, size.w / 2, size.h / 2))} onPointerDown={(e) => e.stopPropagation()}>
           −
         </button>
       </div>

@@ -35,6 +35,42 @@ Orders for divisions or economies that are not yours are dropped.
 march the moment you order it, even while paused. `step(applyOrders(w, orders))` gives exactly
 the same world as `step(w, orders)`.
 
+## Repeatable to the last digit (`src/sim/dmath.ts`, `src/sim/hash.ts`)
+
+The same seed and the same orders always give the same world, on any computer. That is what
+lets a saved game carry on exactly, and it is what multiplayer will need later: in "lockstep"
+play every computer runs the simulation itself and only the players' orders are sent between
+them, so the worlds must never drift apart.
+
+- All randomness comes from the seeded generator in `rng.ts`, whose whole state is one number
+  kept in the world.
+- Adding, subtracting, multiplying, dividing and square roots are exact on every computer.
+  `Math.log`, `Math.exp`, `Math.sin` and the like are not: each browser works them out its own
+  way and may differ in the last digit. The engine uses its own versions (`dmath.ts`), built
+  only from the exact steps, accurate to about 15 figures. Dates are written out by the engine
+  too, not by the computer's language settings.
+- `worldHash(world)` is a 14-digit fingerprint of the whole world. Two computers that are in
+  step have the same fingerprint at the end of every day; if they ever differ, one of them
+  has drifted and needs the world sent again.
+- A test (`tests/lockstep.test.ts`) plays the same game twice and checks every day's
+  fingerprint, checks that a game saved and loaded half way ends exactly like one that never
+  stopped, and checks that no file in `src/sim` uses the maths, clocks or language settings
+  that differ between computers.
+
+## Lessons (`src/tutorial/lessons.ts`)
+
+Learn to play has nine lessons. Each is a world built from the real 1936 world, with France as
+the player, divisions placed where the lesson wants them, and `story.lesson` set. That switches
+off history cards, story events, random events and the end of the game; the AI's historical
+agenda and the treaties are off too, so nothing happens but what the lesson set up. Two lessons
+start a war: France and Germany on 7 September 1939 (the Saar, with most of the German army in
+the east), and Italy and France on 11 June 1940. The AI still leads the enemy army, so it can
+counter-attack.
+
+Each step is a check on the game (a panel open, divisions marching, a province taken) and a
+"Show me" that does the step. The tests play every lesson with Show me alone and fail if any
+step cannot be finished. Lessons are never saved and never touch the autosave.
+
 ## What you can see (`src/sim/intel.ts`)
 
 You always see the map and who holds each province. You see foreign divisions only in

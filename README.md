@@ -4,14 +4,18 @@ A grand-strategy game set in Europe from 1936. You lead a real country through t
 the war that followed, and face what its leaders faced: armies, factories, money, allies and
 public support. It is built to teach the history and the economics as you play.
 
-> **Status: Stage H of the war game.** Story mode is in: start in 1936 or on the morning of
-> 1 September 1939, lead one of six countries, and get a history card on each real date that
-> says what really happened and how your game compares. Decisions arrive on their real dates,
-> three chapters give you your country's real aims, and an end report sets your game beside
-> history. Free-for-all tears up every treaty and lets every country look after itself. The
-> last stage is polish, a tutorial and the finished Mac app (Stage I).
+> **Status: Stage I-1 of the war game.** New to the game? Press **Learn to play** on the title
+> screen: nine short lessons on the real map teach the map table, time, moving divisions, battle,
+> factories, money, research and the home front, diplomacy, and the navy and air force. Each
+> lesson's card tells you one thing at a time, lights up what to click, and moves on when you
+> have done it, or press **Show me** and watch. In real games an advisor explains each panel the
+> first time you open it, and every underlined word opens the codex. The rest of Stage I comes
+> next: smarter army AI (I-2) and the finished Mac app with automatic updates (I-3).
 
-## How to play (Stage H)
+## How to play
+
+**Start with Learn to play** (key **L** on the title screen). The nine lessons take about 36
+minutes in all, and you can take them in any order. Everything below is what they teach.
 
 1. Choose **Story** or **Free-for-all**, then a start (1 January 1936, or 1 September 1939)
    and a country. The clock starts paused. In Story mode press **C** for the Chronicle: your
@@ -144,6 +148,7 @@ Apple Developer account.
 
 | Key | Does |
 | --- | --- |
+| L | On the title screen: Learn to play |
 | Space | Pause or resume |
 | 1 to 5 | Game speed |
 | . | Advance one day while paused |

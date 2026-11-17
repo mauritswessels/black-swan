@@ -1,6 +1,6 @@
 /** Codex, save/load and keyboard help, shown on top of any screen. */
-import { useState } from 'react';
-import { GLOSSARY } from '../../content/glossary';
+import { useEffect, useRef, useState } from 'react';
+import { GLOSSARY, GROUPS, groupOf, type GroupId } from '../../content/glossary';
 import { readSave, SLOTS, type Slot } from '../../save/storage';
 import { useGame } from '../store';
 
@@ -22,16 +22,32 @@ export function Shell({ title, children }: { title: string; children: React.Reac
 }
 
 export function Codex() {
+  const first = useGame((s) => s.codexTerm);
   const [q, setQ] = useState('');
-  const terms = GLOSSARY.filter((t) => (t.term + t.definition).toLowerCase().includes(q.toLowerCase())).sort((a, b) => a.term.localeCompare(b.term));
+  const [group, setGroup] = useState<GroupId | 'all' | 'ap'>('all');
+  const list = useRef<HTMLDListElement>(null);
+  const words = q.toLowerCase();
+  const terms = GLOSSARY.filter((t) => (group === 'all' || (group === 'ap' ? t.ap : groupOf(t) === group)) && (t.term + t.definition + t.why).toLowerCase().includes(words)).sort((a, b) => a.term.localeCompare(b.term));
+  // Opened from a word on the screen: go straight to its entry.
+  useEffect(() => {
+    if (first) list.current?.querySelector(`[data-term="${first}"]`)?.scrollIntoView({ block: 'center' });
+  }, [first]);
   return (
     <Shell title={`Codex · ${GLOSSARY.length} terms`}>
-      <input className="search" placeholder="Search terms…" value={q} onChange={(e) => setQ(e.target.value)} autoFocus aria-label="Search the codex" />
-      <dl className="codex">
+      <input className="search" placeholder="Search terms…" value={q} onChange={(e) => setQ(e.target.value)} autoFocus={!first} aria-label="Search the codex" />
+      <div className="codex-groups" role="group" aria-label="Show terms about">
+        {[{ id: 'all', name: 'All' }, ...GROUPS, { id: 'ap', name: 'AP Macro' }].map((g) => (
+          <button key={g.id} aria-pressed={group === g.id} onClick={() => setGroup(g.id as typeof group)}>
+            {g.name}
+          </button>
+        ))}
+      </div>
+      <dl className="codex" ref={list}>
         {terms.map((t) => (
-          <div key={t.id}>
+          <div key={t.id} data-term={t.id} className={t.id === first ? 'picked' : ''}>
             <dt>
               {t.term} {t.ap && <span className="tag first">AP Macro</span>}
+              {group === 'all' && <span className="codex-group">{GROUPS.find((g) => g.id === groupOf(t))?.name}</span>}
             </dt>
             <dd>
               {t.definition}
@@ -39,7 +55,9 @@ export function Codex() {
             </dd>
           </div>
         ))}
+        {!terms.length && <p className="muted">Nothing found. Try another word, or show all groups.</p>}
       </dl>
+      <p className="muted codex-foot">New to the game? Learn to play (key L on the title screen) teaches all of this step by step on the map.</p>
     </Shell>
   );
 }
@@ -62,7 +80,7 @@ export function Saves() {
                 </div>
               </div>
               <div className="slot-actions">
-                {world && screen === 'game' && slot !== 'auto' && (
+                {world && screen === 'game' && slot !== 'auto' && !world.story.lesson && (
                   <button className="btn" onClick={() => setMsg(save(slot) ? `Saved to ${label(slot)}.` : 'Saving failed: storage is blocked.')}>
                     Save here
                   </button>
@@ -78,7 +96,7 @@ export function Saves() {
         })}
       </ul>
       <p className="muted" role="status">
-        {msg || 'Saves stay on this computer. The game also autosaves on the first of each month and when you go back to the menu.'}
+        {msg || (world?.story.lesson && screen === 'game' ? 'Lessons are not saved. You can load one of your own games here.' : '') || 'Saves stay on this computer. The game also autosaves on the first of each month and when you go back to the menu.'}
       </p>
     </Shell>
   );
@@ -113,7 +131,7 @@ export function Help() {
     ['M', 'Sound on or off'],
     ['?', 'This help'],
     ['Esc', 'Close a panel or the sidebar'],
-    ['N / F / C', 'On the title screen: Story, Free-for-all, Continue'],
+    ['N / F / C / L', 'On the title screen: Story, Free-for-all, Continue, Learn to play'],
   ];
   return (
     <Shell title="Keyboard shortcuts">

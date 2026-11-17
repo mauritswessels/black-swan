@@ -9,6 +9,7 @@ import { TERRAIN_COLOUR } from '../map/colours';
 import { SPEED_MS, useGame, type MapMode, type Selection } from '../store';
 import { money } from './EconomyPanels';
 import { Sidebar } from './Sidebar';
+import { Coach } from './Coach';
 import './maptable.css';
 
 const GOVERNMENT = { democracy: 'Democracy', authoritarian: 'Authoritarian government', fascist: 'Fascist dictatorship', communist: 'Communist dictatorship' };
@@ -114,6 +115,7 @@ function Rail() {
   const { setOverlay, go, toggleMute, select } = useGame.getState();
   const muted = useGame((s) => s.muted);
   const story = useGame((s) => s.world?.mode === 'story');
+  const inLesson = useGame((s) => !!s.lesson);
   // A gold dot on a panel that is waiting for a decision: an idle research team, or no plan under way.
   const e = useGame((s) => (s.world?.player && !s.world.capitulated.includes(s.world.player) ? s.world.economies[s.world.player] : undefined));
   const alerts: Record<string, string> = {};
@@ -128,7 +130,7 @@ function Rail() {
     <nav className="mt-rail" aria-label="Panels">
       {RAIL.map((r) =>
         r.open ? (
-          <button key={r.label} onClick={() => select(r.open!)} title={`${RAIL_TITLE[r.label] ?? r.label} (${r.key})`} className={alerts[r.label] ? 'alert' : ''} aria-label={`${RAIL_TITLE[r.label] ?? r.label}${alerts[r.label] ? `: ${alerts[r.label]}` : ''}`}>
+          <button key={r.label} data-tut={`rail-${r.label.toLowerCase()}`} onClick={() => select(r.open!)} title={`${RAIL_TITLE[r.label] ?? r.label} (${r.key})`} className={alerts[r.label] ? 'alert' : ''} aria-label={`${RAIL_TITLE[r.label] ?? r.label}${alerts[r.label] ? `: ${alerts[r.label]}` : ''}`}>
             <Icon d={r.d} />
             <span>{r.label}</span>
           </button>
@@ -147,7 +149,7 @@ function Rail() {
         <Icon d="M5 5l14 14M19 5L5 19M4 8l4-4M20 8l-4-4" />
         <span>Battles</span>
       </button>
-      <button onClick={() => setOverlay('codex')} title="Codex (X)">
+      <button data-tut="rail-codex" onClick={() => setOverlay('codex')} title="Codex (X)">
         <Icon d={CODEX} />
         <span>Codex</span>
       </button>
@@ -164,9 +166,9 @@ function Rail() {
         <Icon d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7M12 17h.01M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18" />
         <span>Keys</span>
       </button>
-      <button onClick={() => go('title')} title="Main menu">
+      <button onClick={() => go(inLesson ? 'lessons' : 'title')} title={inLesson ? 'Back to the lessons' : 'Main menu'}>
         <Icon d="M4 12l8-8l8 8M6 10v10h12V10" />
-        <span>Menu</span>
+        <span>{inLesson ? 'Lessons' : 'Menu'}</span>
       </button>
     </nav>
   );
@@ -285,6 +287,7 @@ export function MapTable() {
   const overlay = useGame((s) => s.overlay);
   const defeated = useGame((s) => s.defeated);
   const hasSelection = useGame((s) => !!s.selection);
+  const inLesson = useGame((s) => !!s.lesson);
 
   // The clock: one day per tick. It stops while a panel such as the codex is open.
   useEffect(() => {
@@ -307,6 +310,7 @@ export function MapTable() {
       <Sidebar />
       <Ticker />
       {defeated && <Defeat />}
+      {inLesson && <Coach />}
     </div>
   );
 }

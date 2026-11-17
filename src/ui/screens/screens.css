@@ -80,3 +80,24 @@
 .st-timeline small { grid-row: 1 / span 2; color: #8fa0bb; font-size: 12.5px; }
 .st-timeline b { color: var(--white); font-weight: 600; }
 .st-timeline span { color: #a9b6cb; }
+
+/* ================= Stage I: Learn to play ================= */
+.lesson-list { list-style: none; margin: 22px 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(290px, 1fr)); gap: 10px; }
+.lesson-list button { width: 100%; height: 100%; text-align: left; display: grid; grid-template-columns: 34px 1fr auto; column-gap: 12px; row-gap: 3px; padding: 12px 14px; background: var(--glass); border: 1px solid var(--edge-strong); border-radius: 3px; cursor: pointer; align-content: start; color: var(--txt); }
+.lesson-list button:hover { background: rgba(156, 200, 255, 0.14); box-shadow: 0 0 18px rgba(156, 200, 255, 0.2); }
+.lesson-list button.next { border-color: var(--gold); }
+.lesson-list b { grid-row: 1 / span 2; font: 300 30px/1 var(--f-cond); color: var(--ice); }
+.lesson-list button.done b { color: var(--ok); }
+.lesson-title { font: 600 19px var(--f-cond); letter-spacing: 0.05em; color: var(--white); text-transform: uppercase; }
+.lesson-sum { grid-column: 2 / span 2; font-size: 13.5px; color: #a9b6cb; line-height: 1.4; }
+.lesson-min { grid-row: 1; grid-column: 3; font-size: 12.5px; color: var(--dim); white-space: nowrap; }
+.lesson-list button.done .lesson-min { color: var(--ok); }
+.title-actions.left { justify-content: flex-start; }
+
+/* Stage I: codex groups and jumping to a term. */
+.codex-groups { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.codex-groups button { padding: 5px 10px; border: 1px solid var(--edge-strong); border-radius: 3px; background: transparent; color: #cfe0f7; font: 600 12.5px var(--f-cond); letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
+.codex-groups button[aria-pressed='true'] { border-color: var(--gold); background: rgba(255, 196, 107, 0.12); color: #fff; }
+.codex-group { margin-left: auto; font: 500 11.5px var(--f-cond); letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
+.codex > div.picked { border-left: 3px solid var(--gold); padding-left: 10px; background: rgba(255, 196, 107, 0.06); }
+.codex-foot { margin-top: 10px; font-size: 13px; }

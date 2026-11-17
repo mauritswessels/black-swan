@@ -19,8 +19,10 @@ import { picturesOf } from './forces';
 import { applyOrders, dateLabel } from '../sim/world';
 import { readSave, writeSave, type Slot } from '../save/storage';
 import { sound } from './audio/sound';
+import { lessonById, type LessonView } from '../tutorial/lessons';
+import { markLessonDone } from './lessonProgress';
 
-export type Screen = 'title' | 'setup' | 'game';
+export type Screen = 'title' | 'setup' | 'game' | 'lessons';
 export type MapMode = 'political' | 'terrain' | 'supply' | 'diplomacy' | 'airsea';
 
 /** What the sidebar is showing. */
@@ -68,6 +70,20 @@ interface Store {
   screen: Screen;
   setupMode: Mode;
   overlay: null | 'codex' | 'saves' | 'help' | 'report';
+  /** The codex entry to show first when the codex opens. */
+  codexTerm: string | null;
+  /** Open the codex, at one term if given. */
+  openCodex: (term?: string) => void;
+  /** The lesson being played, the step it is on, and how things stood when that step began. */
+  lesson: { id: string; step: number; start: LessonView; finished: boolean } | null;
+  /** How often the player has dragged or zoomed the map (lessons check it). */
+  moves: number;
+  bumpMoves: () => void;
+  startLesson: (id: string) => void;
+  /** Go on to the next step of the lesson. */
+  lessonNext: () => void;
+  /** Do the current step for the player. */
+  lessonShow: () => void;
   /** While a September 1939 game is being prepared: how far along, 0 to 1. */
   preparing: number | null;
   /** Stop the clock when a history card arrives. */
@@ -269,7 +285,15 @@ function diplomaticNews(before: World, after: World): News[] {
   return out;
 }
 
-const fresh = { running: false, selection: null, ordering: false, bySea: false, news: [] as News[], notice: '', focus: null, defeated: false };
+const fresh = { running: false, selection: null, ordering: false, bySea: false, news: [] as News[], notice: '', focus: null, defeated: false, lesson: null, mapMode: 'political' as MapMode };
+
+/** What a lesson's checks can see (see src/tutorial/lessons.ts). */
+export const lessonView = (s: Pick<Store, 'world' | 'selection' | 'mapMode' | 'overlay' | 'running' | 'speed' | 'ordering' | 'bySea' | 'moves'>): LessonView => ({
+  world: s.world!, selection: s.selection, mapMode: s.mapMode, overlay: s.overlay, running: s.running, speed: s.speed, ordering: s.ordering, bySea: s.bySea, moves: s.moves,
+});
+/** Lessons never touch the player's saves. */
+const saving = (w: World) => !w.story.lesson;
+let lastMove = 0;
 let focusN = 0;
 
 export const useGame = create<Store>((set, get) => {
@@ -291,10 +315,19 @@ export const useGame = create<Store>((set, get) => {
     screen: 'title',
     setupMode: 'freeForAll',
     overlay: null,
+    codexTerm: null,
+    openCodex: (term) => set({ overlay: 'codex', codexTerm: term ?? null }),
+    moves: 0,
+    bumpMoves: () => {
+      // Dragging fires many events: count one move every quarter of a second at most.
+      const now = Date.now();
+      if (now - lastMove < 250) return;
+      lastMove = now;
+      set((s) => ({ moves: s.moves + 1 }));
+    },
     world: null,
     muted: readMuted(),
     speed: 2,
-    mapMode: 'political',
     pauseOnAttack: true,
     togglePauseOnAttack: () => set((s) => ({ pauseOnAttack: !s.pauseOnAttack })),
     preparing: null,
@@ -304,10 +337,10 @@ export const useGame = create<Store>((set, get) => {
 
     go: (screen) => {
       const { world, screen: was } = get();
-      if (was === 'game' && world) writeSave('auto', summaryOf(world), world);
-      set({ screen, overlay: null, running: false });
+      if (was === 'game' && world && saving(world)) writeSave('auto', summaryOf(world), world);
+      set({ screen, overlay: null, running: false, ...(screen !== 'game' ? { lesson: null } : {}) });
     },
-    setOverlay: (overlay) => set({ overlay }),
+    setOverlay: (overlay) => set({ overlay, codexTerm: null }),
     chooseMode: (mode) => set({ setupMode: mode, screen: 'setup', overlay: null }),
 
     startGame: ({ mode, start, player, history }) => {
@@ -393,7 +426,7 @@ export const useGame = create<Store>((set, get) => {
       if ((attacked || decision) && get().running && !get().muted) sound.alert();
       set({ world: next, selection: sel, news: added.length ? [...news, ...added].slice(-40) : news, defeated, running: get().running && !defeated && !attacked && !decision && !card && !ended, ...(ended ? { overlay: 'report' as const } : {}) });
       // Autosave on the first of each month.
-      if (dateLabel(next).startsWith('1 ')) writeSave('auto', summaryOf(next), next);
+      if (dateLabel(next).startsWith('1 ') && saving(next)) writeSave('auto', summaryOf(next), next);
     },
 
     select: (selection) => {
@@ -527,6 +560,53 @@ export const useGame = create<Store>((set, get) => {
       give([{ ...action, country: world.player } as Order]);
     },
 
+    startLesson: (id) => {
+      const l = lessonById(id);
+      if (!l) return;
+      const world = l.build();
+      const first = l.steps[0]?.province;
+      const s = { ...get(), ...fresh, world };
+      set({ ...fresh, world, screen: 'game', overlay: null, preparing: null, speed: 2, lesson: { id, step: 0, start: lessonView(s), finished: false }, focus: { province: first ?? 23, n: ++focusN } });
+      if (!get().muted) sound.startAmbient();
+    },
+
+    lessonNext: () => {
+      const s = get();
+      const l = s.lesson;
+      const lesson = l && lessonById(l.id);
+      if (!l || !lesson || l.finished) return;
+      const step = l.step + 1;
+      if (step >= lesson.steps.length) {
+        markLessonDone(l.id);
+        return set({ lesson: { ...l, finished: true }, running: false });
+      }
+      const next = lesson.steps[step];
+      const running = next.keepClock ? s.running : false;
+      const province = next.province;
+      set({ lesson: { ...l, step, start: lessonView({ ...s, running }) }, running, ...(province !== undefined ? { focus: { province, n: ++focusN } } : {}) });
+    },
+
+    lessonShow: () => {
+      const s = get();
+      const step = s.lesson && lessonById(s.lesson.id)?.steps[s.lesson.step];
+      if (!s.world || !step?.show) return;
+      const a = step.show(lessonView(s));
+      const patch: Partial<Store> = {};
+      if (a.select !== undefined) {
+        const k = a.select?.kind;
+        Object.assign(patch, { selection: a.select as Selection | null, ordering: false, bySea: false, notice: '' }, k === 'zone' || k === 'fleet' || k === 'wings' ? { mapMode: 'airsea' } : {});
+      }
+      if (a.orders?.length) patch.world = applyOrders(s.world, ownOrders(s.world, a.orders));
+      if (a.mapMode !== undefined) patch.mapMode = a.mapMode as MapMode;
+      if (a.overlay !== undefined) Object.assign(patch, { overlay: a.overlay, codexTerm: null });
+      if (a.run !== undefined) patch.running = a.run;
+      if (a.speed !== undefined) patch.speed = a.speed;
+      if (a.look !== undefined) Object.assign(patch, { focus: { province: a.look, n: ++focusN }, moves: s.moves + 1 });
+      set(patch);
+      if (!s.muted) sound.click();
+      for (let i = 0; i < (a.days ?? 0); i++) get().tick();
+    },
+
     cycleArmy: (step) => {
       const { world, selection } = get();
       if (!world?.player) return;
@@ -541,5 +621,13 @@ export const useGame = create<Store>((set, get) => {
 });
 
 if (useGame.getState().muted) sound.setMuted(true);
+
+// A lesson moves on by itself as soon as the player has done what the step asks.
+useGame.subscribe((s) => {
+  const l = s.lesson;
+  if (!l || l.finished || !s.world || s.screen !== 'game') return;
+  const step = lessonById(l.id)?.steps[l.step];
+  if (step?.done && step.done(lessonView(s), l.start)) useGame.getState().lessonNext();
+});
 // While developing, `game.getState()` in the browser console gives the whole app state.
 if (import.meta.env.DEV) (window as unknown as { game: typeof useGame }).game = useGame;

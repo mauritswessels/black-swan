@@ -1,6 +1,7 @@
 /** Small shared pieces: glossary tooltips, animated numbers, a gauge and a meter. */
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { termById } from '../../content/glossary';
+import { useGame } from '../store';
 
 // ---------- Tooltip for a glossary term ----------
 let tipEl: HTMLDivElement | null = null;
@@ -27,7 +28,9 @@ export function Term({ id, children, now }: { id: string; children: ReactNode; n
     el.append(b, document.createTextNode(t.definition));
     const i = document.createElement('i');
     i.textContent = now ?? t.why;
-    el.append(i);
+    const more = document.createElement('small');
+    more.textContent = 'Click for the codex';
+    el.append(i, more);
     el.hidden = false;
     const w = 300;
     el.style.left = `${Math.min(x + 14, window.innerWidth - w - 12)}px`;
@@ -47,6 +50,16 @@ export function Term({ id, children, now }: { id: string; children: ReactNode; n
         show(r.left, r.bottom);
       }}
       onBlur={hide}
+      onClick={(e) => {
+        e.stopPropagation();
+        hide();
+        useGame.getState().openCodex(id);
+      }}
+      onKeyDown={(e) => {
+        if (e.key !== 'Enter') return;
+        hide();
+        useGame.getState().openCodex(id);
+      }}
     >
       {children}
     </span>

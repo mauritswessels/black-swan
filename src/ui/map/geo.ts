@@ -29,6 +29,32 @@ export const COAST: string = path(mesh(t, object, (a: unknown, b: unknown) => a 
 export const PROVINCE_LINES: string = path(mesh(t, object, (a: unknown, b: unknown) => a !== b)) ?? '';
 export const GRATICULE: string = path(geoGraticule10()) ?? '';
 
+const pairKey = (a: number, b: number): number => (a < b ? a * 1000 + b : b * 1000 + a);
+const borders = new Map<number, { d: string; mid: [number, number] } | null>();
+/** The border line between two neighbouring provinces, and its middle point. Null when they only meet across the sea. */
+export function sharedBorder(a: number, b: number): { d: string; mid: [number, number] } | null {
+  const k = pairKey(a, b);
+  let hit = borders.get(k);
+  if (hit === undefined) {
+    const m = mesh(t, object, (x: unknown, y: unknown) => {
+      const i = index.get(x);
+      const j = index.get(y);
+      return (i === a && j === b) || (i === b && j === a);
+    });
+    const d = path(m) ?? '';
+    hit = d ? { d, mid: path.centroid(m) as [number, number] } : null;
+    borders.set(k, hit);
+  }
+  return hit;
+}
+
+/** The outline of a group of provinces (a pocket), coasts included. */
+export function outline(provinces: number[]): string {
+  const inside = new Set(provinces);
+  const has = (g: unknown) => inside.has(index.get(g)!);
+  return path(mesh(t, object, (x: unknown, y: unknown) => (x === y ? has(x) : has(x) !== has(y)))) ?? '';
+}
+
 /** The lines between provinces held by different countries. Changes as provinces change hands. */
 export function countryLines(controller: string[]): string {
   return path(mesh(t, object, (a: unknown, b: unknown) => a !== b && controller[index.get(a)!] !== controller[index.get(b)!])) ?? '';

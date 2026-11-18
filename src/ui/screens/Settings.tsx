@@ -166,6 +166,9 @@ export function Settings() {
             />
             <span className="set-value">{Math.round(settings.volume * 100)}%</span>
           </Row>
+          <Row title="Battle sounds" why="A low rumble of guns that grows with the number of battles where you are looking, while the clock runs.">
+            <Switch on={settings.battleSounds} onChange={(v) => setSetting('battleSounds', v)} label="Battle sounds" />
+          </Row>
         </section>
 
         <section className="set-group" aria-labelledby="set-clock">

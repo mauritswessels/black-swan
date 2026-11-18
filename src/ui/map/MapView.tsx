@@ -19,7 +19,11 @@ import { picturesOf, skyOver } from '../forces';
 import { useGame, type MapMode } from '../store';
 import { lessonById } from '../../tutorial/lessons';
 import { countryColour, landColour, TERRAIN_COLOUR, tint } from './colours';
-import { COAST, COUNTRY_POINTS, countryLines, GRATICULE, POINTS, PROVINCE_LINES, SEAS, SHAPES, TABLE_H, TABLE_W, ZONE_POINTS, ZONE_SHAPES } from './geo';
+import { COAST, COUNTRY_POINTS, countryLines, GRATICULE, outline, POINTS, PROVINCE_LINES, SEAS, SHAPES, sharedBorder, TABLE_H, TABLE_W, ZONE_POINTS, ZONE_SHAPES } from './geo';
+import { RIVER_BORDERS, riverBetween } from '../../sim/rivers';
+import { pocketsOf, pocketWords } from '../../sim/pockets';
+import { GROUND_WORDS, groundOn } from '../../sim/seasons';
+import { sound } from '../audio/sound';
 
 interface View {
   k: number;
@@ -86,6 +90,64 @@ const Land = memo(function Land({ fill, lines }: { fill: string[]; lines: string
       <path d={COAST} className="mt-coast" />
       <path d={lines} className="mt-border-glow" />
       <path d={lines} className="mt-border" />
+    </g>
+  );
+});
+
+/** The great rivers, drawn on the borders they follow. */
+const RIVER_LINES: string = RIVER_BORDERS.map((r) => sharedBorder(r.a, r.b)?.d ?? '').join('');
+
+/** One front band: the attackers' colour growing into `to` from its border with `from`, `line` points of 100 deep. */
+export interface Band {
+  key: string;
+  from: number;
+  to: number;
+  owner: string;
+  line: number;
+  battle: boolean;
+}
+
+/**
+ * The front bands on the map: one for each direction of each battle, as deep as the battle's
+ * front line, and one for each march into empty enemy land, as deep as the division has walked.
+ */
+export function frontBands(w: World, visible: (province: number, owner: string) => boolean): Band[] {
+  const bands = new Map<string, Band>();
+  const fighting = new Map(w.battles.map((b) => [b.province, b]));
+  for (const u of w.units) {
+    if (!u.path.length || u.sea) continue;
+    const to = u.path[0];
+    const b = fighting.get(to);
+    let line: number;
+    if (b) {
+      if (!b.attackers.includes(u.owner)) continue;
+      line = b.line;
+    } else {
+      if (u.landing || !atWar(w, u.owner, w.controller[to])) continue;
+      line = 100 * u.progress;
+    }
+    if (line < 1 || !visible(to, u.owner)) continue;
+    const key = `${u.at}>${to}`;
+    const had = bands.get(key);
+    if (!had || had.line < line) bands.set(key, { key, from: u.at, to, owner: had?.owner ?? u.owner, line, battle: !!b });
+  }
+  return [...bands.values()];
+}
+
+const FrontBand = memo(function FrontBand({ band, k }: { band: Band; k: number }) {
+  const border = sharedBorder(band.from, band.to);
+  const [tx, ty] = POINTS[band.to];
+  // How deep the province is, seen from this border: twice the distance from the border to its centre.
+  const [mx, my] = border?.mid ?? [(POINTS[band.from][0] + tx) / 2, (POINTS[band.from][1] + ty) / 2];
+  const depth = Math.max(8, 2 * Math.hypot(tx - mx, ty - my));
+  const width = 2 * depth * (band.line / 100);
+  const d = border?.d ?? `M${mx - (ty - my) * 0.4},${my + (tx - mx) * 0.4}L${mx + (ty - my) * 0.4},${my - (tx - mx) * 0.4}`;
+  const colour = countryColour(band.owner);
+  return (
+    <g clipPath={`url(#clip-${band.to})`} className={`mt-band${band.battle ? ' battle' : ''}`}>
+      {/* A bright edge where the front is, then the band itself on top of it. */}
+      <path d={d} strokeWidth={width + 3.5 / k} className="edge" />
+      <path d={d} stroke={colour} strokeWidth={width} className="fill" />
     </g>
   );
 });
@@ -306,6 +368,28 @@ export function MapView() {
   const lines = useMemo(() => countryLines(world.controller), [world.controller]);
   const stacks = useMemo(() => visibleStacks(world, me), [world.units, world.controller, me]); // eslint-disable-line react-hooks/exhaustive-deps
   const seen = useMemo(() => visibleProvinces(world, me), [world.units, world.controller, me]); // eslint-disable-line react-hooks/exhaustive-deps
+  const friendsOfMe = useMemo(() => (me ? allianceMap(world.diplomacy).get(me) : undefined), [world.diplomacy, me]);
+  const bands = useMemo(() => frontBands(world, (p, owner) => !me || owner === me || !!friendsOfMe?.has(owner) || seen[p]), [world.units, world.battles, world.controller, seen, me, friendsOfMe]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Pockets you can see: your own and your allies', and the enemy's where your divisions see them.
+  const pockets = useMemo(() => pocketsOf(world).filter((x) => !me || x.owner === me || friendsOfMe?.has(x.owner) || x.provinces.some((p) => seen[p])).map((x) => ({ ...x, d: outline(x.provinces) })), [world.units, seen, me, friendsOfMe]); // eslint-disable-line react-hooks/exhaustive-deps
+  const clipped = [...new Set(bands.map((b) => b.to))];
+
+  // Battle sounds: a low rumble of guns that grows with the battles in view while the clock runs.
+  const running = useGame((s) => s.running);
+  const battleSounds = useGame((s) => s.settings.battleSounds);
+  useEffect(() => {
+    if (!running || !battleSounds) return sound.setRumble(0);
+    const x0 = -view.x / view.k;
+    const y0 = -view.y / view.k;
+    const x1 = x0 + size.w / view.k;
+    const y1 = y0 + size.h / view.k;
+    const near = world.battles.filter((b) => {
+      const [x, y] = POINTS[b.province];
+      return x >= x0 && x <= x1 && y >= y0 && y <= y1;
+    }).length;
+    sound.setRumble(Math.min(1, near / 6));
+  }, [world.battles, view, size, running, battleSounds]);
+  useEffect(() => () => sound.setRumble(0), []);
 
   const k = view.k;
   const inv = 1 / k;
@@ -406,6 +490,11 @@ export function MapView() {
           <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
             <path d="M0 0L10 5L0 10z" fill="context-stroke" />
           </marker>
+          {clipped.map((p) => (
+            <clipPath key={p} id={`clip-${p}`}>
+              <path d={SHAPES[p]} />
+            </clipPath>
+          ))}
           <radialGradient id="table-glow" cx="50%" cy="50%" r="60%">
             <stop offset="0" stopColor="#12233f" />
             <stop offset="1" stopColor="#05070c" />
@@ -421,6 +510,14 @@ export function MapView() {
             </g>
           )}
           <Land fill={fill} lines={lines} />
+          {mapMode !== 'airsea' && (
+            <g className="mt-fronts" aria-hidden="true">
+              {bands.map((b) => (
+                <FrontBand key={b.key} band={b} k={k} />
+              ))}
+            </g>
+          )}
+          <path d={RIVER_LINES} className="mt-river" />
           {inRange.length > 0 && <path d={inRange.map((p) => SHAPES[p]).join('')} className="mt-range" />}
           {hover !== null && <path d={SHAPES[hover]} className="mt-hover" />}
           {selectedProvince !== null && <path d={SHAPES[selectedProvince]} className="mt-picked" />}
@@ -562,6 +659,22 @@ export function MapView() {
             </g>
           )}
 
+          <g className="mt-pockets">
+            {pockets.map((x) => {
+              const [px, py] = POINTS[x.centre];
+              const own = x.owner === me || !!friendsOfMe?.has(x.owner);
+              return (
+                <g key={`${x.owner}|${x.centre}`} className={`mt-pocket${own ? ' own' : ''}`}>
+                  <path d={x.d} className="ring" />
+                  <g transform={`translate(${px},${py + 26 * cs}) scale(${Math.max(cs, inv * 0.8)})`}>
+                    <rect x={-58} y={-9} width={116} height={18} rx={9} className="tag-back" />
+                    <text y={4}>{pocketWords(x.divisions)}</text>
+                  </g>
+                </g>
+              );
+            })}
+          </g>
+
           <g className="mt-battles">
             {world.battles.map((b) => {
               if (!seen[b.province] && !(me && (b.attackers.includes(me) || b.defenders.includes(me)))) return null;
@@ -626,11 +739,15 @@ function HoverLine({ province, zone }: { province: number | null; zone: string |
     if (holder !== me && !atWar(world, me, holder)) hint = 'Neutral: your divisions cannot enter';
     else hint = world.units.some((u) => u.at === province && atWar(world, u.owner, me)) ? `${click} to attack` : `${click} to march here`;
   }
+  const rivers = [...new Set(p.neighbours.map((n) => riverBetween(province, n)).filter((r): r is string => !!r))];
+  const ground = groundOn(province, world.startDate, world.day);
   return (
     <div className="mt-hoverline" aria-hidden="true">
       <b>{p.name}</b>
       {p.city && p.city !== p.name ? ` (${p.city})` : ''} · {holder}
       {holder !== p.owner ? `, taken from ${p.owner}` : ''} · {p.terrain}
+      {rivers.length > 0 && ` · ${rivers.join(', ')}`}
+      {ground !== 'dry' && ` · ${GROUND_WORDS[ground].split(':')[0]}`}
       {hint && <em> · {hint}</em>}
     </div>
   );

@@ -9,8 +9,8 @@
  *
  * Each day, in order: orders (military, economic and diplomatic), the day's diplomacy
  * (diplomacy.ts), the economy with research and national plans (economy.ts), the war at sea
- * and in the air (forces.ts), supply, battles (combat.ts), marching, rest and attrition, and
- * finally any surrenders. Divisions may only
+ * and in the air (forces.ts), supply, battles (combat.ts), marching, rest and attrition,
+ * any surrenders, and once a week a record of the front for the war replay (replay.ts). Divisions may only
  * enter their own land, the land of an ally, or the land of a country they are at war with.
  */
 import { DIG_IN_MAX_DAYS, fightBattles, type Draft } from './combat';
@@ -20,6 +20,8 @@ import { allianceMap, cloneDiplomacy, giveDiplomacyOrder, isDiplomacyOrder, onGo
 import { cloneEconomies, giveEconomyOrder, isEconomyOrder, MEN_PER_DIVISION, monthEnds, moraleOf, onBattleEnded, reinforce, runEconomies, startEconomies, startFactories } from './economy';
 import { disband, giveForceOrder, isForceOrder, pictures, runForces, startForces, type Pictures } from './forces';
 import { combatEdges, isWinter, modsOf, WINTER_LANDS } from './mods';
+import { recordFront, startReplay } from './replay';
+import { GROUND_MARCH, groundMap } from './seasons';
 import type { ForceDraft } from './navy';
 import { daysToEnter, findRoute, PROVINCES } from './map';
 import { Rng, seedFrom } from './rng';
@@ -104,7 +106,7 @@ export function newWorld(mode: Mode, seedText: string, startDate = '1936-01-01',
   const factories = startFactories();
   const forces = startForces();
   const economies = startEconomies({ controller, factories, units, wars: [], fleets: forces.fleets, wings: forces.wings });
-  return { mode, player, seed, rng: rng.state, day: 0, startDate, units, nextUnitId: units.length, controller, owner: [...controller], diplomacy: startDiplomacy(economies), wars: [], declaredBy: {}, capitulated: [], battles: [], nextBattleId: 0, reports: [], economies, factories, ...forces, story: startStory('1936', 'close', seed) };
+  return { mode, player, seed, rng: rng.state, day: 0, startDate, units, nextUnitId: units.length, controller, owner: [...controller], diplomacy: startDiplomacy(economies), wars: [], declaredBy: {}, capitulated: [], battles: [], nextBattleId: 0, reports: [], economies, factories, ...forces, story: startStory('1936', 'close', seed), replay: startReplay(controller, 0) };
 }
 
 /** Organisation regained per day of rest with full supply. */
@@ -230,7 +232,9 @@ export function step(world: World, orders: Order[] = []): World {
     nextBattleId: world.nextBattleId,
     reports: [...world.reports],
     friends: allianceMap(dd.diplomacy),
+    ground: groundMap(world.startDate, world.day),
   };
+  const ground = d.ground!;
   const friends = d.friends!;
   const economies = dd.economies;
 
@@ -285,12 +289,10 @@ export function step(world: World, orders: Order[] = []): World {
         u.progress = 0;
         break;
       }
-      // A landing crosses in a day: the weeks of preparation are already behind it.
-      const need = u.landing ? 1 : daysToEnter(u.at, next, u.type);
+      // A landing crosses in a day: the weeks of preparation are already behind it. Mud and snow slow the march (seasons.ts).
+      const need = u.landing ? 1 : daysToEnter(u.at, next, u.type) / GROUND_MARCH[ground[next]];
       if (blocked(u, next)) {
-        // It fights for the province instead (see combat.ts), pressing forward as it does, so
-        // that it can step in as soon as the defenders give way.
-        u.progress = Math.min(1, u.progress + dayLeft / need);
+        // It fights for the province instead: how far in it stands is the battle's front line (combat.ts).
         break;
       }
       const remaining = (1 - u.progress) * need;
@@ -337,8 +339,9 @@ export function step(world: World, orders: Order[] = []): World {
   for (const u of d.units) {
     u.dugIn = u.path.length ? 0 : Math.min(DIG_IN_MAX_DAYS, u.dugIn + 1);
     // Wear and tear at the front. Divisions in a battle take their losses there instead.
+    const hot = ground[u.at] === 'heat';
     if (!fought.has(u.id) && atFront(u)) {
-      const worn = Math.min(u.strength, FRONT_WASTAGE * (winter && WINTER_LANDS.has(PROVINCES[u.at].owner) && !WINTER_LANDS.has(u.owner) ? 2 : 1));
+      const worn = Math.min(u.strength, FRONT_WASTAGE * (winter && WINTER_LANDS.has(PROVINCES[u.at].owner) && !WINTER_LANDS.has(u.owner) ? 2 : 1) * (hot ? 2 : 1));
       u.strength -= worn;
       recover(economies[u.owner], worn);
     }
@@ -349,7 +352,7 @@ export function step(world: World, orders: Order[] = []): World {
     const resting = !fought.has(u.id);
     const rest = u.path.length ? 0.5 : 1; // marching divisions recover at half speed
     if (u.organisation > ceiling) u.organisation = Math.max(ceiling, u.organisation - ATTRITION_ORG);
-    else if (resting) u.organisation = Math.min(ceiling, u.organisation + ORG_RECOVERY * rest * recoveryOf(u.owner));
+    else if (resting) u.organisation = Math.min(ceiling, u.organisation + ORG_RECOVERY * rest * recoveryOf(u.owner) * (hot ? 0.5 : 1));
     if (u.supply === 0 && u.organisation === 0) u.strength -= ATTRITION_STRENGTH;
     else if (resting) u.strength = Math.min(100, u.strength + reinforce(economies[u.owner], u, u.supply * rest));
   }
@@ -362,7 +365,8 @@ export function step(world: World, orders: Order[] = []): World {
   surrenders(dd);
   disband(dd, (name) => dd.capitulated.includes(name) || name in dd.diplomacy.conquered);
 
-  return { ...fromDraft(world, dd), day: world.day + 1, rng: rng.state, battles: d.battles, nextBattleId: d.nextBattleId, reports: d.reports };
+  // 7. Once a week, the front is written down for the war replay.
+  return { ...fromDraft(world, dd), day: world.day + 1, rng: rng.state, battles: d.battles, nextBattleId: d.nextBattleId, reports: d.reports, replay: recordFront(world.replay, dd.controller, world.day + 1) };
 }
 
 /** The current date in words, e.g. "7 March 1936". Uses UTC so it is the same on every computer. */

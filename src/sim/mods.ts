@@ -9,6 +9,7 @@
 import { PLANS } from './plans';
 import { TECHS } from './research';
 import { PROVINCES } from './map';
+import { GROUND_ATTACK, groundIn, isWinter, seasonOf, WINTER_ATTACK, WINTER_LANDS } from './seasons';
 import type { ArmyEffect, Economy, Unit } from './types';
 
 /** Every number research and plans can move. All start at 0; see EFFECT_TEXT for what each one means. */
@@ -152,16 +153,7 @@ export interface EdgeContext {
   startDate: string;
 }
 
-/** Countries where an invader fights the cold as well as the defenders. */
-export const WINTER_LANDS = new Set(['Soviet Union', 'Finland', 'Norway', 'Sweden']);
-/** From December to February an army attacking into one of those countries, other than its own, keeps this share of its hitting power. */
-export const WINTER_ATTACK = 0.75;
-export function isWinter(startDate: string, day: number): boolean {
-  const d = new Date(`${startDate}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + day);
-  const m = d.getUTCMonth();
-  return m === 11 || m <= 1;
-}
+export { isWinter, WINTER_ATTACK, WINTER_LANDS } from './seasons';
 
 /** The edges every country's divisions have today, from its research and plans, and (with `ctx`) from surprise, lost officers and winter. */
 export function combatEdges(economies: Record<string, Economy>, ctx?: EdgeContext): Edges {
@@ -173,10 +165,12 @@ export function combatEdges(economies: Record<string, Economy>, ctx?: EdgeContex
     defenceOf.set(x.country, (defenceOf.get(x.country) ?? 1) * x.defence);
   }
   const winter = !!ctx && isWinter(ctx.startDate, ctx.day);
+  const season = ctx && seasonOf(ctx.startDate, ctx.day);
+  // The cold hits invaders of the winter lands; mud slows every attack (seasons.ts).
   const cold = (u: Unit): number => {
-    if (!winter || !u.path.length) return 1;
+    if (!season || !u.path.length) return 1;
     const land = PROVINCES[u.path[0]].owner;
-    return WINTER_LANDS.has(land) && !WINTER_LANDS.has(u.owner) ? WINTER_ATTACK : 1;
+    return (winter && WINTER_LANDS.has(land) && !WINTER_LANDS.has(u.owner) ? WINTER_ATTACK : 1) * GROUND_ATTACK[groundIn(u.path[0], season)];
   };
   const cache = new Map<string, Mods>();
   const of = (owner: string): Mods => {

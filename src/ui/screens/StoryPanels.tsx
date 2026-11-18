@@ -355,6 +355,9 @@ export function EndReport() {
           <button className="btn primary" onClick={() => setOverlay(null)} autoFocus>
             {r.ended ? 'Keep playing' : 'Back to the map'}
           </button>
+          <button className="btn" onClick={() => setOverlay('replay')}>
+            Watch the war replay <kbd>V</kbd>
+          </button>
           <button className="btn" onClick={() => go('title')}>
             Main menu
           </button>

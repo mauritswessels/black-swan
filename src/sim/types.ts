@@ -276,6 +276,16 @@ export interface Battle {
   surrendered: number;
   /** Running totals used to explain the result afterwards (see combat.ts). */
   tally: BattleTally;
+  /**
+   * The front line: how far the attackers have got into the province, from 0 (still at the
+   * border) to 100 (the far side). It moves every day by how the fighting went, and the
+   * province changes hands when it reaches 100 (see combat.ts).
+   */
+  line: number;
+  /** How far the line moved on the last day of fighting (negative: pushed back). */
+  push: number;
+  /** The river the attackers are crossing, if any. */
+  river?: string;
 }
 
 /** Sums over the days of a battle. Dividing by `days` gives the averages. */
@@ -303,6 +313,10 @@ export interface BattleTally {
   air: number;
   /** Share of the attacking divisions that came ashore from the sea. */
   landing: number;
+  /** Share of the attackers' hitting power that came across a river (games saved before version 1.2 have none). */
+  river?: number;
+  /** Days fought in mud or snow. */
+  badGround?: number;
 }
 
 /** One reason for how a battle ended, e.g. "attacking into mountains". */
@@ -378,6 +392,22 @@ export interface World {
   nextForceEventId: number;
   /** Story mode's history cards, chapters and events; Free-for-all's clock (see story.ts). */
   story: StoryState;
+  /** Who held each province, once a week, for the war replay (see replay.ts). Games saved before version 1.2 start recording when loaded. */
+  replay?: Replay;
+}
+
+/**
+ * The front once a week: who held each province at the start, and what changed each week.
+ * Only changes are kept, so a whole war fits in a few dozen kilobytes.
+ */
+export interface Replay {
+  /** The day recording began, and who held each province that day. */
+  startDay: number;
+  base: string[];
+  /** Weeks in which provinces changed hands: the day, and each [province, new holder]. */
+  weeks: { day: number; changes: [number, string][] }[];
+  /** Who held each province at the last record (the base with every change applied). */
+  now: string[];
 }
 
 /** Which start a game uses: the full campaign from 1 January 1936, or the short scenario that opens on 1 September 1939. */

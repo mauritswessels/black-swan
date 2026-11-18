@@ -7,6 +7,10 @@ let master: GainNode | null = null;
 let drone: { stop: () => void } | null = null;
 let muted = false;
 let volume = 0.5;
+/** The guns: a low rumble of filtered noise and now and then a distant thump, as loud as `rumbleLevel` (0 to 1). */
+let rumble: { gain: GainNode; stop: () => void } | null = null;
+let rumbleLevel = 0;
+let thumps: ReturnType<typeof setTimeout> | null = null;
 
 function audio(): AudioContext | null {
   if (muted) return null;
@@ -81,6 +85,46 @@ export const sound = {
       },
     };
   },
+  /**
+   * Battle sounds: 0 is silence, 1 is many battles in view. The rumble fades in and out
+   * gently, and distant guns thump more often the louder it is.
+   */
+  setRumble: (level: number) => {
+    rumbleLevel = Math.max(0, Math.min(1, level));
+    const a = rumbleLevel > 0 ? audio() : ctx;
+    if (!a || !master) return;
+    if (!rumble && rumbleLevel > 0) {
+      // Brown noise: each sample a small random step from the last, which sounds like a deep roar.
+      const buffer = a.createBuffer(1, a.sampleRate * 3, a.sampleRate);
+      const data = buffer.getChannelData(0);
+      let last = 0;
+      for (let i = 0; i < data.length; i++) {
+        last = (last + 0.02 * (Math.random() * 2 - 1)) / 1.02;
+        data[i] = last * 3.5;
+      }
+      const src = a.createBufferSource();
+      src.buffer = buffer;
+      src.loop = true;
+      const low = a.createBiquadFilter();
+      low.type = 'lowpass';
+      low.frequency.value = 110;
+      const gain = a.createGain();
+      gain.gain.value = 0;
+      src.connect(low).connect(gain).connect(master);
+      src.start();
+      rumble = { gain, stop: () => (src.stop(), gain.disconnect()) };
+    }
+    if (rumble) rumble.gain.gain.setTargetAtTime(0.09 * rumbleLevel, a.currentTime, 1.2);
+    if (rumbleLevel > 0 && !thumps) {
+      const next = () => {
+        thumps = null;
+        if (rumbleLevel <= 0 || muted) return;
+        tone(45 + Math.random() * 25, 0.9, 'sine', 0.05 + 0.1 * rumbleLevel * Math.random(), 0, 28);
+        thumps = setTimeout(next, (2500 + Math.random() * 4000) / (0.4 + rumbleLevel));
+      };
+      thumps = setTimeout(next, 800);
+    }
+  },
   /** Loudness of everything, 0 to 1 (Settings). */
   setVolume: (v: number) => {
     volume = Math.min(1, Math.max(0, v));
@@ -91,6 +135,10 @@ export const sound = {
     if (m && drone) {
       drone.stop();
       drone = null;
+    }
+    if (m && rumble) {
+      rumble.stop();
+      rumble = null;
     }
     if (!m) sound.startAmbient();
   },

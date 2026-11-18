@@ -269,6 +269,9 @@ function Defeat() {
         <button className="btn" onClick={() => useGame.getState().setOverlay('report')}>
           End report
         </button>
+        <button className="btn" onClick={() => useGame.getState().setOverlay('replay')}>
+          War replay
+        </button>
         <button className="btn" onClick={() => setOpen(false)}>
           Look at the map
         </button>

@@ -4,6 +4,7 @@ import { readSave } from '../save/storage';
 import { MapTable } from './screens/MapTable';
 import { Codex, Help, Saves } from './screens/Overlays';
 import { EndReport } from './screens/StoryPanels';
+import { Replay } from './screens/Replay';
 import { Setup } from './screens/Setup';
 import { Lessons } from './screens/Lessons';
 import { Settings } from './screens/Settings';
@@ -59,6 +60,7 @@ function useShortcuts() {
       if (k === 'r') return g.select({ kind: 'reports' });
       if (k === 'c') return g.select({ kind: 'chronicle' });
       if (k === 'o') return g.setOverlay('report');
+      if (k === 'v') return g.setOverlay('replay');
       if (k === 'p' && g.world?.player) return g.select({ kind: 'production' });
       if (k === 'e' && g.world?.player) return g.select({ kind: 'economy' });
       if (k === 't' && g.world?.player) return g.select({ kind: 'research' });
@@ -123,6 +125,7 @@ export function App() {
       {overlay === 'saves' && <Saves />}
       {overlay === 'help' && <Help />}
       {overlay === 'report' && <EndReport />}
+      {overlay === 'replay' && <Replay />}
       {overlay === 'settings' && <Settings />}
     </>
   );

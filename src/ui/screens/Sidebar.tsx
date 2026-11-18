@@ -9,7 +9,10 @@ import { daysToEnter, PROVINCES, routeDays } from '../../sim/map';
 import { economyView, OIL, STEEL, tallies } from '../../sim/economy';
 import { allianceMap, governmentOf, SURRENDER_SHARE } from '../../sim/diplomacy';
 import { DEPOTS, infrastructure, linkedProvinces, supplyCapacity } from '../../sim/supply';
-import type { BattleReport, Unit, World } from '../../sim/types';
+import type { Battle, BattleReport, Unit, World } from '../../sim/types';
+import { BRIDGEHEAD } from '../../sim/rivers';
+import { GROUND_WORDS, groundOn } from '../../sim/seasons';
+import { countryColour } from '../map/colours';
 import { atWar, enemiesOf } from '../../sim/war';
 import { dateLabel } from '../../sim/world';
 import { TERRAIN_NOTE } from '../map/colours';
@@ -131,6 +134,8 @@ function OutlookBox({ o, mine }: { o: Outlook; mine: 'attacker' | 'defender' | n
   if (o.attackerEdge > 1.005) factors.push(`Attackers' research: +${pct((o.attackerEdge - 1) * 100)} attack`);
   if (o.defenderEdge > 1.005) factors.push(`Defenders' research and forts: +${pct((o.defenderEdge - 1) * 100)} defence`);
   if (o.directions > 1) factors.push(`Attack from ${o.directions} directions: room for ${o.attackersFighting} attackers at once`);
+  if (o.ground !== 'dry') factors.push(`Ground: ${GROUND_WORDS[o.ground]}`);
+  if (o.river) factors.push(`Crossing the ${o.river}: ${o.riverShare < 0.995 ? 'part of the attack hits' : 'the attackers hit'} 15% less hard, and the line moves at half pace until a bridgehead is won`);
   if (o.attackers > o.attackersFighting) factors.push(`${plural(o.attackers - o.attackersFighting, 'attacking division')} waiting in reserve (only ${o.attackersFighting} fit in the fight)`);
   if (o.defenders > o.defendersFighting) factors.push(`${plural(o.defenders - o.defendersFighting, 'defending division')} in reserve`);
   return (
@@ -143,6 +148,7 @@ function OutlookBox({ o, mine }: { o: Outlook; mine: 'attacker' | 'defender' | n
       <Row label={`Defenders (${o.defenders}) deal per day`} value={o.defence.toFixed(0)} />
       <Row label="Attackers can keep going for" value={days(o.attackersLast)} />
       <Row label="Defenders can hold for" value={days(o.defendersLast)} />
+      <Row label="Front line moves per day" value={`${o.push > 0 ? '+' : ''}${o.push.toFixed(1)} points`} />
       {factors.length > 0 && (
         <ul>
           {factors.map((f) => (
@@ -361,7 +367,7 @@ function ForeignStack({ w, province, owner }: { w: World; province: number; owne
   const c = countryByName(owner);
   // What it would look like if every division of yours next door attacked.
   const next = me ? w.units.filter((u) => u.owner === me && PROVINCES[province].neighbours.includes(u.at)) : [];
-  const o = enemy ? outlook(next.map((u) => ({ ...u, path: [province] })), units, province, combatEdges(w.economies, { effects: w.story.effects, day: w.day, startDate: w.startDate })) : null;
+  const o = enemy ? outlook(next.map((u) => ({ ...u, path: [province] })), units, province, combatEdges(w.economies, { effects: w.story.effects, day: w.day, startDate: w.startDate }), 1, groundOn(province, w.startDate, w.day)) : null;
   if (!units.length) return <Frame kicker="Intelligence report" title="Nothing here now" sub={PROVINCES[province].name}>{null}</Frame>;
   return (
     <Frame kicker="Intelligence report" title={`${c.adjective} forces in ${PROVINCES[province].name}`} sub={enemy ? 'At war with you' : me && allianceMap(w.diplomacy).get(me)?.has(owner) ? 'Your ally' : 'Neutral'}>
@@ -454,6 +460,31 @@ function CountryView({ w, name }: { w: World; name: string }) {
   );
 }
 
+/** How far the attackers have got: a bar from the border (0) to the far side (100), where the province changes hands. */
+function FrontLine({ w, b }: { w: World; b: Battle }) {
+  const ground = groundOn(b.province, w.startDate, w.day);
+  const dir = b.push > 0.05 ? 'forward' : b.push < -0.05 ? 'back' : 'not at all';
+  return (
+    <div className="sb-front">
+      <h3>The front line</h3>
+      <div className="sb-front-bar" role="meter" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(b.line)} aria-label="How far the attackers have got into the province">
+        <i style={{ width: `${b.line}%`, background: countryColour(b.attackers[0]) }} />
+        {b.line < BRIDGEHEAD && b.river && <em style={{ left: `${BRIDGEHEAD}%` }} title="Bridgehead" />}
+      </div>
+      <div className="sb-front-scale" aria-hidden="true">
+        <span>Border</span>
+        <span>Far side: the province changes hands</span>
+      </div>
+      <p className="sb-note">
+        The attackers are {Math.round(b.line)} points of 100 into {PROVINCES[b.province].name}. Yesterday the line moved {dir}
+        {dir !== 'not at all' ? ` (${b.push > 0 ? '+' : ''}${b.push.toFixed(1)})` : ''}.
+        {b.river && b.line < BRIDGEHEAD ? ` They are crossing the ${b.river}: until the line is ${BRIDGEHEAD} points in, it moves at half pace.` : ''}
+        {ground !== 'dry' ? ` The ground: ${GROUND_WORDS[ground]}.` : ''} If the defenders break, the line jumps forward as they fall back.
+      </p>
+    </div>
+  );
+}
+
 function BattleView({ w, id }: { w: World; id: number }) {
   const b = w.battles.find((x) => x.id === id);
   if (!b) return null;
@@ -469,6 +500,7 @@ function BattleView({ w, id }: { w: World; id: number }) {
         <Row label="Defenders' losses" value={`${b.defenderLosses.toFixed(1)} divisions`} />
         <Row label="Terrain" value={PROVINCES[b.province].terrain} />
       </div>
+      <FrontLine w={w} b={b} />
       {o && <OutlookBox o={o} mine={mine} />}
       <div className="sb-actions">
         <Link to={{ kind: 'province', id: b.province }}>The province</Link>

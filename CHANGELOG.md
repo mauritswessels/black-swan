@@ -3,6 +3,44 @@
 Versions from 1.0.0 on are numbered. Each one starts with a heading like `## 1.0.1: What it brings`;
 that section becomes the notes on the GitHub release and on the update card in the app.
 
+## 1.2.0: A front line that moves (2026-11-18)
+
+Until now a battle was all or nothing: the province stayed the same colour until it suddenly
+changed hands. Now every battle has a front line that creeps across the province, and rivers,
+mud and snow slow it down.
+
+- **A moving front line.** Each battle has a line from 0 to 100. Every day it moves by
+  10 x (A - D) / (A + D) points, where A and D are the attack and defence that day, so a much
+  stronger attacker moves it about 10 points a day and an even fight barely moves it. When the
+  defenders break, the line jumps forward (further for tanks on open ground). At 100 the province
+  changes hands. Marching into empty land is drawn the same way.
+- **On the map** the line is a band in the attacker's colour creeping in from the border, with a
+  bright edge. The battle sidebar has a bar showing how far the line has come and how fast it
+  moves each day.
+- **Rivers.** The Rhine, Meuse, Elbe, Vistula, Bug, Danube, Dnieper, Don and others, and the Suez
+  Canal, are drawn in blue. Attacking across one hits 15% less hard, and the line moves at half
+  pace until a bridgehead 20 points deep is won.
+- **Seasons.** Mud in the autumn rains and the spring thaw in the east halves marching and the
+  front's pace; snow in the winter slows both by a quarter; desert provinces in summer double the wear
+  at the front and halve how fast organisation comes back. Hover over a province to see its ground.
+- **Trapped pockets.** Divisions cut off from supply get a red ring on the map with how many are
+  inside, and the news warns you so you can break out or open a way to them.
+- **War replay.** The front is written down once a week and played back in about a minute: press
+  V, or open it from the end-of-war report or the defeat screen.
+- **Battle sounds.** A low rumble of guns that grows with the number of battles in view. It can
+  be turned off in Settings.
+- **The AI keeps pushing** battles it is winning instead of calling them off too early.
+- **Lessons and codex.** The battle lesson now shows the front line bar and the Rhine crossing;
+  8 new codex terms (front line, river crossing, bridgehead, mud, snow, desert heat, pocket, war
+  replay).
+- **Balance.** See docs/balance-stage-k1.md: in six AI-only runs France falls in July to
+  September 1940 and Germany is defeated in 5 of 6 runs (October 1943 to May 1944). Greece now
+  falls in 2 of 3 runs from 1936. Still to do: Barbarossa stops near the border, which the army
+  orders in the next stage should fix.
+- **Tests.** 239 tests (13 new) for the front line, rivers, seasons, pockets, the replay and old
+  saves. The lockstep test still passes.
+- **Saves.** 1.1 saves still load (save version 11). Version 1.2.0.
+
 ## 1.1.0: A war economy that can pay for a long war (2026-11-18)
 
 Until now the economy could not pay for the real war: left to the AI, Soviet prices rose

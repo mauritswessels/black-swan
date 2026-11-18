@@ -4,18 +4,22 @@ A grand-strategy game set in Europe from 1936. You lead a real country through t
 the war that followed, and face what its leaders faced: armies, factories, money, allies and
 public support. It is built to teach the history and the economics as you play.
 
-> **Version 1.1.** The finished Mac app, now with a war economy that can pay for a long war. Lead one of six great powers in Story mode, or any
+> **Version 1.2.** The finished Mac app, now with a front line that moves inside each province. Lead one of six great powers in Story mode, or any
 > of 31 countries in Free-for-all, from 1936 or September 1939: armies, a navy and air force,
 > factories and war finance, research, diplomacy and 53 history cards. The app updates itself
 > from GitHub, keeps its saves as files, and has a Settings screen. New to the game? Press
 > **Learn to play** on the title screen.
 >
-> New in 1.1: a war of attrition (wear and tear at the front, wounded who come back, a
-> gradual call-up), soldiers paid by what a worker earns, and wartime finance as it really
-> worked: forced saving under rationing, an interest rate capped below inflation, and
-> compulsory loans in the Soviet Union. Left to the AI, history now runs close to the real
-> war: France falls in the summer of 1940, the Soviet Union holds without runaway inflation,
-> and Germany is usually defeated in 1944.
+> New in 1.2: the front creeps. When you attack a province, a band in your colour grows into
+> it day by day, slides back on a bad day, and the province is yours only when the band
+> reaches the far side. Great rivers stall an attack until a bridgehead is won, the autumn
+> rains and the spring thaw turn the east to mud, trapped armies are ringed on the map with a
+> count, a war replay plays the whole war back in a minute (key V), and the guns rumble when
+> battles are near.
+>
+> New in 1.1: a war of attrition, soldiers paid by what a worker earns, and wartime finance
+> as it really worked (forced saving, an interest rate capped below inflation, compulsory
+> loans in the Soviet Union).
 
 ## Installing the Mac app
 
@@ -66,6 +70,9 @@ minutes in all, and you can take them in any order. Everything below is what the
 9. Click one of your counters, for example `FRA 4`, to select those divisions. Shift-click
    adds another counter. Right-click a province to send them there (two-finger click on a
    trackpad). If enemy divisions are in it, they attack. The sidebar shows the **outlook**.
+   Click the crossed swords to follow a battle: the **front line** bar (and the band on the
+   map) shows how far your divisions have got. The province changes hands when it reaches
+   the far side.
 10. To end a war, open the enemy's sidebar and offer peace: back to the old borders, or each
     keeps what it holds. It shows the war score and whether they are likely to accept. A
     country that loses 60% of its own land's victory points surrenders (40% once its capital
@@ -103,7 +110,10 @@ makes every other country arm faster.
 Tips for the war: an attack needs about 2 to 1. Attack from several provinces at once, bring
 artillery against dug-in defenders, and do not stack more divisions in a province than it can
 feed (see the Supply map mode). Allies may march through each other's land and use each
-other's depots.
+other's depots. Avoid attacking across the great rivers drawn in blue unless you must, and
+plan around the seasons: mud in the east from mid-October to late November and from
+mid-March to the end of April, snow from December to February, heat in the desert in
+summer. When the map rings a pocket in red, those divisions are cut off: break out fast.
 
 Tips for the money: there is no free way to pay. Taxes above 25% cost stability. Bonds are
 painless until the debt and its interest pile up. Printing is painless for about three months,
@@ -217,6 +227,7 @@ every installed copy then needs one manual reinstall.
 | G | With a fleet or an air base open: choose where it goes on the map |
 | C | Chronicle: chapters, objectives and history cards (Standings in Free-for-all) |
 | O | Report: your game beside the real history |
+| V | War replay: the front week by week, in about a minute |
 | X | Codex |
 | S | Save and load (3 slots plus an autosave) |
 | M | Sound on or off |
@@ -230,7 +241,12 @@ every installed copy then needs one manual reinstall.
 ```text
 src/sim/          the game engine: pure TypeScript, no UI, fully testable
   world.ts        newWorld() and step(world, orders): one day at a time
-  combat.ts       battles: daily rounds, retreat, surrender and battle reports
+  combat.ts       battles: daily rounds, the front line, retreat, surrender and battle reports
+  rivers.ts       the great rivers and the borders they run along
+  seasons.ts      snow, mud and desert heat, worked out from the date
+  pockets.ts      divisions cut off from supply, grouped into pockets
+  replay.ts       the front written down once a week, for the war replay
+  upgrade.ts      bringing a world saved by an older version up to date
   supply.ts       depots, links home and how many divisions a province can feed
   war.ts          who is at war with whom
   diplomacy.ts    relations, pacts, world tension, causes for war, ultimatums, peace,
@@ -271,7 +287,9 @@ src/save/         save slots (whole game state as JSON): files in the Mac app, l
 src/native.ts     the bridge to the Mac app (save files, the menu, text size); does nothing in a browser
 src/ui/           React screens, widgets, sound and the War Room theme
   map/            the Map table: shapes, colours and the map itself
-  screens/        title, choose your country, the Map table, sidebar, overlays, Settings
+  screens/        title, choose your country, the Map table, sidebar, overlays, Settings,
+                  the war replay
+  audio/          sound made in code: clicks, alarms, the map room hum and the guns
   settings.ts     the player's settings and their defaults
   updates.ts      checking for, downloading and installing a new version
   releaseNotes.ts release notes as plain text, and comparing version numbers
@@ -309,8 +327,9 @@ the middle of a modern region are therefore approximate:
 
 ## Plan
 
-Version 1.0 completes the plan and 1.1 fixes the war economy (see CHANGELOG.md). Ideas for
-later versions: playing against friends over the internet (the engine is already
+Version 1.0 completes the plan, 1.1 fixes the war economy and 1.2 makes the front move inside
+each province (see CHANGELOG.md). Next: armies you move as one with Hold and Push orders
+(K2), then a right-click attack menu for land, sea and air (K3). Ideas for later versions: playing against friends over the internet (the engine is already
 deterministic, with a fingerprint check for it), the Pacific and the Americas, and an army AI
 that can push deep on the eastern front (Barbarossa still stops close to the border).
 

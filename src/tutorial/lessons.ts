@@ -368,7 +368,18 @@ const battle: Lesson = {
       target: { sel: '.sb-outlook' },
     },
     {
-      text: 'Start the clock and watch the battle. You can click the crossed swords over the Palatinate to follow it.',
+      text: 'Let one day pass (press `.` while the clock is stopped), then click the crossed swords over the Palatinate to open the battle.',
+      province: P.palatinate,
+      done: (v) => v.selection?.kind === 'battle',
+      show: (v) => ({ days: 1, select: { kind: 'battle', id: v.world.nextBattleId } }),
+    },
+    {
+      text: 'The bar is the front line: how far your divisions have got into the Palatinate, from the border to the far side. On the map it is the band in your colour growing from the border. The province is yours only when the band reaches the far side.',
+      why: 'Each day the line moves by how the fighting went: forward when you deal more damage than you take, back when you take more. When the defenders break, it jumps forward as they fall back.',
+      target: { sel: '.sb-front' },
+    },
+    {
+      text: 'Start the clock and watch the battle.',
       province: P.palatinate,
       done: (v) => v.world.controller[P.palatinate] === ME,
       show: () => ({ run: true, speed: 3 }),
@@ -393,14 +404,15 @@ const battle: Lesson = {
       },
     },
     {
-      text: 'Start the clock and take Württemberg.',
+      text: 'Start the clock and take Württemberg. Both ways in cross the Rhine, the blue line on the map: watch the band stall at the river until your divisions win a bridgehead.',
+      why: 'Attacking across a great river, divisions hit 15% less hard, and the line moves at half pace until it is 20 points in. Mud in the autumn and spring, and snow in the winter, slow the front in the east in the same way.',
       province: P.wurttemberg,
       done: (v) => v.world.controller[P.wurttemberg] === ME,
       show: () => ({ run: true, speed: 3 }),
-      days: 50,
+      days: 90,
     },
     {
-      text: 'The strongest move of all is encirclement: cut an enemy army off from its depots. Surrounded divisions that lose a battle surrender completely instead of retreating.',
+      text: 'The strongest move of all is encirclement: cut an enemy army off from its depots. The map rings a pocket of trapped divisions with a count. Surrounded divisions that lose a battle surrender completely instead of retreating.',
       why: 'A country gives up when its enemies hold 60% of its victory points, or 40% once its capital has fallen.',
     },
     {

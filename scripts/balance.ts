@@ -4,7 +4,7 @@
  * years of AI peace, to check research, national plans and the home front; and three runs of
  * the whole story with every country led by the AI, to check that it follows real history (three from 1936 and three from September 1939).
  *
- *   npm run balance            200 wars, 24 finance runs, a peace run and six history runs, writes docs/balance-stage-j.md
+ *   npm run balance            200 wars, 24 finance runs, a peace run and six history runs, writes docs/balance-stage-k1.md
  *   npm run balance -- 40      a quicker run with fewer wars
  *
  * Every war uses the real 1936 map and starting armies, with both sides led by the simple AI
@@ -136,14 +136,28 @@ const economyRow = (w: World, seed: string, date: string): string[] =>
     return `| ${seed} | ${date} | ${c} | ${units.length} (${Math.round(strength)}%) | ${Math.floor(v.mil)} | ${e.inflation.toFixed(0)}% | x${(e.priceLevel / 100).toFixed(1)} | ${Math.round(v.debtRatio * 100)}% | ${e.rationing ? 'yes' : 'no'} | ${Math.round(e.stability)} | ${e.governmentsFallen} |`;
   });
 const MOSCOW = PROVINCES.find((p) => p.name === 'Moscow')!.id;
+/** The moving front (Stage K1): every battle each run fought, how long it took, and the river crossings. */
+const frontRows: string[] = [];
 const played = (start: World, days: number, seed?: string): World => {
   let w = start;
   const news: { day: number; text: string }[] = [];
   let last = -1;
   let moscow = false;
   const soviet = PROVINCES.filter((p) => p.owner === 'Soviet Union');
+  let lastReport = -1;
+  const front = { battles: 0, days: 0, won: 0, rivers: new Set<number>(), riverWon: 0, mud: 0 };
   for (let d = 0; d < days; d++) {
     w = advance(w);
+    for (const b of w.battles) if (b.river) front.rivers.add(b.id);
+    for (const r of w.reports) {
+      if (r.id <= lastReport) continue;
+      lastReport = r.id;
+      front.battles++;
+      front.days += r.endDay - r.startDay + 1;
+      if (r.winner === 'attacker') front.won++;
+      if (r.winner === 'attacker' && front.rivers.has(r.id)) front.riverWon++;
+      if (r.causes.some((c) => /mud or snow/.test(c.text))) front.mud++;
+    }
     for (const e of w.diplomacy.log) if (e.id > last) { last = e.id; news.push({ day: e.day, text: e.text }); }
     if (!moscow && w.controller[MOSCOW] !== 'Soviet Union') (moscow = true), news.push({ day: w.day, text: 'MOSCOW FALLS' });
     const date = dateLabel(w);
@@ -156,6 +170,7 @@ const played = (start: World, days: number, seed?: string): World => {
     }
   }
   allNews.set(w, news);
+  if (seed) frontRows.push(`| ${seed} | ${front.battles} | ${(front.days / Math.max(1, front.battles)).toFixed(1)} | ${Math.round((100 * front.won) / Math.max(1, front.battles))}% | ${front.rivers.size} | ${front.riverWon} | ${front.mud} |`);
   return w;
 };
 const histories = SEEDS.map((seed) => played(newWorld('story', seed), dayOf('1936-01-01', END), seed));
@@ -226,7 +241,7 @@ console.log(endRows.join('\n'));
 console.log(fallRows.join('\n'));
 console.log(economyRows.join('\n'));
 
-const report = `# Balance report, Stage J: ${all.length} AI against AI wars, ${financeRows.length} finance playtests, four years of peace, six runs of history and three free-for-alls
+const report = `# Balance report, Stage K1: ${all.length} AI against AI wars, ${financeRows.length} finance playtests, four years of peace, six runs of history and three free-for-alls
 
 Made by \`npm run balance\`. Do not edit the tables by hand; run the command again instead.
 
@@ -285,6 +300,19 @@ Landings by the British AI (the first one on each stretch of coast; there is no 
 | Landing | Really happened | ${SEEDS.join(' | ')} |
 | --- | --- | --- | --- | --- |
 ${landingRows.join('\n')}
+
+## The moving front
+
+Stage K1 made the front move inside each province: a battle's line goes from 0 to 100 and
+the province changes hands at 100, rivers slow a crossing, and mud and snow slow the front.
+For each run, every battle fought from 1936 (or September 1939) to 8 May 1945: how many days
+a battle lasted on average, how many attacks succeeded, how many battles were fought across a
+river and how many of those crossings were forced, and in how many lost attacks the mud or
+snow was one of the three main reasons.
+
+| Run | Battles | Average days | Attacks that succeed | River battles | Crossings forced | Lost partly to mud or snow |
+| --- | --- | --- | --- | --- | --- | --- |
+${frontRows.join('\n')}
 
 ## The war economy
 
@@ -358,7 +386,7 @@ Over the nine years of each run:
 ${seaRows.join('\n')}
 `;
 fs.mkdirSync('docs', { recursive: true });
-const file = 'docs/balance-stage-j.md';
+const file = 'docs/balance-stage-k1.md';
 // Keep the hand-written notes below the tables when the numbers are refreshed.
 const marker = '\n## What the results say';
 const old = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';

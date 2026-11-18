@@ -69,7 +69,7 @@ export function ArmyView({ w, id }: { w: World; id: number }) {
           </b>
           <span>
             {p.cutOff
-              ? `${p.closing ? 'The jaws are closing: taking' : 'Taking'} ${PROVINCES[p.targets[0]].name}${p.targets[1] !== p.targets[0] ? ` and ${PROVINCES[p.targets[1]].name}` : ''} would cut off ${plural(p.cutOff, `${p.foe} division`)} from supply.`
+              ? `${p.closing ? 'The jaws are closing: taking' : 'Taking'} ${PROVINCES[p.targets[0]].name}${p.targets[1] !== p.targets[0] ? ` and ${PROVINCES[p.targets[1]].name}` : ''} would cut off ${plural(p.cutOff, 'division')} of ${p.foe} from supply.`
               : `Both push at ${PROVINCES[p.targets[0]].name} from different sides. Nothing would be cut off there yet: aim further behind the enemy.`}
           </span>
         </div>

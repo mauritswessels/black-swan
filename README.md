@@ -73,23 +73,31 @@ minutes in all, and you can take them in any order. Everything below is what the
    Click the crossed swords to follow a battle: the **front line** bar (and the band on the
    map) shows how far your divisions have got. The province changes hands when it reaches
    the far side.
-10. To end a war, open the enemy's sidebar and offer peace: back to the old borders, or each
+10. **Armies.** Moving every division by hand gets slow in a big war. Hold Shift and drag a
+    box around divisions, then press **A**: they become an army with a flag on the map and a
+    number key (1 to 9). Drag the flag onto an enemy province to **push** toward it, onto a
+    border to **hold** it, onto your own land behind the front to wait in **reserve**; or use
+    the buttons in its sidebar, which also has **fall back**, the pace of a push (careful,
+    steady, all-out), a **commander** (real generals, each with one trait) and the option to
+    send new divisions to it. Two armies pushing at one place from different sides are a
+    **pincer**: the map counts the enemy divisions it would cut off.
+11. To end a war, open the enemy's sidebar and offer peace: back to the old borders, or each
     keeps what it holds. It shows the war score and whether they are likely to accept. A
     country that loses 60% of its own land's victory points surrenders (40% once its capital
     has fallen); you then choose to
     occupy it, annex it or set up a friendly government.
 
-11. Press **F** for the Navy and air force, and switch the map to **Air and sea** (bottom
+12. Press **F** for the Navy and air force, and switch the map to **Air and sea** (bottom
     left). You do not steer ships or aircraft: give each fleet a sea zone and a mission
     (patrol, escort convoys, raid convoys, stay in port), and each air wing a base and a
     mission (air superiority, ground support, strategic bombing, naval strike). Click a fleet
     or an air base on the map to open it; right-click a sea zone or a province to send it
     there.
-12. To cross the sea, select divisions standing on a coast, press **B** (Go by sea) and click
+13. To cross the sea, select divisions standing on a coast, press **B** (Go by sea) and click
     another coast. A friendly shore takes a few days. An enemy shore is a landing: it takes
     two weeks to prepare, you must control the sea zone off the beach, and the troops fight at
     60% as they come ashore.
-13. Aircraft and ships are built on production lines like everything else (Production, **P**).
+14. Aircraft and ships are built on production lines like everything else (Production, **P**).
     Your lines for them start empty, so move some factories there before a war.
 
 Tips for the sea and the air: whoever has twice the other side's naval strength in a zone
@@ -278,6 +286,8 @@ src/sim/          the game engine: pure TypeScript, no UI, fully testable
   aiEconomy.ts    a simple finance minister for AI countries (it also picks research and plans)
   testeconomy.ts  finance playtests, used by the balance report
   ai.ts           the army commander for AI countries: fronts, offensives, encirclement
+  armies.ts       the player's armies: Hold, Push, Fall back, Reserve, pincers
+  commanders.ts   the 24 generals who can lead them, and their traits
   game.ts         advance(): one day with a player, the AI leading every other country
   intel.ts        what a country can see (fog of war)
   testwar.ts      AI against AI test wars, used by the balance report
@@ -331,11 +341,11 @@ the middle of a modern region are therefore approximate:
 
 ## Plan
 
-Version 1.0 completes the plan, 1.1 fixes the war economy and 1.2 makes the front move inside
-each province (see CHANGELOG.md). Next: armies you move as one with Hold and Push orders
-(K2), then a right-click attack menu for land, sea and air (K3). Ideas for later versions: playing against friends over the internet (the engine is already
-deterministic, with a fingerprint check for it), the Pacific and the Americas, and an army AI
-that can push deep on the eastern front (Barbarossa still stops close to the border).
+Version 1.0 completes the plan, 1.1 fixes the war economy, 1.2 makes the front move inside
+each province and 1.3 adds armies with Hold and Push orders (see CHANGELOG.md). Next: a
+right-click attack menu for land, sea and air (K3). Ideas for later versions: playing against
+friends over the internet (the engine is already deterministic, with a fingerprint check for
+it), and the Pacific and the Americas.
 
 ## History and symbols
 

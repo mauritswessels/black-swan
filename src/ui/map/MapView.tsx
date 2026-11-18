@@ -474,6 +474,14 @@ export function MapView() {
   }
   const pincers = me && armies.length > 1 ? pincersOf(world, me) : [];
   const inPincer = new Set(pincers.flatMap((p) => p.armies));
+  // One label for each place the jaws meet: under the target of the push that is nearest, with the most it would cut off.
+  const pincerLabels: { at: number; cutOff: number; closing: boolean }[] = [];
+  for (const x of pincers) {
+    const at = Math.max(x.targets[0], x.targets[1]);
+    const had = pincerLabels.find((y) => y.at === at || x.targets.includes(y.at));
+    if (had) (had.cutOff = Math.max(had.cutOff, x.cutOff)), (had.closing ||= x.closing);
+    else pincerLabels.push({ at, cutOff: x.cutOff, closing: x.closing });
+  }
   const pushes = armies.flatMap((a) => {
     if (a.order.kind !== 'push') return [];
     const c = armyCentre(world, a);
@@ -690,10 +698,10 @@ export function MapView() {
                 <path d={x.d} className="shaft" style={{ stroke: x.colour }} markerEnd="url(#push-head)" />
               </g>
             ))}
-            {pincers.map((x) => {
-              const [px, py] = POINTS[x.targets[0]];
+            {pincerLabels.map((x) => {
+              const [px, py] = POINTS[x.at];
               return (
-                <g key={x.armies.join('|')} transform={`translate(${px},${py - 40 * cs}) scale(${Math.max(cs, inv * 0.8)})`} className={`mt-pincer${x.closing && x.cutOff ? ' closing' : ''}`}>
+                <g key={x.at} transform={`translate(${px},${py + 30 * cs}) scale(${Math.max(cs, inv * 0.8)})`} className={`mt-pincer${x.closing && x.cutOff ? ' closing' : ''}`}>
                   <rect x={-62} y={-10} width={124} height={20} rx={10} />
                   <text y={4.5}>{x.cutOff ? `Pincer: ${x.cutOff} cut off` : 'Pincer'}</text>
                 </g>

@@ -387,7 +387,7 @@ label.sb-goto { display: flex; flex-direction: column; gap: 6px; font-size: 13.5
 .sb-btn.current { border-left: 4px solid var(--gold); }
 .sb-chips .sb-link.on { border-color: var(--gold); background: rgba(255, 196, 107, 0.18); }
 .sb-seg { display: flex; border: 1px solid rgba(156, 200, 255, 0.55); border-radius: 3px; overflow: hidden; }
-.sb-seg button { flex: 1; min-height: 40px; background: none; border: 0; border-left: 1px solid rgba(156, 200, 255, 0.3); color: #dce4f1; font: 500 14px var(--f-body); cursor: pointer; text-transform: capitalize; }
+.sb-seg button { flex: 1; min-height: 40px; background: none; border: 0; border-left: 1px solid rgba(156, 200, 255, 0.3); color: #dce4f1; font: 500 14px var(--f-body); cursor: pointer; }
 .sb-seg button:first-child { border-left: 0; }
 .sb-seg button.on { background: rgba(255, 196, 107, 0.2); color: #fff; }
 .sb-seg button:hover:not(.on) { background: rgba(156, 200, 255, 0.14); }

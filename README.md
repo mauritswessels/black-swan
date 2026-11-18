@@ -40,7 +40,7 @@ Saves → Show in Finder). Copy them to another Mac to carry a game over.
 
 ## How to play
 
-**Start with Learn to play** (key **L** on the title screen). The nine lessons take about 36
+**Start with Learn to play** (key **L** on the title screen). The ten lessons take about 41
 minutes in all, and you can take them in any order. Everything below is what they teach.
 
 1. Choose **Story** or **Free-for-all**, then a start (1 January 1936, or 1 September 1939)

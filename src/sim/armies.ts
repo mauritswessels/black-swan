@@ -203,13 +203,16 @@ function stepsTo(target: number): number[] {
 }
 
 /**
- * The enemy provinces a push attacks today, at most three: those of the front on the way from
+ * The enemy provinces a push attacks today, at most three: the target itself once it is on the
+ * front, and before that the provinces of the front on the way from
  * where the army stands (`from`) to its target. Each counts its steps to the target plus half its
  * steps from the army, so an army coming from the south does not wander off to attack the target
  * from the north.
  */
 export function pushAxis(targets: number[], target: number, from: number | null = null): number[] {
   if (!targets.length) return [];
+  // The target is on the front: everything goes at it.
+  if (targets.includes(target)) return [target];
   const steps = stepsTo(target);
   const back = from === null ? null : stepsTo(from);
   const score = (t: number) => steps[t] + (back ? back[t] / 2 : 0);

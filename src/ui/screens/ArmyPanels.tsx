@@ -112,7 +112,7 @@ export function ArmyView({ w, id }: { w: World; id: number }) {
               const o = a.order as Extract<Army['order'], { kind: 'push' }>;
               return (
                 <button key={p} role="radio" aria-checked={o.pace === p} className={o.pace === p ? 'on' : ''} onClick={() => order({ ...o, pace: p })}>
-                  {PACE_NAME[p]}
+                  {PACE_NAME[p].replace(/^./, (c) => c.toUpperCase())}
                 </button>
               );
             })}

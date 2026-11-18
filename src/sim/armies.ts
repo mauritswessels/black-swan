@@ -45,6 +45,8 @@ export const RESERVE_REACH = 2;
 export const RESERVE_ALARM_LINE = 30;
 /** A reserve counter-attacks only at these odds or better. */
 export const COUNTER_ODDS = 1.2;
+/** A push that has not attacked its target for this many days goes round it. */
+export const STUCK_DAYS = 10;
 /** Divisions of an army falling back dig in this many times as fast once they stand in their new line. */
 export const FALL_BACK_DIG = 2;
 
@@ -257,8 +259,10 @@ export function armyOrders(w: World, country: string, opts: ArmyOrderOptions = {
     if (o.kind === 'push' && enemies.has(o.foe)) {
       // At war: the AI's front code, on the provinces in the way, at the army's pace.
       const front = frontsOf(w, country).find((f) => f.foe === o.foe);
-      // A target holding more than a third as many divisions as the army is too strong to take head on.
-      const axis = new Set(pushAxis(front?.targets ?? [], o.target, armyCentre(w, a), 3 * hostile(o.target) > units.length));
+      // The army goes round its target when it is too strong to take head on: when it holds more
+      // than a third as many divisions as the army, or the army has not managed an attack on it in ten days.
+      const stuck = w.day - a.orderDay > STUCK_DAYS && !units.some((u) => attacking(u) && u.path[0] === o.target);
+      const axis = new Set(pushAxis(front?.targets ?? [], o.target, armyCentre(w, a), stuck || 3 * hostile(o.target) > units.length));
       // On the day of the order every division is taken back, except those already attacking.
       const view = fresh ? { ...w, units: w.units.map((u) => (mine.has(u.id) && u.path.length && !attacking(u) ? { ...u, path: [], progress: 0 } : u)) } : w;
       if (fresh) for (const u of units) if (u.path.length && !attacking(u)) orders.push({ type: 'halt', unit: u.id });

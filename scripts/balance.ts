@@ -4,7 +4,7 @@
  * years of AI peace, to check research, national plans and the home front; and three runs of
  * the whole story with every country led by the AI, to check that it follows real history (three from 1936 and three from September 1939).
  *
- *   npm run balance            200 wars, 24 finance runs, a peace run and six history runs, writes docs/balance-stage-k1.md
+ *   npm run balance            200 wars, 24 finance runs, a peace run and six history runs, armies run by a bot, writes docs/balance-stage-k2.md
  *   npm run balance -- 40      a quicker run with fewer wars
  *
  * Every war uses the real 1936 map and starting armies, with both sides led by the simple AI
@@ -22,6 +22,9 @@ import { planById } from '../src/sim/plans';
 import { dateLabel, newWorld } from '../src/sim/world';
 import type { World } from '../src/sim/types';
 import { POLICIES, runFinance } from '../src/sim/testeconomy';
+import { armiesOf } from '../src/sim/armies';
+import { aiEconomyOrders } from '../src/sim/aiEconomy';
+import { applyOrders } from '../src/sim/world';
 import { runWar, SCENARIOS, type WarResult } from '../src/sim/testwar';
 
 const total = Number(process.argv[2]) || 200;
@@ -230,6 +233,67 @@ const ffaRows = FFA_SEEDS.map((seed) => {
   const first = allNews.get(w)!.find((e) => /declares war on/.test(e.text));
   return `| ${seed} | ${first ? dateLabel({ startDate: w.startDate, day: first.day }) : 'none'} | ${wars} | ${w.capitulated.length} | ${w.diplomacy.pacts.filter((p) => p.kind === 'alliance').length} | ${table.slice(0, 3).map((r) => `${r.country} ${r.points} (${r.change >= 0 ? '+' : ''}${r.change})`).join(', ')} | ${COUNTRIES.filter((c) => c.major && w.capitulated.includes(c.name)).map((c) => c.name).join(', ') || 'none'} |`;
 });
+// Armies (Stage K2): the September 1939 start played as Germany by a bot that only gives army orders.
+// North and South push on Warsaw from two sides (a pincer), West holds France and takes the new divisions.
+// When Poland falls, all three push toward Paris: the north and south armies through the Low Countries and the centre.
+const ARMY_SEEDS = ['armies-1', 'armies-2', 'armies-3'];
+const armyRows = ARMY_SEEDS.map((seed) => {
+  let w = newGame({ mode: 'story', start: '1939', player: 'Germany', seed });
+  const id = (n: string) => PROVINCES.find((p) => p.name === n || p.city === n)!.id;
+  const germans = w.units.filter((u) => u.owner === 'Germany');
+  const near = (names: string[]) => germans.filter((u) => names.includes(PROVINCES[u.at].name)).map((u) => u.id);
+  const north = near(['East Prussia', 'Pomerania', 'Mecklenburg']);
+  const south = near(['Silesia', 'Moravia', 'Slovakia', 'Bohemia', 'Saxony']);
+  const west = germans.map((u) => u.id).filter((x) => !north.includes(x) && !south.includes(x));
+  w = applyOrders(w, [
+    { type: 'formArmy', country: 'Germany', units: north, name: 'Army Group North' },
+    { type: 'formArmy', country: 'Germany', units: south, name: 'Army Group South' },
+    { type: 'formArmy', country: 'Germany', units: west, name: 'Army Group West' },
+  ]);
+  const [n, s, x] = armiesOf(w, 'Germany');
+  const push = (a: number, target: number, foe: string, pace: 'careful' | 'steady' | 'allOut' = 'steady') => ({ type: 'armyOrder' as const, country: 'Germany', army: a, order: { kind: 'push' as const, target, foe, pace } });
+  w = applyOrders(w, [
+    push(n.id, id('Warsaw'), 'Poland'),
+    push(s.id, id('Warsaw'), 'Poland'),
+    { type: 'armyOrder', country: 'Germany', army: x.id, order: { kind: 'hold', foe: 'France' } },
+    { type: 'armySettings', country: 'Germany', army: x.id, reinforce: true, commander: 'rundstedt' },
+    { type: 'armySettings', country: 'Germany', army: n.id, commander: 'guderian' },
+    { type: 'armySettings', country: 'Germany', army: s.id, commander: 'manstein' },
+  ]);
+  let poland = '';
+  let france = '';
+  let turned = false;
+  let held = false;
+  let pincerDays = 0;
+  const t = Date.now();
+  const days = dayOf('1939-09-01', '1941-06-01');
+  for (let d = 0; d < days; d++) {
+    // The bot leaves the economy to the AI finance minister: it only commands armies.
+    w = advance(w, aiEconomyOrders(w, 'Germany'));
+    if (!poland && w.capitulated.includes('Poland')) poland = dateLabel(w);
+    if (!france && w.capitulated.includes('France')) france = dateLabel(w);
+    if (armiesOf(w, 'Germany').filter((a) => a.order.kind === 'push').length >= 2 && !poland) pincerDays++;
+    // Poland has fallen: everyone west, to hold the French border through the winter.
+    if (poland && !held) {
+      held = true;
+      w = applyOrders(w, armiesOf(w, 'Germany').map((a) => ({ type: 'armyOrder' as const, country: 'Germany', army: a.id, order: { kind: 'hold' as const, foe: 'France' } })));
+    }
+    // 10 May 1940, as in history: all three push into France.
+    if (held && !turned && dateLabel(w) === '10 May 1940') {
+      turned = true;
+      const [a, b, c] = armiesOf(w, 'Germany');
+      w = applyOrders(w, [push(a.id, id('Lorraine'), 'France', 'allOut'), push(b.id, id('Burgundy'), 'France', 'allOut'), push(c.id, id('Lorraine'), 'France', 'allOut')]);
+    }
+    if (turned && !france) {
+      // Once a push has taken its target, the next one: on to Paris.
+      w = applyOrders(w, armiesOf(w, 'Germany').filter((a) => a.order.kind === 'hold' && a.order.at !== undefined).map((a) => push(a.id, id('Paris'), 'France')));
+    }
+  }
+  const ms = (Date.now() - t) / days;
+  const lost = PROVINCES.filter((p) => p.owner === 'Germany' && w.controller[p.id] !== 'Germany').length;
+  return `| ${seed} | ${poland || 'did not fall'} | ${france || 'did not fall'} | ${w.units.filter((u) => u.owner === 'Germany').length} | ${lost} | ${w.reports.filter((r) => r.attackers.includes('Germany')).length} | ${armiesOf(w, 'Germany').map((a) => `${a.name}: ${a.units.length}`).join(', ')} | ${ms.toFixed(1)} |`;
+});
+console.log(armyRows.join('\n'));
 console.log(storyRows.join('\n'));
 console.log(ffaRows.join('\n'));
 console.log(forceRows.join('\n'));
@@ -241,7 +305,7 @@ console.log(endRows.join('\n'));
 console.log(fallRows.join('\n'));
 console.log(economyRows.join('\n'));
 
-const report = `# Balance report, Stage K1: ${all.length} AI against AI wars, ${financeRows.length} finance playtests, four years of peace, six runs of history and three free-for-alls
+const report = `# Balance report, Stage K2: ${all.length} AI against AI wars, ${financeRows.length} finance playtests, four years of peace, six runs of history, three free-for-alls and three games played with armies
 
 Made by \`npm run balance\`. Do not edit the tables by hand; run the command again instead.
 
@@ -313,6 +377,21 @@ snow was one of the three main reasons.
 | Run | Battles | Average days | Attacks that succeed | River battles | Crossings forced | Lost partly to mud or snow |
 | --- | --- | --- | --- | --- | --- | --- |
 ${frontRows.join('\n')}
+
+## Armies
+
+Stage K2 lets the player command armies instead of divisions. A bot plays the September 1939
+start as Germany using only army orders: Army Group North and Army Group South push on Warsaw
+from two sides, Army Group West holds the French border and takes every new division. When
+Poland falls, all three hold the French border through the winter. On 10 May 1940 they push
+into Lorraine and Burgundy, then each pushes on to Paris once it has taken its target. The AI finance minister runs Germany's economy and the
+AI leads every other country. The bot does not attack Belgium or the Netherlands: in Story mode
+that needs a cause for war, which this bot does not seek. The run ends on 1 June 1941. Real history: Poland fell on
+6 October 1939, France on 22 June 1940.
+
+| Run | Poland falls | France falls | German divisions on 1 June 1941 | German provinces lost | German attacks | Armies at the end | Milliseconds a day |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+${armyRows.join('\n')}
 
 ## The war economy
 
@@ -386,7 +465,7 @@ Over the nine years of each run:
 ${seaRows.join('\n')}
 `;
 fs.mkdirSync('docs', { recursive: true });
-const file = 'docs/balance-stage-k1.md';
+const file = 'docs/balance-stage-k2.md';
 // Keep the hand-written notes below the tables when the numbers are refreshed.
 const marker = '\n## What the results say';
 const old = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';

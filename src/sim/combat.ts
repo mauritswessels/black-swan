@@ -94,10 +94,17 @@ export const PUSH_PER_DAY = 10;
 export const BREAKTHROUGH_JUMP = 0.6;
 export const BREAKTHROUGH_JUMP_PURSUED = 0.85;
 
-/** How far the front line moves today, from each side's damage, the ground and any river. */
-export function linePush(attack: number, defence: number, line: number, ground: Ground = 'dry', riverShare = 0): number {
+/** Against an army that is reeling, the line can move this far in a day. */
+export const REELING_PUSH_MAX = 15;
+
+/**
+ * How far the front line moves today, from each side's damage, the ground and any river.
+ * Against an army caught by surprise or in shock (`reeling`) it gives way much faster: the push
+ * is 10 x (A - D) / the smaller of A and D, so twice the damage moves it 10 points, up to 15.
+ */
+export function linePush(attack: number, defence: number, line: number, ground: Ground = 'dry', riverShare = 0, reeling = false): number {
   if (attack + defence <= 0) return 0;
-  let push = (PUSH_PER_DAY * (attack - defence)) / (attack + defence);
+  let push = reeling && attack > 0 && defence > 0 ? Math.max(-PUSH_PER_DAY, Math.min(REELING_PUSH_MAX, (PUSH_PER_DAY * (attack - defence)) / Math.min(attack, defence))) : (PUSH_PER_DAY * (attack - defence)) / (attack + defence);
   push *= GROUND_PUSH[ground];
   if (push > 0 && line < BRIDGEHEAD) push *= 1 - (1 - RIVER_PUSH) * riverShare;
   return push;
@@ -262,19 +269,19 @@ export function outlook(attackers: Unit[], defenders: Unit[], province: number, 
     favours: ratio > 1.15 ? 'attacker' : ratio < 1 / 1.15 ? 'defender' : 'even',
     riverShare,
     river,
-    push: linePush(attackSum, defenceSum, line, ground, riverShare),
+    push: linePush(attackSum, defenceSum, line, ground, riverShare, defenders.some((u) => edges?.reeling?.(u.owner))),
     ground,
   };
 }
 
 /** The outlook for a battle being fought now, or for the units already ordered into a province. */
-export function outlookAt(w: Pick<World, 'units' | 'wars'> & { economies?: Record<string, Economy>; story?: World['story']; day?: number; startDate?: string; battles?: Battle[] }, province: number, air?: Draft['air']): Outlook | null {
+export function outlookAt(w: Pick<World, 'units' | 'wars'> & { economies?: Record<string, Economy>; story?: World['story']; day?: number; startDate?: string; battles?: Battle[]; armies?: World['armies'] }, province: number, air?: Draft['air']): Outlook | null {
   const here = w.units.filter((u) => u.at === province);
   const attackers = w.units.filter((u) => u.path[0] === province && here.some((e) => atWar(w, u.owner, e.owner)));
   const defenders = here.filter((u) => attackers.some((a) => atWar(w, a.owner, u.owner)));
   const sky = air && attackers.length && defenders.length ? air(byCount(attackers), byCount(defenders), province) : 1;
   const line = w.battles?.find((b) => b.province === province)?.line ?? 0;
-  return outlook(attackers, defenders, province, w.economies && combatEdges(w.economies, w.story && { effects: w.story.effects, day: w.day ?? 0, startDate: w.startDate ?? '1936-01-01' }), sky, groundOn(province, w.startDate ?? '1936-01-01', w.day ?? 0), line);
+  return outlook(attackers, defenders, province, w.economies && combatEdges(w.economies, w.story && { effects: w.story.effects, day: w.day ?? 0, startDate: w.startDate ?? '1936-01-01', armies: w.armies }), sky, groundOn(province, w.startDate ?? '1936-01-01', w.day ?? 0), line);
 }
 
 /** Fight one day of every battle. Returns the ids of the units that took part today. */
@@ -345,7 +352,8 @@ export function fightBattles(d: Draft, rng: Rng): Set<number> {
     battle.attackerLosses += hit(front, defenceDamage);
     // The front line moves by how the day went.
     const ground = d.ground?.[province] ?? 'dry';
-    battle.push = linePush(attackDamage, defenceDamage, battle.line ?? 0, ground, riverShare);
+    const reeling = !!d.edges?.reeling && battle.defenders.some((c) => d.edges!.reeling!(c));
+    battle.push = linePush(attackDamage, defenceDamage, battle.line ?? 0, ground, riverShare, reeling);
     battle.line = Math.max(0, Math.min(100, (battle.line ?? 0) + battle.push));
     for (const u of attackers) busy.add(u.id);
     for (const u of defenders) busy.add(u.id);

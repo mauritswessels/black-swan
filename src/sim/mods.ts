@@ -10,7 +10,8 @@ import { PLANS } from './plans';
 import { TECHS } from './research';
 import { PROVINCES } from './map';
 import { GROUND_ATTACK, groundIn, isWinter, seasonOf, WINTER_ATTACK, WINTER_LANDS } from './seasons';
-import type { ArmyEffect, Economy, Unit } from './types';
+import type { Army, ArmyEffect, Economy, Unit } from './types';
+import { commanderById, TRAIT_ATTACK, TRAIT_DEFENCE, type Trait } from './commanders';
 
 /** Every number research and plans can move. All start at 0; see EFFECT_TEXT for what each one means. */
 export interface Mods {
@@ -142,15 +143,32 @@ export const AMPHIBIOUS = 0.6;
 export interface Edges {
   attack(u: Unit): number;
   defence(u: Unit, province: number): number;
+  /** The country's army was caught by surprise or is in shock (story.ts, diplomacy.ts): it cannot hold a line. */
+  reeling?(country: string): boolean;
 }
 
 const CAP = { infantry: 'Infantry', armour: 'Armour', artillery: 'Artillery' } as const;
+
+/** Army effects that leave an army reeling: caught by surprise (a broken pact) or in shock (France in May 1940, the Balkans in 1941). */
+export const REELING = ['surprise', 'shock'];
 
 /** What story.ts adds to a battle: passing conditions on whole armies, and the season. */
 export interface EdgeContext {
   effects: ArmyEffect[];
   day: number;
   startDate: string;
+  /** Armies, for their commanders' traits (commanders.ts). */
+  armies?: Army[];
+}
+
+/** The trait of the commander leading each division's army, by unit id. */
+export function commanderTraits(armies: Army[] | undefined): Map<number, Trait> {
+  const out = new Map<number, Trait>();
+  for (const a of armies ?? []) {
+    const c = commanderById(a.commander);
+    if (c) for (const id of a.units) out.set(id, c.trait);
+  }
+  return out;
 }
 
 export { isWinter, WINTER_ATTACK, WINTER_LANDS } from './seasons';
@@ -164,6 +182,7 @@ export function combatEdges(economies: Record<string, Economy>, ctx?: EdgeContex
     attackOf.set(x.country, (attackOf.get(x.country) ?? 1) * x.attack);
     defenceOf.set(x.country, (defenceOf.get(x.country) ?? 1) * x.defence);
   }
+  const reeling = new Set((ctx?.effects ?? []).filter((x) => x.until >= ctx!.day && REELING.includes(x.id)).map((x) => x.country));
   const winter = !!ctx && isWinter(ctx.startDate, ctx.day);
   const season = ctx && seasonOf(ctx.startDate, ctx.day);
   // The cold hits invaders of the winter lands; mud slows every attack (seasons.ts).
@@ -171,6 +190,11 @@ export function combatEdges(economies: Record<string, Economy>, ctx?: EdgeContex
     if (!season || !u.path.length) return 1;
     const land = PROVINCES[u.path[0]].owner;
     return (winter && WINTER_LANDS.has(land) && !WINTER_LANDS.has(u.owner) ? WINTER_ATTACK : 1) * GROUND_ATTACK[groundIn(u.path[0], season)];
+  };
+  const traits = commanderTraits(ctx?.armies);
+  const led = (u: Unit, table: Record<Trait, number>): number => {
+    const t = traits.get(u.id);
+    return t ? table[t] : 1;
   };
   const cache = new Map<string, Mods>();
   const of = (owner: string): Mods => {
@@ -180,7 +204,8 @@ export function combatEdges(economies: Record<string, Economy>, ctx?: EdgeContex
   };
   return {
     // A division storming a beach fights at 60% (see AMPHIBIOUS), a little better with landing craft.
-    attack: (u) => (1 + of(u.owner)[`attack${CAP[u.type]}`]) * (u.landing ? Math.min(1, AMPHIBIOUS + of(u.owner).amphibious) : 1) * (attackOf.get(u.owner) ?? 1) * cold(u),
-    defence: (u, province) => (1 + of(u.owner)[`defence${CAP[u.type]}`]) * (PROVINCES[province].owner === u.owner ? 1 + of(u.owner).homeDefence : 1) * (defenceOf.get(u.owner) ?? 1),
+    attack: (u) => (1 + of(u.owner)[`attack${CAP[u.type]}`]) * (u.landing ? Math.min(1, AMPHIBIOUS + of(u.owner).amphibious) : 1) * (attackOf.get(u.owner) ?? 1) * cold(u) * led(u, TRAIT_ATTACK),
+    defence: (u, province) => (1 + of(u.owner)[`defence${CAP[u.type]}`]) * (PROVINCES[province].owner === u.owner ? 1 + of(u.owner).homeDefence : 1) * (defenceOf.get(u.owner) ?? 1) * led(u, TRAIT_DEFENCE),
+    reeling: (country) => reeling.has(country),
   };
 }

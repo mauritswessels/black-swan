@@ -637,8 +637,10 @@ export function cloneEconomies(es: Record<string, Economy>): Record<string, Econ
   return out;
 }
 
-export type EconomyOrder = Extract<Order, { country: string }>;
-export const isEconomyOrder = (o: Order): o is EconomyOrder => 'country' in o;
+/** Orders about armies carry a country too, but belong to armies.ts. */
+const ARMY_ORDERS = new Set(['formArmy', 'armyOrder', 'armyUnits', 'armySettings', 'disbandArmy']);
+export type EconomyOrder = Exclude<Extract<Order, { country: string }>, { type: 'formArmy' | 'armyOrder' | 'armyUnits' | 'armySettings' | 'disbandArmy' }>;
+export const isEconomyOrder = (o: Order): o is EconomyOrder => 'country' in o && !ARMY_ORDERS.has(o.type);
 
 /** Where a new division forms: the capital, or failing that the biggest home city the country still holds. */
 export function musterPoint(controller: string[], country: string, owner?: string[]): number | null {

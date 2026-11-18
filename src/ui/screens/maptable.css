@@ -382,3 +382,48 @@ label.sb-goto { display: flex; flex-direction: column; gap: 6px; font-size: 13.5
 .sb-tip small { color: #b7c3d6; font-size: 13px; }
 .sb-tip-actions { display: flex; gap: 8px; }
 .sb-mini.quiet { border-color: transparent; color: var(--dim); }
+
+/* ---------- armies ---------- */
+.sb-btn.current { border-left: 4px solid var(--gold); }
+.sb-chips .sb-link.on { border-color: var(--gold); background: rgba(255, 196, 107, 0.18); }
+.sb-seg { display: flex; border: 1px solid rgba(156, 200, 255, 0.55); border-radius: 3px; overflow: hidden; }
+.sb-seg button { flex: 1; min-height: 40px; background: none; border: 0; border-left: 1px solid rgba(156, 200, 255, 0.3); color: #dce4f1; font: 500 14px var(--f-body); cursor: pointer; }
+.sb-seg button:first-child { border-left: 0; }
+.sb-seg button.on { background: rgba(255, 196, 107, 0.2); color: #fff; }
+.sb-seg button:hover:not(.on) { background: rgba(156, 200, 255, 0.14); }
+.sb-goto select { height: 44px; padding: 0 10px; background: rgba(0, 0, 0, 0.35); border: 1px solid rgba(156, 200, 255, 0.4); border-radius: 3px; color: #fff; font: 14px var(--f-body); }
+.sb-check { display: flex; gap: 10px; align-items: center; font-size: 14px; color: #dce4f1; cursor: pointer; }
+.sb-check input { width: 18px; height: 18px; accent-color: var(--gold); }
+.sb-inline { padding: 0; border: 0; background: none; color: #9cc8ff; font: inherit; text-decoration: underline; cursor: pointer; }
+.sb-pincer { display: flex; flex-direction: column; gap: 4px; padding: 10px 12px; border: 1px solid rgba(156, 200, 255, 0.4); border-radius: 3px; background: rgba(156, 200, 255, 0.06); font-size: 13.5px; color: #dce4f1; }
+.sb-pincer b { color: #fff; }
+.sb-pincer.closing { border-color: var(--gold); background: rgba(255, 196, 107, 0.12); }
+.sb .sb-link kbd, .sb-btn kbd { margin-right: 4px; }
+
+/* armies on the map: a flag for each, an arrow for each push */
+.mt-flag { cursor: grab; }
+.mt-flag .pole { stroke: #eaf2ff; stroke-width: 1.6; }
+.mt-flag .cloth { stroke: #05070c; stroke-width: 1; }
+.mt-flag.picked .cloth { stroke: #fff; stroke-width: 2.2; }
+.mt-flag text { font-family: var(--f-cond); }
+.mt-flag .slot { pointer-events: none; }
+.mt-flag .hit { fill: transparent; stroke: none; }
+.mt-flag .slot { font-size: 13px; font-weight: 700; fill: #05070c; text-anchor: middle; }
+.mt-flag .name { font-size: 12px; font-weight: 600; fill: #fff; paint-order: stroke; stroke: rgba(5, 7, 12, 0.85); stroke-width: 3px; }
+.mt-flag:hover .cloth { stroke: #fff; }
+.mt-pushes { pointer-events: none; }
+.mt-push path { fill: none; stroke-linecap: round; }
+.mt-push .halo { stroke: rgba(5, 7, 12, 0.7); stroke-width: 9; }
+.mt-push .shaft { stroke-width: 5; opacity: 0.85; }
+.mt-push.picked .shaft { stroke-width: 6.5; opacity: 1; }
+.mt-push.pincer .halo { stroke: rgba(255, 196, 107, 0.45); stroke-width: 12; }
+.mt-pincer rect { fill: rgba(10, 15, 26, 0.92); stroke: rgba(156, 200, 255, 0.6); stroke-width: 1; }
+.mt-pincer.closing rect { stroke: var(--gold); stroke-width: 2; animation: mt-pulse-stroke 1.4s ease-in-out infinite; }
+.mt-pincer text { font: 600 11.5px var(--f-cond); letter-spacing: 0.06em; fill: #ffe1ad; text-anchor: middle; }
+@keyframes mt-pulse-stroke { 50% { stroke-opacity: 0.35; } }
+.mt-post { fill: none; stroke: #eaf2ff; stroke-width: 2; stroke-dasharray: 3 3; }
+.mt-band-select { position: absolute; border: 1.5px dashed var(--gold); background: rgba(255, 196, 107, 0.1); pointer-events: none; }
+.mt-pull { position: absolute; inset: 0; pointer-events: none; }
+.mt-pull line { stroke-width: 3; stroke-dasharray: 8 5; }
+@media (prefers-reduced-motion: reduce) { .mt-pincer.closing rect { animation: none; } }
+.sb > * { flex-shrink: 0; }

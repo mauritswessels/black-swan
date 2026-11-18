@@ -17,9 +17,9 @@ import { inApp, invoke } from '../native';
 export const SLOTS = ['auto', '1', '2', '3'] as const;
 export type Slot = (typeof SLOTS)[number];
 
-/** The save format. Version 11 (game 1.2) added the front line in battles and the war replay; version 10 saves still load (see upgrade.ts). */
-export const SAVE_VERSION = 11;
-const READABLE = [10, 11];
+/** The save format. Version 11 (game 1.2) added the front line in battles and the war replay; version 12 (game 1.3) added armies. Version 10 and 11 saves still load (see upgrade.ts). */
+export const SAVE_VERSION = 12;
+const READABLE = [10, 11, 12];
 
 export interface SaveFile<State = unknown> {
   version: number;

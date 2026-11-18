@@ -16,7 +16,7 @@ describe('tutorial lessons', () => {
   }
 
   it('every lesson has steps, and every step that waits on the player can be shown', () => {
-    expect(LESSONS.length).toBe(9);
+    expect(LESSONS.length).toBe(10);
     expect(new Set(LESSONS.map((l) => l.id)).size).toBe(LESSONS.length);
     for (const l of LESSONS) {
       expect(l.steps.length).toBeGreaterThan(3);

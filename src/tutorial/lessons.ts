@@ -1,5 +1,5 @@
 /**
- * Learn to play: nine short lessons, each a prepared situation on the real map.
+ * Learn to play: ten short lessons, each a prepared situation on the real map.
  *
  * A lesson is a world (built here, from the real 1936 world) and a list of steps. Each step
  * tells the player one thing, may point at a button or a province, and is done when a check on
@@ -238,7 +238,7 @@ const time: Lesson = {
       show: () => ({ run: true }),
     },
     {
-      text: 'Speed it up: press `3`, or click the third bar.',
+      text: 'Speed it up: hold `Shift` and press `3`, or click the third bar.',
       target: { sel: '.mt-speed' },
       keepClock: true,
       done: (v) => v.speed >= 3,
@@ -319,7 +319,7 @@ const moving: Lesson = {
       show: () => ({ mapMode: 'supply' }),
     },
     {
-      text: 'Two more tricks: `H` halts the selected divisions where they are, and `Tab` jumps from one of your armies to the next. Press `Esc` to drop the selection.',
+      text: 'Two more tricks: `H` halts the selected divisions where they are, and `Tab` jumps from one of your counters to the next. Press `Esc` to drop the selection.',
       done: (v) => v.selection === null,
       show: () => ({ select: null, mapMode: 'political' }),
     },
@@ -338,7 +338,7 @@ const battle: Lesson = {
     w = army(w, 'Germany', [[P.palatinate, 'infantry', 2], [P.wurttemberg, 'infantry', 2], [P.rhineland, 'infantry', 2], [P.eastPrussia, 'infantry', 8], [P.pomerania, 'infantry', 8], [P.pomerania, 'armour', 3], [P.silesia, 'infantry', 8], [P.silesia, 'armour', 3]]);
     return war(w, ME, 'Germany', 'France declares war on Germany after the invasion of Poland');
   },
-  next: 'Next, learn where new divisions come from: factories and production.',
+  next: 'Next, let armies take whole fronts off your hands.',
   steps: [
     {
       text: 'It is 7 September 1939. Germany has invaded Poland, and France has declared war on Germany. Most of the German army is far away in Poland. This is your chance: the Saar offensive.',
@@ -423,6 +423,94 @@ const battle: Lesson = {
     {
       text: 'Peace can put the old borders back, or let each side keep what it holds. The sidebar says whether they are likely to accept, and why.',
       target: { sel: '.sb-outlook' },
+    },
+  ],
+};
+
+const armyOf = (v: LessonView) => (v.world.armies ?? []).find((a) => a.owner === ME);
+const armyOrder = (v: LessonView, order: NonNullable<World['armies']>[number]['order']): Action => {
+  const a = armyOf(v);
+  return a ? { select: { kind: 'army', id: a.id }, orders: [{ type: 'armyOrder', country: ME, army: a.id, order }] } : {};
+};
+
+const armies: Lesson = {
+  id: 'armies',
+  title: 'Armies',
+  summary: 'Group divisions into an army, then let it hold a border or push.',
+  minutes: 5,
+  build: () => {
+    let w = base('armies', '1939-09-07');
+    w = army(w, ME, [[P.lorraine, 'infantry', 6], [P.lorraine, 'artillery', 2], [P.burgundy, 'infantry', 5], [P.burgundy, 'armour', 1], [P.paris, 'infantry', 4], [P.provence, 'infantry', 3]]);
+    w = army(w, 'Germany', [[P.palatinate, 'infantry', 2], [P.wurttemberg, 'infantry', 2], [P.rhineland, 'infantry', 3], [P.eastPrussia, 'infantry', 8], [P.pomerania, 'infantry', 8], [P.silesia, 'infantry', 8]]);
+    return war(w, ME, 'Germany', 'France declares war on Germany after the invasion of Poland');
+  },
+  next: 'Next, learn where new divisions come from: factories and production.',
+  steps: [
+    {
+      text: 'A real war has too many divisions to move one by one. An army is a group of divisions that carries out one order between them: hold a border, or push toward a target.',
+      why: 'Generals commanded armies, not divisions. You decide where the effort goes; the army works out which division goes where.',
+    },
+    {
+      text: 'Hold `Shift` and drag a box around your counters in Lorraine and Burgundy.',
+      why: 'Shift-drag selects every one of your divisions inside the box. Plain dragging still moves the map.',
+      province: P.lorraine,
+      done: (v) => new Set(selectedUnits(v).map((u) => u.at)).size >= 2,
+      show: (v) => selectUnitsAt(v, P.lorraine, P.burgundy),
+    },
+    {
+      text: 'Press `A`, or click Form a new army in the sidebar.',
+      done: (v) => !!armyOf(v),
+      show: (v) => ({ orders: [{ type: 'formArmy', country: ME, units: (selectedUnits(v).length ? selectedUnits(v) : mine(v).filter((u) => u.at === P.lorraine || u.at === P.burgundy)).map((u) => u.id) }], select: { kind: 'army', id: v.world.nextArmyId ?? 0 } }),
+    },
+    {
+      text: 'Your 1st Army has a flag on the map, in its own colour, and the number key `1`. Press `1` to select it (press it again to look at it). Its divisions are ringed in gold.',
+      done: (v) => v.selection?.kind === 'army',
+      show: (v) => ({ select: { kind: 'army', id: armyOf(v)?.id ?? 0 } }),
+    },
+    {
+      text: 'Click Hold against Germany.',
+      why: 'Holding, the army spreads along the whole border with that country: more divisions where more enemies stand, and some behind the line. It keeps the line filled as divisions come and go.',
+      target: { sel: '.sb-chips' },
+      done: (v) => armyOf(v)?.order.kind === 'hold',
+      show: (v) => armyOrder(v, { kind: 'hold', foe: 'Germany' }),
+    },
+    {
+      text: 'Start the clock and watch the army spread out along the border.',
+      done: (v, s) => v.world.day - s.world.day >= 6,
+      show: () => ({ run: true, speed: 3 }),
+      days: 10,
+    },
+    {
+      text: 'Now attack. Drag the army’s flag onto the Palatinate (or click Push toward…, then the Palatinate).',
+      why: 'Dragging the flag onto an enemy province means push; onto a border, hold it; onto your own land behind the front, wait there in reserve.',
+      province: P.palatinate,
+      done: (v) => armyOf(v)?.order.kind === 'push',
+      show: (v) => armyOrder(v, { kind: 'push', target: P.palatinate, foe: 'Germany', pace: 'steady' }),
+    },
+    {
+      text: 'The thick arrow is the push. Its pace sets the odds it waits for before each attack: careful (1.6 to 1), steady (1.3 to 1) or all-out (even odds). All-out is fast and costly.',
+      target: { sel: '.sb-seg' },
+    },
+    {
+      text: 'Start the clock. The army attacks on its own, and when the Palatinate is taken it holds the ground around it.',
+      province: P.palatinate,
+      done: (v) => v.world.controller[P.palatinate] === ME,
+      show: () => ({ run: true, speed: 3 }),
+      days: 60,
+    },
+    {
+      text: 'Give the army a commander: pick one from the list in the sidebar. Each has one strength: bold ones attack 10% harder, careful ones defend 10% harder, and good organisers get their divisions back in shape faster.',
+      why: 'The commanders are real generals of the time. Hover over a name for who they were, and what they did.',
+      target: { sel: '.sb select' },
+      done: (v) => !!armyOf(v)?.commander,
+      show: (v) => {
+        const a = armyOf(v);
+        return a ? { select: { kind: 'army', id: a.id }, orders: [{ type: 'armySettings', country: ME, army: a.id, commander: 'degaulle' }] } : {};
+      },
+    },
+    {
+      text: 'Two more orders. Fall back: the army stops attacking, goes back to a province you pick and digs in twice as fast. Reserve: it waits behind the front and goes to help where the enemy breaks in.',
+      why: 'Two armies pushing at the same place from different sides make a pincer. The map labels it, and warns when the jaws are closing on enemy divisions that would be cut off.',
     },
   ],
 };
@@ -736,7 +824,7 @@ const forces: Lesson = {
   ],
 };
 
-export const LESSONS: Lesson[] = [mapTable, time, moving, battle, production, money, homeFront, diplomacy, forces];
+export const LESSONS: Lesson[] = [mapTable, time, moving, battle, armies, production, money, homeFront, diplomacy, forces];
 
 export const lessonById = (id: string): Lesson | undefined => LESSONS.find((l) => l.id === id);
 

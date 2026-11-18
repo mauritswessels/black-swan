@@ -4,6 +4,8 @@
  * This is the starter set for the war game; every stage adds the terms it introduces.
  */
 
+import { COMMANDERS, TRAIT_NAME, TRAIT_TEXT } from '../sim/commanders';
+
 export interface Term {
   id: string;
   term: string;
@@ -116,7 +118,7 @@ export const GLOSSARY: Term[] = [
   { id: 'ground-support', term: 'Ground support', definition: 'Bombers helping the army in battles within their range.', why: 'With control of the sky over a battle, your side hits 15% harder and the enemy 15% less hard.' },
   { id: 'air-range', term: 'Range of aircraft', definition: 'How far a wing flies from its base: 400 km for fighters and 800 km for bombers, more with research.', why: 'An air wing only helps where it can reach, so move bases forward as the front moves.' },
   // Stage K1: the moving front.
-  { id: 'front-line', term: 'Front line', definition: 'How far the attackers have got into a province they are fighting for, from 0 (still at the border) to 100 (the far side). On the map it is a band in the attackers’ colour growing from the border.', why: 'It moves every day by how the fighting went, about 3 points for a day where you deal twice the damage you take, and back on a bad day. The province changes hands only when the line reaches 100. When the defenders break it jumps forward, further when tanks can chase them across open ground.' },
+  { id: 'front-line', term: 'Front line', definition: 'How far the attackers have got into a province they are fighting for, from 0 (still at the border) to 100 (the far side). On the map it is a band in the attackers’ colour growing from the border.', why: 'It moves every day by how the fighting went, about 3 points for a day where you deal twice the damage you take, and back on a bad day. Against an army reeling from a surprise attack or the shock of defeat it moves much faster, up to 15 points a day. The province changes hands only when the line reaches 100. When the defenders break it jumps forward, further when tanks can chase them across open ground.' },
   { id: 'river-crossing', term: 'River crossing', definition: 'An attack across one of the great rivers drawn in blue on the map: the Rhine, Meuse, Elbe, Vistula, Bug, Danube, Dnieper, Don and others, and the Suez Canal.', why: 'The attackers have to cross under fire on boats and bridges, so they hit 15% less hard, and the line moves at half pace until a bridgehead is won.' },
   { id: 'bridgehead', term: 'Bridgehead', definition: 'Ground won on the far bank of a river, deep enough to bring the rest of an army across.', why: 'In this game, a front line 20 points into a province across a river. From there it moves at its usual pace.' },
   { id: 'mud', term: 'Mud (rasputitsa)', definition: 'The weeks of the spring thaw (15 March to 30 April) and the autumn rains (10 October to 20 November) when the unpaved roads of eastern Europe turn to mud. Russians call it the rasputitsa, "the time without roads".', why: 'In the Soviet Union, Poland, the Baltic states and Romania, marching takes twice as long, attacks hit 20% less hard and the front moves at half pace. In October 1941 the mud slowed the German advance on Moscow for weeks.' },
@@ -125,11 +127,22 @@ export const GLOSSARY: Term[] = [
   { id: 'pocket', term: 'Pocket', definition: 'Divisions cut off from supply by the enemy, standing in provinces next to each other. The map rings each pocket with a count, red for your own.', why: 'Trapped divisions lose organisation every day, then start to starve, and if they lose a battle they surrender. Break out, or open a way to them, before that happens. Close the ring when the pocket is the enemy’s.' },
   { id: 'war-replay', term: 'War replay', definition: 'The front, written down once a week, played back in about a minute. Press V, or open it from the report.', why: 'It shows how the war actually moved: the fast advances, the stalls at rivers and in the mud, and the turning points.' },
   { id: 'lockstep', term: 'Lockstep', definition: 'A way of playing over the internet in which every computer runs the same game and only the players’ orders are sent between them.', why: 'It needs a game that gives exactly the same result from the same start and the same orders. Black Swan is built that way, so playing against friends can be added later.' },
+  { id: 'army', term: 'Army', definition: 'A group of your divisions under one order. Draw a box around divisions with Shift held and press A to form one. Each army has a flag on the map and a number key, 1 to 9.', why: 'With an army you decide where the effort goes, and the army moves its own divisions: you no longer have to move every one by hand. Real generals commanded armies, not divisions.' },
+  { id: 'army-order', term: 'Army order', definition: 'What an army does until you tell it otherwise: Hold a border, Push toward a target, Fall back to a line, or wait in Reserve. Drag its flag onto the map, or choose in the sidebar.', why: 'An order goes on working day after day: the army keeps its line filled as divisions are lost, rest or arrive. Divisions you march by hand stay in the army, which leaves them alone until its next order.' },
+  { id: 'hold', term: 'Hold', definition: 'An army order: spread along the whole border with one country, with more divisions where more of its divisions stand, and a few behind the line. After a push takes its target, the army holds the ground around it.', why: 'It is the order for a quiet front, or for a long border you cannot afford to lose. The army does not attack, so its divisions dig in.' },
+  { id: 'push', term: 'Push', definition: 'An army order: attack toward a target province, through the enemy provinces in the way, using the same front code as the computer’s generals. At peace the army gathers on the border closest to the target, ready for the war.', why: 'The army only attacks where the odds suit its pace, takes worn-out divisions out of the fight, and attacks from several sides when it can.' },
+  { id: 'pace', term: 'Pace', definition: 'How hard a pushing army attacks: careful (only at odds of 1.6 to 1 or better), steady (1.3 to 1, like the computer’s generals) or all-out (at even odds).', why: 'All-out is fast and costly; careful saves lives but gives the enemy time to dig in and bring up reserves.' },
+  { id: 'fall-back', term: 'Fall back', definition: 'An army order: stop attacking, go back to a province you pick and the land next to it facing the enemy, and dig in there twice as fast as usual.', why: 'Giving up ground to save an army is often wiser than losing both. A shorter line also needs fewer divisions to hold.' },
+  { id: 'reserve', term: 'Reserve', definition: 'An army order: wait at a province behind the front. When the enemy breaks in within two provinces of it, the reserve goes to help: it reinforces a province being lost, or counter-attacks one just taken at odds of 1.2 to 1 or better.', why: 'A front without reserves breaks at its weakest point. In May 1940 the French had sent their reserve into Belgium and had nothing left to stop the breakthrough at Sedan.' },
+  { id: 'pincer', term: 'Pincer', definition: 'Two of your armies pushing at the same place, or places next to each other, from different directions. The map labels it and counts the enemy divisions that would be cut off if both reach their targets.', why: 'A pincer is how most great encirclements were made: at Kiev in 1941 and at Stalingrad in 1942. When the jaws close, the trapped divisions lose their supply.' },
+  { id: 'commander', term: 'Commander', definition: 'A general who leads one of your armies. Each has one trait: bold (divisions attack 10% harder), careful (they defend 10% harder) or good at supply (they get organisation back 25% faster).', why: 'The commanders are real generals of the time, and each has a codex entry saying who they were. A trait is the game’s simplification of a whole career.' },
+  ...COMMANDERS.map((c) => ({ id: `commander-${c.id}`, term: c.name, definition: `${c.country}, ${c.life}. In the game: ${TRAIT_NAME[c.trait].toLowerCase()} (${TRAIT_TEXT[c.trait].toLowerCase()}).`, why: c.story })),
 ];
 
 /** The groups the codex sorts its terms into. */
 export const GROUPS = [
   { id: 'army', name: 'Army and battle' },
+  { id: 'commanders', name: 'Commanders' },
   { id: 'economy', name: 'Economy and money' },
   { id: 'home', name: 'Home front and research' },
   { id: 'diplomacy', name: 'Diplomacy' },
@@ -140,7 +153,8 @@ export type GroupId = (typeof GROUPS)[number]['id'];
 
 const GROUP_OF: Record<string, GroupId> = Object.fromEntries(
   ([
-    ['army', 'province division strength organisation supply encirclement dig-in front-width depot attrition retreat capitulation counter outlook fog-of-war fortification winter surprise-attack front-line river-crossing bridgehead mud snow desert-heat pocket victory-points infantry armour artillery'],
+    ['army', 'province division strength organisation supply encirclement dig-in front-width depot attrition retreat capitulation counter outlook fog-of-war fortification winter surprise-attack front-line river-crossing bridgehead mud snow desert-heat pocket victory-points infantry armour artillery army army-order hold push pace fall-back reserve pincer commander'],
+    ['commanders', COMMANDERS.map((c) => `commander-${c.id}`).join(' ')],
     ['economy', 'inflation war-bonds budget-deficit money-supply rationing gdp consumer-goods guns-or-butter opportunity-cost production-line manpower national-debt real-interest-rate printing-money quantity-theory inflation-expectations hyperinflation inflation-tax price-controls crowding-out mefo-bills how-to-pay-for-the-war steel-and-oil autarky national-income conscription'],
     ['home', 'stability war-support war-weariness home-front change-of-government research ahead-of-its-time national-plan'],
     ['diplomacy', 'relations world-tension alliance guarantee non-aggression-pact cause-for-war claim ultimatum appeasement containment war-score truce occupation annexation demilitarised-zone diplomatic-mission decision peace-terms friendly-government'],

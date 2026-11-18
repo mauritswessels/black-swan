@@ -59,12 +59,12 @@ them, so the worlds must never drift apart.
 
 ## Lessons (`src/tutorial/lessons.ts`)
 
-Learn to play has nine lessons. Each is a world built from the real 1936 world, with France as
+Learn to play has ten lessons. Each is a world built from the real 1936 world, with France as
 the player, divisions placed where the lesson wants them, and `story.lesson` set. That switches
 off history cards, story events, random events and the end of the game; the AI's historical
 agenda and the treaties are off too, so nothing happens but what the lesson set up. Two lessons
 start a war: France and Germany on 7 September 1939 (the Saar, with most of the German army in
-the east), and Italy and France on 11 June 1940. The AI still leads the enemy army, so it can
+the east; the Battle and Armies lessons both use it), and Italy and France on 11 June 1940. The AI still leads the enemy army, so it can
 counter-attack.
 
 Each step is a check on the game (a panel open, divisions marching, a province taken) and a
@@ -152,10 +152,15 @@ draws: a band in their colour, growing from each border they attack across.
 - Walking into an empty enemy province is drawn the same way, from how far the division has
   walked.
 - Who holds a province, for supply, factories and victory points, changes only at 100.
+- **Reeling defenders** (since 1.3). When the defenders' army is caught by surprise or in the
+  shock of 1940 (see Story mode), the line gives way much faster:
+  push = 10 x (A - D) / the smaller of A and D, between -10 and +15 a day. Twice the damage
+  moves it 10 points instead of 3.3. Armies taken by surprise in 1941 lost hundreds of
+  kilometres in weeks, which the even formula could not show.
 
 **Rivers** (`src/sim/rivers.ts`). Sixteen great rivers and the Suez Canal lie on the province
 borders they follow most closely: the Rhine, Meuse, Elbe, Vistula, Narew, Bug, Dniester, Prut,
-Danube, Dnieper, Don, Svir, Po, Loire and Ebro. Attacking across one costs 25% of the attack and
+Danube, Dnieper, Don, Svir, Po, Loire and Ebro. Attacking across one costs 15% of the attack and
 halves the line's pace until a bridgehead of 20 points is won.
 
 **The army AI and the front line.** An AI country keeps feeding a battle whose line moved
@@ -224,9 +229,11 @@ kilobytes in the save. Saves from 1.1 start recording on the day they are loaded
 - **Cut off** means no path, through provinces your country controls, back to one of your
   depots. A depot is your capital, or the biggest city of each separate piece of your home
   territory (for France: Paris, Algiers, Corsica and Damascus). It only works while you hold it.
-- **Capacity** of a province = 4 + 3 x infrastructure. Infrastructure runs from 1 to 5: plains
-  3, forest 2, hills 2, marsh 1, mountains 1, desert 1, plus 1 for a big city and plus 1 for a
-  capital. So open country feeds 13 divisions, a mountain province 7 and a capital up to 19.
+- **Capacity** of a province = 5 + 4 x infrastructure (4 + 3 x infrastructure before 1.3).
+  Infrastructure runs from 1 to 5: plains 3, forest 2, hills 2, marsh 1, mountains 1, desert 1,
+  plus 1 for a big city and plus 1 for a capital. So open country feeds 17 divisions, a
+  mountain province 9 and a capital up to 25. It was raised in 1.3 because an army invading
+  the Soviet Union could not fit enough divisions on its front to push far.
 
 What supply does:
 
@@ -826,6 +833,52 @@ Divisions start in the homeland (the land connected to the capital), on the capi
 foreign borders first, at most half of what each province can supply. About 15% of the army
 garrisons overseas territories, one division each, the richest first.
 
+## Armies (`src/sim/armies.ts`, `src/sim/commanders.ts`)
+
+Since 1.3 the player can group divisions into armies (an AI country does not use them: its army
+commander below leads its whole army). An army has a name, a number key from 1 to 9 (the
+lowest free one when it is formed; a tenth army has none), its divisions, one order and,
+optionally, a commander. A division belongs to one army at most. Armies are part of the world,
+so they are saved and give the same orders on every computer.
+
+Each day, before the player's own orders and the AI's, every army turns its order into orders
+for its divisions. On the day an order is given the army takes back all its divisions; on later
+days it leaves alone any that the player has marched by hand, until its next order.
+
+| Order | What the army does |
+| --- | --- |
+| None | Nothing: the player moves its divisions. |
+| Hold (a country) | Spreads over the line of friendly provinces that touch that country, by weight: 1 + the country's divisions next door + 0.5 for each of its provinces next door + 2 for a city of your own with 10 victory points or more. Each province gets its share, up to what it can feed (after the divisions there that are not the army's); the rest stand in the depth behind. A division already in the right place stays. No attacks: those under way are called off on the day of the order. |
+| Hold (the ground around a province) | What a push becomes when its target is taken: the province and the land next to it facing the enemy, weighted 1 + the enemy pressure there (+1 for the province itself). |
+| Push (a target, a pace) | At war: the AI army commander, for this army alone, on one front, attacking only the enemy provinces on the axis (below), at the pace's margin: careful 1.6, steady 1.3, all-out 1.0. It never waits for the whole front to be strong enough, as the AI does. At peace: deploys on the stretch of border nearest the target, weighted 1 / (1 + steps to the target) squared. When the target is held by the army's country or an ally, the order becomes Hold the ground around it. |
+| Fall back (a province) | No attacks, every day. The line is the province and the friendly land next to it that faces the enemy (weight 1 + enemy pressure, +1 for the province); the rest stand behind. Divisions of the army dig in twice as fast (4% a day, still up to 20%). |
+| Reserve (a province) | Stands at the province and the land next to it. When a friendly province within 2 steps is under attack and its line is 30 or more in, the nearest divisions go to help, up to what it can feed. When the enemy holds a province of yours or an ally's within 2 steps, the reserve counter-attacks if it can bring 1.2 times the defence. |
+
+**The axis of a push.** Once the target is on the front (next to friendly land) the army attacks
+only it, unless it is too strong to take head on: it holds more than a third as many divisions
+as the army, or the army has not attacked it for 10 days. Then the army may also attack the
+front provinces beside it, to go round it. Before the target is on the front, the army attacks up
+to three front provinces, those with the lowest score = steps to the target + half the steps from
+the army's centre (the province holding most of its divisions), within 1 of the best. So an army
+coming from the south does not wander round to attack its target from the north.
+
+**New divisions.** One army at a time may be set to take new divisions: each new division
+joins it on the day it is raised. Divisions that are destroyed leave their army; an army whose
+country surrenders is gone.
+
+**Pincers.** Two armies of one country pushing against the same enemy, at the same target or at
+targets next to each other, whose directions from the target to each army's centre are at
+least 60 degrees apart, form a pincer. The map labels it with the number of enemy (and allied
+enemy) divisions that would lose their link to a depot if both targets were taken today. The
+jaws are closing when each army's centre is within 2 steps of its target; the news reports it
+once, the day it starts.
+
+**Commanders.** 24 real generals, four or five for each playable country, each with one trait:
+bold (the army's divisions attack x 1.1), careful (they defend x 1.1) or good at supply (they
+regain organisation x 1.25 as fast). A commander leads one army of his own country at a time.
+Each has a codex entry: what he did, and, where a general took part in or was tried for crimes,
+that too.
+
 ## The army AI (`src/sim/ai.ts`)
 
 Leads the armies of every AI country at war, and of every country with a war planned in the
@@ -846,6 +899,9 @@ expedition has been called home.
 whole front attacks: it needs only 0.7 of the usual edge and keeps a smaller guard. Below 0.6
 to 1 it only defends and finishes battles already started.
 
+**A reeling enemy** (since 1.3). Against an enemy caught by surprise or in shock, attacks go in
+at 0.75 of the usual margin, before it can recover.
+
 **Choosing targets.** Each enemy province the front can reach scores (victory points + 2 x the
 number of enemy divisions that would be cut off + 1) / (its defence + 1). An attack that would
 cut off two or more enemy divisions needs 15% less of an edge. Undefended provinces get one
@@ -859,13 +915,16 @@ than a quarter (offensive) or half of what the province can feed.
 any city of 10 victory points or more, kept at full strength), then to the provinces next to
 the three best targets, then anywhere in the line with room, then the depth. A division in a
 province more than a quarter overcrowded steps back to the nearest province with room. Those
-below 25 organisation pull out of the line to rest.
+below 25 organisation pull out of the line to rest. A division already standing on its front
+stays unless the move is clearly better (since 1.3), so the line does not shuffle sideways
+every day.
 
 **By sea.** Divisions that cannot reach a front on foot go to a front overseas through the
 nearest friendly port, sail on the expeditions and landings of the timetable, and otherwise
 make a landing of their own only when most of the army has no front on land: on a coast whose
 sea the country controls, with at least 4 rested divisions, where the enemy cannot answer with
-twice as many. A communist country and the others fight the same enemy on separate fronts:
+twice as many, and (since 1.3) never on a stretch of coast the timetable keeps for a later
+landing of the same country, so Britain does not land in northern France years before Normandy. A communist country and the others fight the same enemy on separate fronts:
 neither ships divisions to a front in the other's land.
 
 **Total war** (`src/sim/aiEconomy.ts`). An AI country with a communist government fighting

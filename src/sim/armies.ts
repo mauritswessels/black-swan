@@ -203,19 +203,21 @@ function stepsTo(target: number): number[] {
 }
 
 /**
- * The enemy provinces a push attacks today, at most three: the target itself once it is on the
- * front, and before that the provinces of the front on the way from
+ * The enemy provinces a push attacks today, at most three: once the target is on the front, the
+ * target (and, when it is too strong, the provinces beside it, to go round it); before that, the
+ * provinces of the front on the way from
  * where the army stands (`from`) to its target. Each counts its steps to the target plus half its
  * steps from the army, so an army coming from the south does not wander off to attack the target
  * from the north.
  */
-export function pushAxis(targets: number[], target: number, from: number | null = null): number[] {
+export function pushAxis(targets: number[], target: number, from: number | null = null, strong = false): number[] {
   if (!targets.length) return [];
-  // The target is on the front: everything goes at it.
-  if (targets.includes(target)) return [target];
   const steps = stepsTo(target);
   const back = from === null ? null : stepsTo(from);
   const score = (t: number) => steps[t] + (back ? back[t] / 2 : 0);
+  // The target is on the front: everything goes at it, or, if it is too strong (`strong`), at it and the provinces beside it, to go round it.
+  if (targets.includes(target) && !strong) return [target];
+  if (targets.includes(target)) return [target, ...targets.filter((t) => PROVINCES[target].neighbours.includes(t)).sort((a, b) => score(a) - score(b) || a - b).slice(0, 2)];
   const best = Math.min(...targets.map(score));
   const km = (t: number) => distanceKm(PROVINCES[t].centre, PROVINCES[target].centre);
   return targets.filter((t) => score(t) <= best + 1).sort((a, b) => score(a) - score(b) || km(a) - km(b) || a - b).slice(0, 3);
@@ -255,7 +257,8 @@ export function armyOrders(w: World, country: string, opts: ArmyOrderOptions = {
     if (o.kind === 'push' && enemies.has(o.foe)) {
       // At war: the AI's front code, on the provinces in the way, at the army's pace.
       const front = frontsOf(w, country).find((f) => f.foe === o.foe);
-      const axis = new Set(pushAxis(front?.targets ?? [], o.target, armyCentre(w, a)));
+      // A target holding more than a third as many divisions as the army is too strong to take head on.
+      const axis = new Set(pushAxis(front?.targets ?? [], o.target, armyCentre(w, a), 3 * hostile(o.target) > units.length));
       // On the day of the order every division is taken back, except those already attacking.
       const view = fresh ? { ...w, units: w.units.map((u) => (mine.has(u.id) && u.path.length && !attacking(u) ? { ...u, path: [], progress: 0 } : u)) } : w;
       if (fresh) for (const u of units) if (u.path.length && !attacking(u)) orders.push({ type: 'halt', unit: u.id });

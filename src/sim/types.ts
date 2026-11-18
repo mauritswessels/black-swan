@@ -412,7 +412,8 @@ export type Pace = 'careful' | 'steady' | 'allOut';
  */
 export type ArmyOrder =
   | { kind: 'none' }
-  | { kind: 'hold'; foe: string }
+  /** Without `at`: the whole border with `foe`. With it: the ground around `at`, which a push has just taken. */
+  | { kind: 'hold'; foe: string; at?: number }
   | { kind: 'push'; target: number; foe: string; pace: Pace }
   | { kind: 'fallBack'; to: number }
   | { kind: 'reserve'; at: number };

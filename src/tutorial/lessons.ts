@@ -238,7 +238,7 @@ const time: Lesson = {
       show: () => ({ run: true }),
     },
     {
-      text: 'Speed it up: press `3`, or click the third bar.',
+      text: 'Speed it up: hold `Shift` and press `3`, or click the third bar.',
       target: { sel: '.mt-speed' },
       keepClock: true,
       done: (v) => v.speed >= 3,

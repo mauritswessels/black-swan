@@ -20,6 +20,7 @@ import { applyOrders, dateLabel } from '../sim/world';
 import { readSave, writeSave, type Slot } from '../save/storage';
 import { upgradeWorld } from '../sim/upgrade';
 import { pocketsOf, pocketWords } from '../sim/pockets';
+import { armiesOf, armyCentre, describeOrder, orderFor, pincersOf, type AimKind } from '../sim/armies';
 import { sound } from './audio/sound';
 import { lessonById, type LessonView } from '../tutorial/lessons';
 import { markLessonDone } from './lessonProgress';
@@ -31,6 +32,8 @@ export type MapMode = 'political' | 'terrain' | 'supply' | 'diplomacy' | 'airsea
 /** What the sidebar is showing. */
 export type Selection =
   | { kind: 'units'; ids: number[] }
+  | { kind: 'army'; id: number }
+  | { kind: 'armies' }
   | { kind: 'stack'; province: number; owner: string }
   | { kind: 'province'; id: number }
   | { kind: 'country'; name: string }
@@ -103,6 +106,8 @@ interface Store {
   ordering: boolean;
   /** With `ordering` and divisions selected: the destination is reached by sea. */
   bySea: boolean;
+  /** With an army selected: the next province clicked gets this order. */
+  aim: AimKind | null;
   mapMode: MapMode;
   news: News[];
   /** A short message about the last order, shown in the sidebar. */
@@ -148,6 +153,16 @@ interface Store {
   /** Give a diplomatic order as your country (declare war, propose a pact, answer a decision). It takes effect at once. */
   act: (order: Order) => void;
   cycleArmy: (step: 1 | -1) => void;
+  /** Form an army from the selected divisions. */
+  formArmy: () => void;
+  /** Give an order about your armies (form, order, divisions, settings, disband). It takes effect at once. */
+  command: (order: Order) => void;
+  /** Choose the order the next click on the map gives the selected army. */
+  setAim: (kind: AimKind | null) => void;
+  /** Point the selected army (or `army`) at a province: with the aimed order, or the one that fits the place. */
+  armyTo: (province: number, army?: number, kind?: AimKind) => void;
+  /** Number keys: select the army in that slot; pressed again, look at it on the map. */
+  pickArmy: (slot: number) => void;
   /** Give an order about your economy (taxes, factories, new divisions). It takes effect at once. */
   economy: (action: EconomyAction) => void;
 }
@@ -204,6 +219,21 @@ function headlines(before: World, after: World): News[] {
   for (const c of after.story.chapters.slice(before.story.chapters.length)) {
     const met = c.met.filter(Boolean).length;
     add(`A chapter ends: you met ${met} of ${c.met.length} objectives`, met * 2 >= c.met.length ? 'good' : 'bad', undefined, { kind: 'chronicle' });
+  }
+  // Your armies: a push that has reached its target, and pincers about to close.
+  if (me) {
+    for (const a of armiesOf(after, me)) {
+      const was = (before.armies ?? []).find((x) => x.id === a.id);
+      if (was?.order.kind === 'push' && a.order.kind === 'hold' && after.controller[was.order.target] !== before.controller[was.order.target])
+        add(`${a.name} has taken ${PROVINCES[was.order.target].city ?? PROVINCES[was.order.target].name}. It now holds the ground around it`, 'good', was.order.target, { kind: 'army', id: a.id });
+    }
+    const named = (id: number) => armiesOf(after, me).find((x) => x.id === id)?.name ?? 'an army';
+    const old = pincersOf(before, me);
+    for (const x of pincersOf(after, me)) {
+      if (!x.closing || !x.cutOff) continue;
+      if (old.some((y) => y.closing && y.cutOff && y.armies[0] === x.armies[0] && y.armies[1] === x.armies[1])) continue;
+      add(`Pincer closing: ${named(x.armies[0])} and ${named(x.armies[1])} can cut off ${plural(x.cutOff, 'enemy division')} near ${PROVINCES[x.targets[0]].name}`, 'good', x.targets[0], { kind: 'army', id: x.armies[0] });
+    }
   }
   // Pockets: your divisions cut off, or enemy divisions you have cut off.
   if (me) {
@@ -305,7 +335,7 @@ function diplomaticNews(before: World, after: World): News[] {
   return out;
 }
 
-const fresh = { running: false, selection: null, ordering: false, bySea: false, news: [] as News[], notice: '', focus: null, defeated: false, lesson: null, mapMode: 'political' as MapMode };
+const fresh = { running: false, selection: null, ordering: false, bySea: false, aim: null, news: [] as News[], notice: '', focus: null, defeated: false, lesson: null, mapMode: 'political' as MapMode };
 
 /** What a lesson's checks can see (see src/tutorial/lessons.ts). */
 export const lessonView = (s: Pick<Store, 'world' | 'selection' | 'mapMode' | 'overlay' | 'running' | 'speed' | 'ordering' | 'bySea' | 'moves'>): LessonView => ({
@@ -434,6 +464,9 @@ export const useGame = create<Store>((set, get) => {
       if (sel?.kind === 'units') {
         const alive = sel.ids.filter((id) => next.units.some((u) => u.id === id));
         sel = alive.length ? { kind: 'units', ids: alive } : null;
+      } else if (sel?.kind === 'army') {
+        const id = sel.id;
+        if (!(next.armies ?? []).some((a) => a.id === id)) sel = null;
       } else if (sel?.kind === 'battle') {
         const id = sel.id;
         if (!next.battles.some((b) => b.id === id)) sel = next.reports.some((r) => r.id === id) ? { kind: 'report', id } : null;
@@ -458,11 +491,11 @@ export const useGame = create<Store>((set, get) => {
     select: (selection) => {
       // Fleets, wings and sea zones only show on the air and sea map.
       const sea = selection?.kind === 'zone' || selection?.kind === 'fleet' || selection?.kind === 'wings';
-      set({ selection, ordering: false, bySea: false, notice: '', ...(sea ? { mapMode: 'airsea' as MapMode } : {}) });
+      set({ selection, ordering: false, bySea: false, aim: null, notice: '', ...(sea ? { mapMode: 'airsea' as MapMode } : {}) });
     },
     setOrdering: (ordering) => {
       const k = get().selection?.kind;
-      set({ ordering: ordering && (selectedUnits().length > 0 || k === 'fleet' || k === 'wings'), bySea: false, notice: '' });
+      set({ ordering: ordering && (selectedUnits().length > 0 || k === 'fleet' || k === 'wings'), bySea: false, aim: null, notice: '' });
     },
     setBySea: (on) => set({ ordering: on && selectedUnits().length > 0, bySea: on && selectedUnits().length > 0, notice: '' }),
 
@@ -631,6 +664,53 @@ export const useGame = create<Store>((set, get) => {
       set(patch);
       if (!s.muted) sound.click();
       for (let i = 0; i < (a.days ?? 0); i++) get().tick();
+    },
+
+    formArmy: () => {
+      const { world } = get();
+      const ids = selectedUnits();
+      if (!world?.player || !ids.length) return set({ notice: 'Select some of your divisions first: drag with Shift held to draw a box around them.' });
+      const me = world.player;
+      const next = give([{ type: 'formArmy', country: me, units: ids }]);
+      const a = next?.armies?.[next.armies.length - 1];
+      if (!next || !a || a.owner !== me || next === world) return;
+      if (!get().muted) sound.click();
+      set({ selection: { kind: 'army', id: a.id }, ordering: false, aim: null, notice: `${a.name} formed from ${plural(a.units.length, 'division')}${a.slot ? `. Press ${a.slot} to select it` : ' (all nine number keys are taken)'}. Give it an order: Hold a border, or Push toward a target.` });
+    },
+
+    command: (order) => {
+      const { world } = get();
+      if (!world?.player || world.capitulated.includes(world.player)) return;
+      give(ownOrders(world, [order]));
+      if (!get().muted) sound.click();
+    },
+
+    setAim: (aim) => {
+      const s = get();
+      set({ aim: s.selection?.kind === 'army' ? aim : null, ordering: false, bySea: false, notice: aim ? 'Click a province on the map.' : '' });
+    },
+
+    armyTo: (province, armyId, kind) => {
+      const { world, selection, aim } = get();
+      const me = world?.player;
+      const id = armyId ?? (selection?.kind === 'army' ? selection.id : undefined);
+      const a = world && me && id !== undefined ? armiesOf(world, me).find((x) => x.id === id) : undefined;
+      if (!world || !me || !a) return;
+      const got = orderFor(world, me, a, province, kind ?? aim ?? undefined);
+      if ('why' in got) return set({ notice: `Cannot: ${got.why}.`, aim: null });
+      give(ownOrders(world, [{ type: 'armyOrder', country: me, army: a.id, order: got.order }]));
+      if (!get().muted) sound.click();
+      set({ selection: { kind: 'army', id: a.id }, aim: null, ordering: false, notice: `${a.name}: ${describeOrder(got.order)}.` });
+    },
+
+    pickArmy: (slot) => {
+      const { world, selection } = get();
+      if (!world?.player) return;
+      const a = armiesOf(world, world.player).find((x) => x.slot === slot);
+      if (!a) return set({ notice: `No army on key ${slot}. Select divisions and press A to form one.` });
+      const again = selection?.kind === 'army' && selection.id === a.id;
+      const at = armyCentre(world, a);
+      set({ selection: { kind: 'army', id: a.id }, ordering: false, bySea: false, aim: null, notice: '', ...(again && at !== null ? { focus: { province: at, n: ++focusN } } : {}) });
     },
 
     cycleArmy: (step) => {

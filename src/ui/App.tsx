@@ -26,7 +26,8 @@ function useShortcuts() {
         if (g.overlay) return g.setOverlay(null);
         if (g.screen === 'setup' || g.screen === 'lessons') return g.go('title');
         if (g.screen === 'game') {
-          if (g.ordering) g.setOrdering(false);
+          if (g.aim) g.setAim(null);
+          else if (g.ordering) g.setOrdering(false);
           else g.select(null);
           (document.querySelector('.mt-map') as HTMLElement | null)?.focus();
         }
@@ -54,7 +55,11 @@ function useShortcuts() {
         e.preventDefault();
         return g.setRunning(!g.running);
       }
-      if (k >= '1' && k <= '5') return g.setSpeed(Number(k));
+      // Shift with 1 to 5 sets the speed; 1 to 9 alone selects an army (again: look at it).
+      const digit = /^Digit([1-9])$/.exec(e.code)?.[1] ?? /^Numpad([1-9])$/.exec(e.code)?.[1];
+      if (digit && e.shiftKey) return Number(digit) <= 5 ? g.setSpeed(Number(digit)) : undefined;
+      if (digit) return g.pickArmy(Number(digit));
+      if (k === 'a' && g.world?.player) return g.selection?.kind === 'units' ? g.formArmy() : g.select({ kind: 'armies' });
       if (k === '.' && !g.running) return g.tick();
       if (k === 'h') return g.halt();
       if (k === 'r') return g.select({ kind: 'reports' });

@@ -103,7 +103,7 @@ function TopBar() {
         </button>
         <div className="mt-speed" role="group" aria-label={`Speed ${speed} of 5`}>
           {[1, 2, 3, 4, 5].map((n) => (
-            <button key={n} onClick={() => setSpeed(n)} aria-label={`Speed ${n}`} aria-pressed={speed === n} className={n <= speed ? 'on' : ''} title={`Speed ${n} (key ${n})`}>
+            <button key={n} onClick={() => setSpeed(n)} aria-label={`Speed ${n}`} aria-pressed={speed === n} className={n <= speed ? 'on' : ''} title={`Speed ${n} (Shift+${n})`}>
               <i style={{ height: 5 + n * 3 }} />
             </button>
           ))}

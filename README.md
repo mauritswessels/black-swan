@@ -206,14 +206,18 @@ every installed copy then needs one manual reinstall.
 | --- | --- |
 | L | On the title screen: Learn to play |
 | Space | Pause or resume |
-| 1 to 5 | Game speed |
+| Shift + 1 to 5 | Game speed |
 | . | Advance one day while paused |
 | Click | Select your divisions, or open the details of anything else |
 | Shift-click | Add another of your counters to the selection |
-| Right-click | Send the selected divisions there (attack if the enemy is there) |
+| Shift-drag | Draw a box to select all your divisions inside it |
+| A | Form an army from the selected divisions (with none selected: your armies) |
+| 1 to 9 | Select an army; press again to look at it on the map |
+| Drag a flag | Give an army a new front (enemy province: push; border: hold; your land: reserve) |
+| Right-click | Send the selected divisions there (attack if the enemy is there), or point the selected army there |
 | G | Move or attack: then click the destination or type its name |
 | H | Halt the selected divisions |
-| Tab | Step through your armies (while the map has the focus) |
+| Tab | Step through your stacks of divisions (while the map has the focus) |
 | Arrows, + and - | Move and zoom the map (or drag, scroll and pinch) |
 | R | Battle reports |
 | P | Production: factories, new divisions, manpower |

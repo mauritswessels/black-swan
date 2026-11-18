@@ -25,6 +25,7 @@ import { EconomyPanel, ProductionPanel } from './EconomyPanels';
 import { CountryDiplomacy, DecisionView, DiplomacyPanel, Settlement } from './DiplomacyPanels';
 import { FleetView, ForcesPanel, SeaOrders, WingsView, ZoneView } from './ForcesPanels';
 import { HomeFrontPanel, PlansPanel, PlanView, ResearchPanel, TechView } from './HomePanels';
+import { ArmiesPanel, ArmyButtons, ArmyView } from './ArmyPanels';
 
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`;
 const list = (xs: string[]) => (xs.length > 1 ? `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}` : xs[0] ?? '');
@@ -225,6 +226,7 @@ function Units({ w, ids }: { w: World; ids: number[] }) {
           </button>
         )}
       </div>
+      <ArmyButtons w={w} units={units} />
       <SeaOrders w={w} ids={ids} />
       <form
         className="sb-goto"
@@ -261,7 +263,7 @@ function Units({ w, ids }: { w: World; ids: number[] }) {
           </li>
         ))}
       </ul>
-      <p className="sb-fine">Shift-click another of your counters to add it. Click a division to select only that one.</p>
+      <p className="sb-fine">Shift-click another of your counters to add it, or drag with Shift held to draw a box. Click a division to select only that one.</p>
     </Frame>
   );
 }
@@ -577,6 +579,10 @@ export function Sidebar() {
   switch (sel.kind) {
     case 'units':
       return <Units w={w} ids={sel.ids} />;
+    case 'army':
+      return <ArmyView w={w} id={sel.id} />;
+    case 'armies':
+      return w.player ? <ArmiesPanel w={w} me={w.player} /> : null;
     case 'province':
       return <Province w={w} id={sel.id} />;
     case 'stack':

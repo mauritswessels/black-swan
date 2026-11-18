@@ -446,7 +446,9 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
     for (const p of f.provinces) for (const u of unitsAt(p)) if (u.owner !== country && allies?.has(u.owner)) ours += STATS[u.type].attack * (u.strength / 100) * edges.attack(u);
     let theirs = 0;
     const seen = new Set<number>();
+    // An army pushing at a target weighs the enemy on its own axis, not the whole front.
     for (const t of f.targets) {
+      if (army && !army.targets.has(t)) continue;
       for (const p of [t, ...PROVINCES[t].neighbours]) {
         if (seen.has(p) || w.controller[p] !== f.foe) continue;
         seen.add(p);
@@ -456,7 +458,8 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
     const ratio = theirs > 0 ? ours / theirs : 99;
     // An enemy caught by surprise, or in shock, is attacked all-out before it can recover.
     const margin = (ratio >= OFFENSIVE_RATIO ? OFFENSIVE_MARGIN : 1) * (edges.reeling?.(f.foe) ? REELING_MARGIN : 1);
-    const defensive = ratio < DEFENSIVE_RATIO;
+    // An army ordered to push attacks wherever its pace finds the odds; only the AI waits for the whole front to be strong enough.
+    const defensive = !army && ratio < DEFENSIVE_RATIO;
 
     // Encirclement: how many of the foe's divisions would lose their supply if we took each target?
     let links = foeLinks.get(f.foe);

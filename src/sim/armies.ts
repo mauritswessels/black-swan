@@ -27,7 +27,7 @@ import { allianceMap } from './diplomacy';
 import { distanceKm, PROVINCES } from './map';
 import { combatEdges } from './mods';
 import type { SeaPicture } from './sea';
-import { supplyCapacity } from './supply';
+import { linkedProvinces, supplyCapacity } from './supply';
 import type { Army, ArmyOrder, Order, Pace, Unit, World } from './types';
 import { enemiesOf } from './war';
 
@@ -81,7 +81,7 @@ const validOrder = (o: ArmyOrder, country: string): boolean => {
     case 'none':
       return true;
     case 'hold':
-      return typeof o.foe === 'string' && o.foe !== country;
+      return typeof o.foe === 'string' && o.foe !== country && (o.at === undefined || province(o.at));
     case 'push':
       return province(o.target) && typeof o.foe === 'string' && o.foe !== country && o.pace in PACE_BOLDNESS;
     case 'fallBack':
@@ -179,7 +179,7 @@ export function keepArmies(d: ArmyDraft & { diplomacy: World['diplomacy'] }, fir
   for (const a of d.armies) {
     if (a.order.kind !== 'push') continue;
     const holder = d.controller[a.order.target];
-    if (holder === a.owner || friends.get(a.owner)?.has(holder)) a.order = { kind: 'hold', foe: a.order.foe };
+    if (holder === a.owner || friends.get(a.owner)?.has(holder)) a.order = { kind: 'hold', foe: a.order.foe, at: a.order.target };
   }
 }
 
@@ -202,13 +202,20 @@ function stepsTo(target: number): number[] {
   return steps;
 }
 
-/** The enemy provinces a push attacks today: those of the front that are nearest the target, at most three. */
-export function pushAxis(targets: number[], target: number): number[] {
+/**
+ * The enemy provinces a push attacks today, at most three: those of the front on the way from
+ * where the army stands (`from`) to its target. Each counts its steps to the target plus half its
+ * steps from the army, so an army coming from the south does not wander off to attack the target
+ * from the north.
+ */
+export function pushAxis(targets: number[], target: number, from: number | null = null): number[] {
   if (!targets.length) return [];
   const steps = stepsTo(target);
-  const nearest = Math.min(...targets.map((t) => steps[t]));
+  const back = from === null ? null : stepsTo(from);
+  const score = (t: number) => steps[t] + (back ? back[t] / 2 : 0);
+  const best = Math.min(...targets.map(score));
   const km = (t: number) => distanceKm(PROVINCES[t].centre, PROVINCES[target].centre);
-  return targets.filter((t) => steps[t] <= nearest + 1).sort((a, b) => steps[a] - steps[b] || km(a) - km(b) || a - b).slice(0, 3);
+  return targets.filter((t) => score(t) <= best + 1).sort((a, b) => score(a) - score(b) || km(a) - km(b) || a - b).slice(0, 3);
 }
 
 export interface ArmyOrderOptions {
@@ -245,7 +252,7 @@ export function armyOrders(w: World, country: string, opts: ArmyOrderOptions = {
     if (o.kind === 'push' && enemies.has(o.foe)) {
       // At war: the AI's front code, on the provinces in the way, at the army's pace.
       const front = frontsOf(w, country).find((f) => f.foe === o.foe);
-      const axis = new Set(pushAxis(front?.targets ?? [], o.target));
+      const axis = new Set(pushAxis(front?.targets ?? [], o.target, armyCentre(w, a)));
       // On the day of the order every division is taken back, except those already attacking.
       const view = fresh ? { ...w, units: w.units.map((u) => (mine.has(u.id) && u.path.length && !attacking(u) ? { ...u, path: [], progress: 0 } : u)) } : w;
       if (fresh) for (const u of units) if (u.path.length && !attacking(u)) orders.push({ type: 'halt', unit: u.id });
@@ -258,7 +265,14 @@ export function armyOrders(w: World, country: string, opts: ArmyOrderOptions = {
     let depth: number[] = [];
     let weight = (_p: number) => 1;
     const pressure = (p: number) => PROVINCES[p].neighbours.reduce((s, n) => s + (enemies.has(w.controller[n]) ? hostile(n) + 0.5 : 0), 0);
-    if (o.kind === 'hold' || o.kind === 'push') {
+    if (o.kind === 'hold' && o.at !== undefined) {
+      // Holding the ground a push has taken: the province, and the land next to it that faces the enemy.
+      if (!friendly(o.at)) continue;
+      const around = PROVINCES[o.at].neighbours.filter(friendly);
+      line = [o.at, ...around.filter((p) => pressure(p) > 0)];
+      depth = around.filter((p) => !line.includes(p));
+      weight = (p) => 1 + pressure(p) + (p === o.at ? 1 : 0);
+    } else if (o.kind === 'hold' || o.kind === 'push') {
       const foe = o.foe;
       const front = frontsOf(w, country, enemies.has(foe) ? [] : [foe]).find((f) => f.foe === foe);
       if (!front) continue;
@@ -269,8 +283,11 @@ export function armyOrders(w: World, country: string, opts: ArmyOrderOptions = {
         const facing = (p: number) => PROVINCES[p].neighbours.reduce((s, n) => s + (w.controller[n] === foe ? w.units.filter((u) => u.at === n && u.owner === foe).length + 0.5 : 0), 0);
         weight = (p) => 1 + facing(p) + (PROVINCES[p].victoryPoints >= 10 && w.owner[p] === country ? 2 : 0);
       } else {
-        // A push at peace: deploy on the border, most of the army closest to the target.
+        // A push at peace: deploy on the stretch of border closest to the target, most of the army closest of all.
         const steps = stepsTo(o.target);
+        const nearest = Math.min(...line.map((p) => steps[p]));
+        line = line.filter((p) => steps[p] <= nearest);
+        depth = [...new Set(line.flatMap((p) => PROVINCES[p].neighbours.filter((n) => friendly(n) && !line.includes(n))))].sort((x, y) => x - y);
         weight = (p) => 1 / ((1 + steps[p]) * (1 + steps[p]));
       }
     } else if (o.kind === 'fallBack' || o.kind === 'reserve') {
@@ -425,13 +442,120 @@ function spread(units: Unit[], line: number[], depth: number[], weight: (p: numb
   return orders;
 }
 
+/** The orders the screen can aim at a province. */
+export type AimKind = 'push' | 'hold' | 'fallBack' | 'reserve';
+
+/**
+ * The order an army gets when the player points it at a province: with `kind` the order they
+ * chose, without it the one that fits the place (dragging the army's marker):
+ *
+ *   an enemy province, at war          Push toward it;
+ *   another country's province         Hold the border with that country (Push with `kind`);
+ *   your own province on a border      Hold the border with the neighbour, an enemy first;
+ *   your own province inside           Reserve there.
+ */
+export function orderFor(w: World, country: string, army: Army, province: number, kind?: AimKind): { order: ArmyOrder } | { why: string } {
+  const p = PROVINCES[province];
+  if (!p) return { why: 'no such province' };
+  const allies = allianceMap(w.diplomacy).get(country);
+  const ours = (name: string) => name === country || !!allies?.has(name);
+  const enemies = new Set(enemiesOf(w, country));
+  const holder = w.controller[province];
+  const pace: Pace = army.order.kind === 'push' ? army.order.pace : 'steady';
+  // The foreign neighbour of a friendly province: an enemy before a neutral, then the one with most divisions next door.
+  const neighbourFoe = (): string | undefined => {
+    const count = new Map<string, number>();
+    for (const n of p.neighbours) {
+      const c = w.controller[n];
+      if (ours(c)) continue;
+      count.set(c, (count.get(c) ?? 0) + 1 + w.units.filter((u) => u.at === n && u.owner === c).length);
+    }
+    return [...count.keys()].sort((a, b) => Number(enemies.has(b)) - Number(enemies.has(a)) || count.get(b)! - count.get(a)! || (a < b ? -1 : 1))[0];
+  };
+  if (!kind) kind = !ours(holder) ? (enemies.has(holder) ? 'push' : 'hold') : neighbourFoe() ? 'hold' : 'reserve';
+  switch (kind) {
+    case 'push':
+      if (ours(holder)) return { why: `${p.name} is already held by ${holder === country ? 'you' : holder}: push toward a province of another country` };
+      return { order: { kind: 'push', target: province, foe: holder, pace } };
+    case 'hold': {
+      const foe = ours(holder) ? neighbourFoe() : holder;
+      if (!foe) return { why: `${p.name} is not on a border: pick a border, or a province of the country to hold against` };
+      return { order: { kind: 'hold', foe } };
+    }
+    case 'fallBack':
+    case 'reserve':
+      if (!ours(holder)) return { why: `${p.name} is not yours: an army can only ${kind === 'fallBack' ? 'fall back' : 'wait in reserve'} on your own or an ally's land` };
+      return { order: kind === 'fallBack' ? { kind: 'fallBack', to: province } : { kind: 'reserve', at: province } };
+  }
+}
+
+/** Two armies pushing at the same place from different sides, and what closing the jaws would cut off. */
+export interface Pincer {
+  armies: [number, number];
+  /** The targets of the two pushes. */
+  targets: [number, number];
+  foe: string;
+  /** Enemy divisions that would lose their supply if both targets fell today. */
+  cutOff: number;
+  /** Both armies are within two provinces of their targets: the gap is closing. */
+  closing: boolean;
+}
+
+/** The angle between two directions on the map, in degrees, 0 to 180 (no sines or cosines: they differ between computers). */
+function apart(ax: number, ay: number, bx: number, by: number): number {
+  const dot = ax * bx + ay * by;
+  const len = Math.sqrt((ax * ax + ay * ay) * (bx * bx + by * by));
+  if (!len) return 0;
+  // cos 60° = 0.5, cos 90° = 0, cos 120° = -0.5: enough to tell "from different sides".
+  const c = dot / len;
+  return c >= 0.5 ? 0 : c >= 0 ? 60 : c >= -0.5 ? 90 : 120;
+}
+
+/**
+ * Pincers of one country: pairs of its armies pushing at the same or neighbouring targets
+ * against the same enemy, from directions at least 60 degrees apart.
+ */
+export function pincersOf(w: World, country: string): Pincer[] {
+  const pushes = armiesOf(w, country).filter((a) => a.order.kind === 'push' && a.units.length);
+  const out: Pincer[] = [];
+  const centres = new Map(pushes.map((a) => [a.id, armyCentre(w, a)]));
+  for (let i = 0; i < pushes.length; i++)
+    for (let j = i + 1; j < pushes.length; j++) {
+      const a = pushes[i];
+      const b = pushes[j];
+      const oa = a.order as Extract<ArmyOrder, { kind: 'push' }>;
+      const ob = b.order as Extract<ArmyOrder, { kind: 'push' }>;
+      if (oa.foe !== ob.foe) continue;
+      if (oa.target !== ob.target && !PROVINCES[oa.target].neighbours.includes(ob.target)) continue;
+      const ca = centres.get(a.id);
+      const cb = centres.get(b.id);
+      if (ca == null || cb == null || ca === cb) continue;
+      // Directions from the meeting point to each army.
+      const [mx, my] = PROVINCES[oa.target].centre;
+      const [ax, ay] = PROVINCES[ca].centre;
+      const [bx, by] = PROVINCES[cb].centre;
+      if (apart(ax - mx, ay - my, bx - mx, by - my) < 60) continue;
+      // What the foe would lose if the jaws met: its divisions no longer linked to a depot.
+      const friends = allianceMap(w.diplomacy).get(oa.foe);
+      const before = linkedProvinces(w.controller, oa.foe, friends);
+      const after = [...w.controller];
+      after[oa.target] = country;
+      after[ob.target] = country;
+      const cut = linkedProvinces(after, oa.foe, friends);
+      const cutOff = w.units.filter((u) => (u.owner === oa.foe || !!friends?.has(u.owner)) && before[u.at] && !cut[u.at] && !u.sea).length;
+      const near = (c: number, t: number) => c === t || PROVINCES[c].neighbours.includes(t) || PROVINCES[c].neighbours.some((n) => PROVINCES[n].neighbours.includes(t));
+      out.push({ armies: [a.id, b.id], targets: [oa.target, ob.target], foe: oa.foe, cutOff, closing: near(ca, oa.target) && near(cb, ob.target) });
+    }
+  return out;
+}
+
 /** A short description of an army's order, for the map and the sidebar. */
 export function describeOrder(o: ArmyOrder): string {
   switch (o.kind) {
     case 'none':
       return 'No order: you move its divisions by hand';
     case 'hold':
-      return `Hold the border with ${o.foe}`;
+      return o.at === undefined ? `Hold the border with ${o.foe}` : `Hold the ground around ${PROVINCES[o.at].name}`;
     case 'push':
       return `Push toward ${PROVINCES[o.target].name} (${PACE_NAME[o.pace]})`;
     case 'fallBack':

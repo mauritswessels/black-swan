@@ -24,6 +24,11 @@ import { RIVER_BORDERS, riverBetween } from '../../sim/rivers';
 import { pocketsOf, pocketWords } from '../../sim/pockets';
 import { GROUND_WORDS, groundOn } from '../../sim/seasons';
 import { sound } from '../audio/sound';
+import { armiesOf, armyCentre, describeOrder, orderFor, pincersOf } from '../../sim/armies';
+
+/** One colour for each army, by its number key. */
+export const ARMY_COLOURS = ['#ffc46b', '#5ee6b0', '#ff7fa8', '#7fd0ff', '#c9a0ff', '#ff9f5a', '#e6e66b', '#9cf27f', '#f0f0f0'];
+export const armyColour = (slot: number) => ARMY_COLOURS[(slot || 9) - 1];
 
 interface View {
   k: number;
@@ -164,6 +169,7 @@ export function MapView() {
   const selection = useGame((s) => s.selection);
   const mapMode = useGame((s) => s.mapMode);
   const ordering = useGame((s) => s.ordering);
+  const aim = useGame((s) => s.aim);
   const focus = useGame((s) => s.focus);
   // The province a lesson step is about, ringed in gold.
   const lessonProvince = useGame((s) => (s.lesson && !s.lesson.finished ? lessonById(s.lesson.id)?.steps[s.lesson.step]?.province : undefined));
@@ -253,7 +259,14 @@ export function MapView() {
   }, [zoomAt]);
 
   // Dragging moves the map; a press without a drag is a click on whatever was under it.
-  const drag = useRef<{ x: number; y: number; vx: number; vy: number; moved: boolean; target: Element } | null>(null);
+  // Shift-drag draws a box to select divisions; dragging an army's flag points it at another province.
+  const drag = useRef<{ x: number; y: number; vx: number; vy: number; moved: boolean; target: Element; mode: 'pan' | 'box' | 'army'; army?: number } | null>(null);
+  const [band, setBand] = useState<{ x0: number; y0: number; x1: number; y1: number } | null>(null);
+  const [pull, setPull] = useState<{ army: number; x: number; y: number; province: number | null } | null>(null);
+  const local = (e: { clientX: number; clientY: number }) => {
+    const r = box.current!.getBoundingClientRect();
+    return [e.clientX - r.left, e.clientY - r.top] as const;
+  };
   const hit = (el: Element | null) => {
     const stack = el?.closest('[data-s]')?.getAttribute('data-s');
     const battle = el?.closest('[data-b]')?.getAttribute('data-b');
@@ -261,11 +274,17 @@ export function MapView() {
     const province = el?.closest('[data-p]')?.getAttribute('data-p');
     const wing = el?.closest('[data-w]')?.getAttribute('data-w');
     const zone = el?.closest('[data-z]')?.getAttribute('data-z') ?? null;
-    return { stack, battle, country, zone, wing: wing == null ? null : Number(wing), province: province == null ? null : Number(province) };
+    const army = el?.closest('[data-a]')?.getAttribute('data-a');
+    return { stack, battle, country, zone, army: army == null ? null : Number(army), wing: wing == null ? null : Number(wing), province: province == null ? null : Number(province) };
   };
+  /** The province under a hit, whatever was clicked in it. */
+  const placeOf = (h: ReturnType<typeof hit>) => (h.stack ? Number(h.stack.split('|')[0]) : h.wing ?? h.province);
   const onPointerDown = (e: React.PointerEvent) => {
     if (e.button !== 0) return;
-    drag.current = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y, moved: false, target: e.target as Element };
+    const target = e.target as Element;
+    const army = hit(target).army;
+    const mode = army != null ? 'army' : e.shiftKey && me ? 'box' : 'pan';
+    drag.current = { x: e.clientX, y: e.clientY, vx: view.x, vy: view.y, moved: false, target, mode, army: army ?? undefined };
     box.current?.focus({ preventScroll: true });
   };
   const onPointerMove = (e: React.PointerEvent) => {
@@ -275,6 +294,19 @@ export function MapView() {
       const dy = e.clientY - d.y;
       if (!d.moved && Math.hypot(dx, dy) < 5) return;
       d.moved = true;
+      if (d.mode === 'box') {
+        const [x0, y0] = local({ clientX: d.x, clientY: d.y });
+        const [x1, y1] = local(e);
+        setBand({ x0, y0, x1, y1 });
+        return;
+      }
+      if (d.mode === 'army') {
+        const [x, y] = local(e);
+        const at = placeOf(hit(e.target as Element));
+        setPull({ army: d.army!, x, y, province: at });
+        if (at !== hover) setHover(at);
+        return;
+      }
       useGame.getState().bumpMoves();
       setView((v) => clamp({ k: v.k, x: d.vx + dx, y: d.vy + dy }));
       return;
@@ -288,9 +320,35 @@ export function MapView() {
   const onPointerUp = (e: React.PointerEvent) => {
     const d = drag.current;
     drag.current = null;
-    if (!d || d.moved) return;
+    setBand(null);
+    setPull(null);
     const g = useGame.getState();
+    if (d?.moved && d.mode === 'box') {
+      // Every division of yours whose province's centre is inside the box.
+      const [x0, y0] = local({ clientX: d.x, clientY: d.y });
+      const [x1, y1] = local(e);
+      const toMap = (x: number, y: number) => [(x - view.x) / view.k, (y - view.y) / view.k];
+      const [ax, ay] = toMap(Math.min(x0, x1), Math.min(y0, y1));
+      const [bx, by] = toMap(Math.max(x0, x1), Math.max(y0, y1));
+      const ids = world.units.filter((u) => u.owner === me && !u.sea && POINTS[u.at][0] >= ax && POINTS[u.at][0] <= bx && POINTS[u.at][1] >= ay && POINTS[u.at][1] <= by).map((u) => u.id);
+      if (!ids.length) return useGame.setState({ notice: 'No divisions of yours in that box.' });
+      g.select({ kind: 'units', ids });
+      return useGame.setState({ notice: `${ids.length} ${ids.length === 1 ? 'division' : 'divisions'} selected. Press A to form an army from them.` });
+    }
+    if (d?.moved && d.mode === 'army') {
+      const p = placeOf(hit(e.target as Element));
+      if (p != null) g.armyTo(p, d.army);
+      return;
+    }
+    if (!d || d.moved) return;
     const h = hit(d.target);
+    if (h.army != null) return g.select({ kind: 'army', id: h.army });
+    // An army's order: the next click is the place.
+    if (g.aim && g.selection?.kind === 'army') {
+      const p = placeOf(h);
+      if (p != null) return g.armyTo(p);
+      return useGame.setState({ notice: 'Click a province on land.' });
+    }
     // Orders to a fleet or to air wings: the next click is where they go.
     if (g.ordering && g.selection?.kind === 'fleet') {
       if (h.zone && h.province == null && !h.stack) return g.sailTo(h.zone);
@@ -341,6 +399,10 @@ export function MapView() {
     }
     if (g.selection?.kind === 'wings') {
       if (p != null) g.rebaseTo(p);
+      return;
+    }
+    if (g.selection?.kind === 'army') {
+      if (p != null) g.armyTo(p);
       return;
     }
     if (g.selection?.kind !== 'units') return;
@@ -395,7 +457,36 @@ export function MapView() {
   const inv = 1 / k;
   // Counters stay readable when zoomed out and do not balloon when zoomed in.
   const cs = Math.max(0.62, Math.min(1, 0.45 + 0.28 * k)) * inv;
-  const selected = new Set(selection?.kind === 'units' ? selection.ids : []);
+  const selectedArmy = selection?.kind === 'army' && me ? armiesOf(world, me).find((a) => a.id === selection.id) : undefined;
+  const selected = new Set(selection?.kind === 'units' ? selection.ids : selectedArmy ? selectedArmy.units : []);
+  // Your armies: a flag over the province holding most of each, and an arrow for each push.
+  const armies = me ? armiesOf(world, me).filter((a) => a.units.length) : [];
+  const flags: { id: number; slot: number; name: string; x: number; y: number; picked: boolean }[] = [];
+  {
+    const at = new Map<number, number>();
+    for (const a of armies) {
+      const c = armyCentre(world, a);
+      if (c === null) continue;
+      const n = at.get(c) ?? 0;
+      at.set(c, n + 1);
+      flags.push({ id: a.id, slot: a.slot, name: a.name, x: POINTS[c][0] - 18 * cs + n * 26 * cs, y: POINTS[c][1] - 14 * cs, picked: a.id === selectedArmy?.id });
+    }
+  }
+  const pincers = me && armies.length > 1 ? pincersOf(world, me) : [];
+  const inPincer = new Set(pincers.flatMap((p) => p.armies));
+  const pushes = armies.flatMap((a) => {
+    if (a.order.kind !== 'push') return [];
+    const c = armyCentre(world, a);
+    if (c === null || c === a.order.target) return [];
+    const [x1, y1] = POINTS[c];
+    const [x2, y2] = POINTS[a.order.target];
+    // A gentle curve, bowed to the left of the way it goes.
+    const mx = (x1 + x2) / 2 - (y2 - y1) * 0.18;
+    const my = (y1 + y2) / 2 + (x2 - x1) * 0.18;
+    return [{ id: a.id, d: `M${x1},${y1}Q${mx},${my} ${x2},${y2}`, colour: armyColour(a.slot), pincer: inPincer.has(a.id), picked: a.id === selectedArmy?.id }];
+  });
+  // Where the selected army stands fast: its fall-back line or reserve post.
+  const post = selectedArmy?.order.kind === 'fallBack' ? selectedArmy.order.to : selectedArmy?.order.kind === 'reserve' ? selectedArmy.order.at : null;
   const selectedProvince = selection?.kind === 'province' ? selection.id : selection?.kind === 'stack' ? selection.province : null;
 
   // Marching arrows: one per stack and next province. Battles get their own, in red.
@@ -463,7 +554,7 @@ export function MapView() {
   return (
     <div
       ref={box}
-      className={`mt-map${ordering ? ' ordering' : ''}`}
+      className={`mt-map${ordering || aim ? ' ordering' : ''}`}
       tabIndex={0}
       role="application"
       aria-label="Map of Europe. Arrow keys move the map, plus and minus zoom, Tab steps through your armies, G gives a destination, H halts. Details of what you select appear in the sidebar."
@@ -472,6 +563,8 @@ export function MapView() {
       onPointerUp={onPointerUp}
       onPointerLeave={() => {
         drag.current = null;
+        setBand(null);
+        setPull(null);
         setHover(null);
       }}
       onContextMenu={onContextMenu}
@@ -489,6 +582,9 @@ export function MapView() {
           </pattern>
           <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
             <path d="M0 0L10 5L0 10z" fill="context-stroke" />
+          </marker>
+          <marker id="push-head" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto">
+            <path d="M0 0L10 5L0 10L2.5 5z" fill="context-stroke" />
           </marker>
           {clipped.map((p) => (
             <clipPath key={p} id={`clip-${p}`}>
@@ -587,6 +683,25 @@ export function MapView() {
             ))}
           </g>
 
+          <g className="mt-pushes" aria-hidden="true">
+            {pushes.map((x) => (
+              <g key={x.id} className={`mt-push${x.pincer ? ' pincer' : ''}${x.picked ? ' picked' : ''}`}>
+                <path d={x.d} className="halo" />
+                <path d={x.d} className="shaft" style={{ stroke: x.colour }} markerEnd="url(#push-head)" />
+              </g>
+            ))}
+            {pincers.map((x) => {
+              const [px, py] = POINTS[x.targets[0]];
+              return (
+                <g key={x.armies.join('|')} transform={`translate(${px},${py - 40 * cs}) scale(${Math.max(cs, inv * 0.8)})`} className={`mt-pincer${x.closing && x.cutOff ? ' closing' : ''}`}>
+                  <rect x={-62} y={-10} width={124} height={20} rx={10} />
+                  <text y={4.5}>{x.cutOff ? `Pincer: ${x.cutOff} cut off` : 'Pincer'}</text>
+                </g>
+              );
+            })}
+            {post !== null && <circle cx={POINTS[post][0]} cy={POINTS[post][1]} r={30 * cs} className="mt-post" />}
+          </g>
+
           <g className="mt-counters">
             {stacks.map((s) => {
               const [x, y] = POINTS[s.province];
@@ -616,6 +731,27 @@ export function MapView() {
               );
             })}
           </g>
+
+          {!airsea && (
+            <g className="mt-flags">
+              {flags.map((f) => (
+                <g key={f.id} data-a={f.id} transform={`translate(${f.x},${f.y}) scale(${cs})`} className={`mt-flag${f.picked ? ' picked' : ''}`}>
+                  <title>{`${f.name}${f.slot ? ` (key ${f.slot})` : ''}: click to select, drag to give it a new front`}</title>
+                  <rect x={-6} y={-38} width={36} height={42} className="hit" />
+                  <line x1={0} y1={0} x2={0} y2={-34} className="pole" />
+                  <path d="M0 -34h26l-6 9l6 9h-26z" fill={armyColour(f.slot)} className="cloth" />
+                  <text x={10} y={-20.5} className="slot">
+                    {f.slot || '·'}
+                  </text>
+                  {(k >= 1.6 || f.picked) && (
+                    <text x={30} y={-21} className="name">
+                      {f.name}
+                    </text>
+                  )}
+                </g>
+              ))}
+            </g>
+          )}
 
           {airsea && (
             <g className="mt-forces">
@@ -690,7 +826,20 @@ export function MapView() {
           </g>
         </g>
       </svg>
-      <HoverLine province={hover} zone={hoverZone} />
+      {band && <div className="mt-band-select" style={{ left: Math.min(band.x0, band.x1), top: Math.min(band.y0, band.y1), width: Math.abs(band.x1 - band.x0), height: Math.abs(band.y1 - band.y0) }} />}
+      {pull && (() => {
+        const f = flags.find((x) => x.id === pull.army);
+        if (!f) return null;
+        const sx = view.x + f.x * k;
+        const sy = view.y + f.y * k;
+        return (
+          <svg className="mt-pull" width={size.w} height={size.h} aria-hidden="true">
+            <line x1={sx} y1={sy} x2={pull.x} y2={pull.y} style={{ stroke: armyColour(f.slot) }} />
+            <circle cx={pull.x} cy={pull.y} r={6} style={{ fill: armyColour(f.slot) }} />
+          </svg>
+        );
+      })()}
+      <HoverLine province={hover} zone={hoverZone} pulling={pull?.army ?? null} />
       <div className="mt-zoom">
         <button className="mt-icon" aria-label="Zoom in" onClick={() => (useGame.getState().bumpMoves(), zoomAt(1.4, size.w / 2, size.h / 2))} onPointerDown={(e) => e.stopPropagation()}>
           +
@@ -704,10 +853,11 @@ export function MapView() {
 }
 
 /** One line at the bottom of the map saying what is under the pointer, and what a right-click would do. */
-function HoverLine({ province, zone }: { province: number | null; zone: string | null }) {
+function HoverLine({ province, zone, pulling }: { province: number | null; zone: string | null; pulling: number | null }) {
   const world = useGame((s) => s.world)!;
   const selection = useGame((s) => s.selection);
   const ordering = useGame((s) => s.ordering);
+  const aim = useGame((s) => s.aim);
   const bySea = useGame((s) => s.bySea);
   if (province === null && zone !== null) {
     const i = ZONE_INDEX[zone];
@@ -727,7 +877,14 @@ function HoverLine({ province, zone }: { province: number | null; zone: string |
   const holder = world.controller[province];
   const mine = selection?.kind === 'units' && selection.ids.length > 0;
   let hint = '';
-  if (mine && me && ordering && bySea) {
+  const armyId = pulling ?? (selection?.kind === 'army' ? selection.id : null);
+  const army = armyId !== null && me ? armiesOf(world, me).find((a) => a.id === armyId) : undefined;
+  if (army && me) {
+    // What pointing the army here would do.
+    const got = orderFor(world, me, army, province, aim ?? undefined);
+    const how = pulling !== null ? 'Let go' : aim ? 'Click' : 'Right-click';
+    hint = 'why' in got ? `Cannot: ${got.why}` : `${how}: ${army.name} will ${describeOrder(got.order).replace(/^./, (c) => c.toLowerCase())}`;
+  } else if (mine && me && ordering && bySea) {
     const u = world.units.find((x) => x.id === selection.ids[0]);
     const { sea, friends } = picturesOf(world);
     const plan = u ? shipPlan(world, sea, friends, u, province) : null;

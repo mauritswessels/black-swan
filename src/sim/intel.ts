@@ -2,8 +2,8 @@
  * What a country can see. You always see the map and who holds each province, but foreign
  * divisions only where your own land or divisions are, and in the provinces next to those.
  *
- * (The design document also makes the numbers an estimate that can be wrong. That arrives with
- * air reconnaissance in Stage G; for now what you see is exact.)
+ * (The design document also made the numbers an estimate that can be wrong. Version 1.0 keeps
+ * them exact; scouting mistakes are a possible later addition.)
  */
 import { PROVINCES } from './map';
 import type { Unit, World } from './types';

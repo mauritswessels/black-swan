@@ -21,6 +21,7 @@ import { readSave, writeSave, type Slot } from '../save/storage';
 import { sound } from './audio/sound';
 import { lessonById, type LessonView } from '../tutorial/lessons';
 import { markLessonDone } from './lessonProgress';
+import { loadSettings, storeSettings, type Settings } from './settings';
 
 export type Screen = 'title' | 'setup' | 'game' | 'lessons';
 export type MapMode = 'political' | 'terrain' | 'supply' | 'diplomacy' | 'airsea';
@@ -69,7 +70,7 @@ export const SPEED_MS = [1400, 700, 350, 160, 60];
 interface Store {
   screen: Screen;
   setupMode: Mode;
-  overlay: null | 'codex' | 'saves' | 'help' | 'report';
+  overlay: null | 'codex' | 'saves' | 'help' | 'report' | 'settings';
   /** The codex entry to show first when the codex opens. */
   codexTerm: string | null;
   /** Open the codex, at one term if given. */
@@ -111,6 +112,9 @@ interface Store {
   /** Stop the clock when an enemy attacks one of your provinces. */
   pauseOnAttack: boolean;
   togglePauseOnAttack: () => void;
+  /** The player's settings (sound, clock, text size, updates), kept on this computer. */
+  settings: Settings;
+  setSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
 
   go: (screen: Screen) => void;
   setOverlay: (o: Store['overlay']) => void;
@@ -154,6 +158,8 @@ const readMuted = () => {
     return false;
   }
 };
+
+const startSettings = loadSettings();
 
 const MODE_NAME: Record<Mode, string> = { story: 'Story', freeForAll: 'Free-for-all' };
 export const summaryOf = (w: World) => `${w.player ?? 'Observer'} · ${MODE_NAME[w.mode]} · ${dateLabel(w)}`;
@@ -328,11 +334,17 @@ export const useGame = create<Store>((set, get) => {
     world: null,
     muted: readMuted(),
     speed: 2,
-    pauseOnAttack: true,
-    togglePauseOnAttack: () => set((s) => ({ pauseOnAttack: !s.pauseOnAttack })),
+    settings: startSettings,
+    setSetting: (key, value) => {
+      const settings = { ...get().settings, [key]: value };
+      storeSettings(settings);
+      set({ settings, pauseOnAttack: settings.pauseOnAttack, pauseOnCard: settings.pauseOnCard });
+    },
+    pauseOnAttack: startSettings.pauseOnAttack,
+    togglePauseOnAttack: () => get().setSetting('pauseOnAttack', !get().pauseOnAttack),
     preparing: null,
-    pauseOnCard: true,
-    togglePauseOnCard: () => set((s) => ({ pauseOnCard: !s.pauseOnCard })),
+    pauseOnCard: startSettings.pauseOnCard,
+    togglePauseOnCard: () => get().setSetting('pauseOnCard', !get().pauseOnCard),
     ...fresh,
 
     go: (screen) => {
@@ -621,6 +633,7 @@ export const useGame = create<Store>((set, get) => {
 });
 
 if (useGame.getState().muted) sound.setMuted(true);
+sound.setVolume(startSettings.volume);
 
 // A lesson moves on by itself as soon as the player has done what the step asks.
 useGame.subscribe((s) => {

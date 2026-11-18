@@ -10,21 +10,23 @@ import { SPEED_MS, useGame, type MapMode, type Selection } from '../store';
 import { money } from './EconomyPanels';
 import { Sidebar } from './Sidebar';
 import { Coach } from './Coach';
+import { useUpdates } from '../updates';
 import './maptable.css';
 
 const GOVERNMENT = { democracy: 'Democracy', authoritarian: 'Authoritarian government', fascist: 'Fascist dictatorship', communist: 'Communist dictatorship' };
 const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0);
 
-/** The panels on the rail. Those from the design that arrive in later stages are greyed out, so the layout is already the final one. */
-const RAIL: { label: string; stage: string; d: string; open?: Selection; key?: string }[] = [
-  { label: 'Production', stage: 'D', d: 'M3 21V10l6 4v-4l6 4V4h6v17z', open: { kind: 'production' }, key: 'P' },
-  { label: 'Research', stage: 'E', d: 'M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3', open: { kind: 'research' }, key: 'T' },
-  { label: 'Economy', stage: 'D', d: 'M2 20h20M5 20V11M10 20V5M15 20v-7M20 20V8', open: { kind: 'economy' }, key: 'E' },
-  { label: 'Forces', stage: 'G', d: 'M3 15h18l-3 5H6zM7 15V9h5v6M12 11h5v4M9 9V5', open: { kind: 'forces' }, key: 'F' },
-  { label: 'Diplomacy', stage: 'F', d: 'M3 12h18M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18M12 3c-5 5-5 13 0 18M12 3c5 5 5 13 0 18', open: { kind: 'diplomacy' }, key: 'D' },
-  { label: 'Plan', stage: 'E', d: 'M5 21V4h12l-3 4 3 4H5', open: { kind: 'plans' }, key: 'N' },
-  { label: 'Home', stage: 'E', d: 'M4 20v-7a8 8 0 0 1 16 0v7M4 20h16M9 20v-5h6v5M12 5V3', open: { kind: 'politics' }, key: 'W' },
+/** The panels on the rail. */
+const RAIL: { label: string; d: string; open: Selection; key: string }[] = [
+  { label: 'Production', d: 'M3 21V10l6 4v-4l6 4V4h6v17z', open: { kind: 'production' }, key: 'P' },
+  { label: 'Research', d: 'M9 3h6M10 3v6l-5 9a2 2 0 0 0 2 3h10a2 2 0 0 0 2-3l-5-9V3', open: { kind: 'research' }, key: 'T' },
+  { label: 'Economy', d: 'M2 20h20M5 20V11M10 20V5M15 20v-7M20 20V8', open: { kind: 'economy' }, key: 'E' },
+  { label: 'Forces', d: 'M3 15h18l-3 5H6zM7 15V9h5v6M12 11h5v4M9 9V5', open: { kind: 'forces' }, key: 'F' },
+  { label: 'Diplomacy', d: 'M3 12h18M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18M12 3c-5 5-5 13 0 18M12 3c5 5 5 13 0 18', open: { kind: 'diplomacy' }, key: 'D' },
+  { label: 'Plan', d: 'M5 21V4h12l-3 4 3 4H5', open: { kind: 'plans' }, key: 'N' },
+  { label: 'Home', d: 'M4 20v-7a8 8 0 0 1 16 0v7M4 20h16M9 20v-5h6v5M12 5V3', open: { kind: 'politics' }, key: 'W' },
 ];
+const GEAR = 'M12 9a3 3 0 1 0 0 6a3 3 0 0 0 0-6M10.3 3h3.4l.5 2.4 1.7.9 2.3-.9 1.7 2.9-1.8 1.6v2.2l1.8 1.6-1.7 2.9-2.3-.9-1.7.9-.5 2.4h-3.4l-.5-2.4-1.7-.9-2.3.9-1.7-2.9 1.8-1.6v-2.2L4.1 8.3l1.7-2.9 2.3.9 1.7-.9z';
 const RAIL_TITLE: Record<string, string> = { Forces: 'Navy and air force', Plan: 'National plan', Home: 'Home front: stability and war support', Diplomacy: 'Diplomacy: allies, promises, war and peace' };
 const CODEX = 'M5 4h14v16H7a2 2 0 0 1-2-2zM5 18a2 2 0 0 1 2-2h12';
 const Icon = ({ d }: { d: string }) => (
@@ -114,6 +116,7 @@ function TopBar() {
 function Rail() {
   const { setOverlay, go, toggleMute, select } = useGame.getState();
   const muted = useGame((s) => s.muted);
+  const update = useUpdates((s) => (s.status.kind === 'available' ? s.status.version : ''));
   const story = useGame((s) => s.world?.mode === 'story');
   const inLesson = useGame((s) => !!s.lesson);
   // A gold dot on a panel that is waiting for a decision: an idle research team, or no plan under way.
@@ -128,19 +131,12 @@ function Rail() {
   if (waiting) alerts.Diplomacy = waiting === 1 ? 'a decision is waiting for you' : `${waiting} decisions are waiting for you`;
   return (
     <nav className="mt-rail" aria-label="Panels">
-      {RAIL.map((r) =>
-        r.open ? (
-          <button key={r.label} data-tut={`rail-${r.label.toLowerCase()}`} onClick={() => select(r.open!)} title={`${RAIL_TITLE[r.label] ?? r.label} (${r.key})`} className={alerts[r.label] ? 'alert' : ''} aria-label={`${RAIL_TITLE[r.label] ?? r.label}${alerts[r.label] ? `: ${alerts[r.label]}` : ''}`}>
-            <Icon d={r.d} />
-            <span>{r.label}</span>
-          </button>
-        ) : (
-          <button key={r.label} disabled title={`Arrives in Stage ${r.stage}`} aria-label={`${r.label}: arrives in Stage ${r.stage}`}>
-            <Icon d={r.d} />
-            <span>{r.label}</span>
-          </button>
-        ),
-      )}
+      {RAIL.map((r) => (
+        <button key={r.label} data-tut={`rail-${r.label.toLowerCase()}`} onClick={() => select(r.open)} title={`${RAIL_TITLE[r.label] ?? r.label} (${r.key})`} className={alerts[r.label] ? 'alert' : ''} aria-label={`${RAIL_TITLE[r.label] ?? r.label}${alerts[r.label] ? `: ${alerts[r.label]}` : ''}`}>
+          <Icon d={r.d} />
+          <span>{r.label}</span>
+        </button>
+      ))}
       <button onClick={() => select({ kind: 'chronicle' })} title={story ? 'Chronicle: chapters and history cards (C)' : 'Standings (C)'}>
         <Icon d="M6 3h9l4 4v14H6zM15 3v4h4M9 12h7M9 16h7M9 8h3" />
         <span>{story ? 'Chronicle' : 'Standings'}</span>
@@ -162,9 +158,9 @@ function Rail() {
         <Icon d={muted ? 'M4 9v6h4l5 4V5L8 9zM17 9l4 6M21 9l-4 6' : 'M4 9v6h4l5 4V5L8 9zM16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11'} />
         <span>{muted ? 'Sound off' : 'Sound on'}</span>
       </button>
-      <button onClick={() => setOverlay('help')} title="Keys (?)">
-        <Icon d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.7.4-1 1-1 1.7M12 17h.01M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18" />
-        <span>Keys</span>
+      <button onClick={() => setOverlay('settings')} title={update ? `Settings: version ${update} is ready to install` : 'Settings (⌘ ,)'} className={update ? 'alert' : ''} aria-label={update ? `Settings: version ${update} is ready to install` : 'Settings'}>
+        <Icon d={GEAR} />
+        <span>Settings</span>
       </button>
       <button onClick={() => go(inLesson ? 'lessons' : 'title')} title={inLesson ? 'Back to the lessons' : 'Main menu'}>
         <Icon d="M4 12l8-8l8 8M6 10v10h12V10" />

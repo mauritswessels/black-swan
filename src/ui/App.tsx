@@ -1,12 +1,16 @@
 import { useEffect } from 'react';
+import { onMenu, setZoom } from '../native';
 import { readSave } from '../save/storage';
 import { MapTable } from './screens/MapTable';
 import { Codex, Help, Saves } from './screens/Overlays';
 import { EndReport } from './screens/StoryPanels';
 import { Setup } from './screens/Setup';
 import { Lessons } from './screens/Lessons';
+import { Settings } from './screens/Settings';
 import { Title } from './screens/Title';
+import { sound } from './audio/sound';
 import { useGame } from './store';
+import { cannotUpdate, checkForUpdates } from './updates';
 import './screens/screens.css';
 
 function useShortcuts() {
@@ -75,8 +79,39 @@ function useShortcuts() {
   }, []);
 }
 
+/** Put the settings into effect: loudness, size of everything, motion. */
+function useSettings() {
+  const { volume, textSize, reduceMotion } = useGame((s) => s.settings);
+  useEffect(() => sound.setVolume(volume), [volume]);
+  useEffect(() => {
+    void setZoom(textSize);
+  }, [textSize]);
+  useEffect(() => {
+    document.documentElement.classList.toggle('reduce-motion', reduceMotion);
+  }, [reduceMotion]);
+}
+
+/** The Mac app: the Black Swan menu, and a quiet look for a new version at start. */
+function useApp() {
+  useEffect(() => {
+    onMenu((id) => {
+      const g = useGame.getState();
+      if (id === 'settings') g.setOverlay('settings');
+      if (id === 'check-updates') {
+        g.setOverlay('settings');
+        void checkForUpdates(false);
+      }
+    });
+    if (cannotUpdate() || !useGame.getState().settings.checkUpdates) return;
+    const t = setTimeout(() => void checkForUpdates(true), 4000);
+    return () => clearTimeout(t);
+  }, []);
+}
+
 export function App() {
   useShortcuts();
+  useSettings();
+  useApp();
   const { screen, overlay } = useGame();
   return (
     <>
@@ -88,6 +123,7 @@ export function App() {
       {overlay === 'saves' && <Saves />}
       {overlay === 'help' && <Help />}
       {overlay === 'report' && <EndReport />}
+      {overlay === 'settings' && <Settings />}
     </>
   );
 }

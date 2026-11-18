@@ -11,11 +11,15 @@ import './theme/global.css';
 import { App } from './App';
 import { sound } from './audio/sound';
 import { useGame } from './store';
+import { initSaves } from '../save/storage';
 
 if (useGame.getState().muted) sound.setMuted(true);
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
+// In the Mac app, read the save files before the title screen asks for them.
+void initSaves().finally(() =>
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <App />
+    </StrictMode>,
+  ),
 );

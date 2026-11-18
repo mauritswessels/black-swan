@@ -1,7 +1,46 @@
+import { APP_VERSION } from '../../native';
 import { readSave, SLOTS } from '../../save/storage';
 import { lessonsDone } from '../lessonProgress';
 import { useGame } from '../store';
+import { dismissJustUpdated, installUpdate, snoozeUpdate, useUpdates } from '../updates';
+import { Notes, saveBeforeUpdate, updateLine } from './Settings';
 import './screens.css';
+
+/** A new version is ready, is downloading, or has just been installed. */
+function UpdateCard() {
+  const { status, snoozed, justUpdated } = useUpdates();
+  if (justUpdated) {
+    return (
+      <aside className="update-card glass rise" aria-label="What is new">
+        <span className="update-kicker">Updated to version {justUpdated.version}</span>
+        <Notes text={justUpdated.notes} />
+        <div className="update-actions">
+          <button className="btn" onClick={dismissJustUpdated}>
+            Got it
+          </button>
+        </div>
+      </aside>
+    );
+  }
+  if (snoozed || (status.kind !== 'available' && status.kind !== 'downloading' && status.kind !== 'restarting')) return null;
+  return (
+    <aside className="update-card glass rise" aria-label="Update">
+      <span className="update-kicker">{status.kind === 'available' ? `Version ${status.version} is ready` : 'Updating'}</span>
+      {status.kind === 'available' ? <Notes text={status.notes} /> : <p role="status">{updateLine(status)}</p>}
+      {status.kind === 'downloading' && <progress className="set-progress" max={status.total ?? undefined} value={status.total ? status.got : undefined} aria-label="Download progress" />}
+      {status.kind === 'available' && (
+        <div className="update-actions">
+          <button className="btn primary" onClick={() => void installUpdate(saveBeforeUpdate)}>
+            Update and restart
+          </button>
+          <button className="btn" onClick={snoozeUpdate}>
+            Later
+          </button>
+        </div>
+      )}
+    </aside>
+  );
+}
 
 export function Title() {
   const { chooseMode, load, setOverlay, go } = useGame();
@@ -17,7 +56,7 @@ export function Title() {
         <h1>
           Black <span>Swan</span>
         </h1>
-        <p className="tagline">Lead a country through the 1930s and the war that followed. Command its armies on the map table: select divisions, march, attack and read why each battle went the way it did.</p>
+        <p className="tagline">Lead a real country through the 1930s and the war that followed. Command its armies, run its factories and its money, win allies, and face the choices its leaders faced.</p>
         <div className="title-actions">
           {newcomer && (
             <button className="btn primary" onClick={() => go('lessons')} autoFocus>
@@ -48,9 +87,14 @@ export function Title() {
           <button className="btn" onClick={() => setOverlay('codex')}>
             Codex <kbd>X</kbd>
           </button>
+          <button className="btn" onClick={() => setOverlay('settings')}>
+            Settings
+          </button>
         </div>
         <p className="fine">Real countries and real history as the starting point. What happens next is up to you.</p>
       </div>
+      <UpdateCard />
+      <span className="title-version">Version {APP_VERSION}</span>
     </main>
   );
 }

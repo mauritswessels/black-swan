@@ -1,7 +1,7 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
   "productName": "Black Swan",
-  "version": "0.12.0",
+  "version": "../package.json",
   "identifier": "app.blackswan.game",
   "build": {
     "frontendDist": "../dist",
@@ -18,7 +18,8 @@
         "minWidth": 1100,
         "minHeight": 700,
         "resizable": true,
-        "fullscreen": false
+        "fullscreen": false,
+        "label": "main"
       }
     ],
     "security": {
@@ -37,6 +38,21 @@
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.icns"
-    ]
+    ],
+    "shortDescription": "A grand-strategy game set in Europe from 1936",
+    "longDescription": "Lead a real country through the 1930s and the war that followed, and face what its leaders faced: armies, factories, money, allies and public support.",
+    "copyright": "Black Swan. Map data from Natural Earth (public domain).",
+    "macOS": {
+      "signingIdentity": "-",
+      "minimumSystemVersion": "11.0"
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDIxNUQyQkQwRUZCODZCRjAKUldUd2E3anYwQ3RkSWEzTTNPbWp4RTJzdVdTVWxna0lZZnh5TGxnVHdpdTZvSW01SVdZeDVwTS8K",
+      "endpoints": [
+        "https://github.com/mauritswessels/black-swan/releases/latest/download/latest.json"
+      ]
+    }
   }
 }

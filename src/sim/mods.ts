@@ -142,9 +142,14 @@ export const AMPHIBIOUS = 0.6;
 export interface Edges {
   attack(u: Unit): number;
   defence(u: Unit, province: number): number;
+  /** The country's army was caught by surprise or is in shock (story.ts, diplomacy.ts): it cannot hold a line. */
+  reeling?(country: string): boolean;
 }
 
 const CAP = { infantry: 'Infantry', armour: 'Armour', artillery: 'Artillery' } as const;
+
+/** Army effects that leave an army reeling: caught by surprise (a broken pact) or in shock (France in May 1940, the Balkans in 1941). */
+export const REELING = ['surprise', 'shock'];
 
 /** What story.ts adds to a battle: passing conditions on whole armies, and the season. */
 export interface EdgeContext {
@@ -164,6 +169,7 @@ export function combatEdges(economies: Record<string, Economy>, ctx?: EdgeContex
     attackOf.set(x.country, (attackOf.get(x.country) ?? 1) * x.attack);
     defenceOf.set(x.country, (defenceOf.get(x.country) ?? 1) * x.defence);
   }
+  const reeling = new Set((ctx?.effects ?? []).filter((x) => x.until >= ctx!.day && REELING.includes(x.id)).map((x) => x.country));
   const winter = !!ctx && isWinter(ctx.startDate, ctx.day);
   const season = ctx && seasonOf(ctx.startDate, ctx.day);
   // The cold hits invaders of the winter lands; mud slows every attack (seasons.ts).
@@ -182,5 +188,6 @@ export function combatEdges(economies: Record<string, Economy>, ctx?: EdgeContex
     // A division storming a beach fights at 60% (see AMPHIBIOUS), a little better with landing craft.
     attack: (u) => (1 + of(u.owner)[`attack${CAP[u.type]}`]) * (u.landing ? Math.min(1, AMPHIBIOUS + of(u.owner).amphibious) : 1) * (attackOf.get(u.owner) ?? 1) * cold(u),
     defence: (u, province) => (1 + of(u.owner)[`defence${CAP[u.type]}`]) * (PROVINCES[province].owner === u.owner ? 1 + of(u.owner).homeDefence : 1) * (defenceOf.get(u.owner) ?? 1),
+    reeling: (country) => reeling.has(country),
   };
 }

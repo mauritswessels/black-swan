@@ -30,8 +30,8 @@ export function infrastructure(p: Province): number {
   return Math.min(5, TERRAIN_INFRASTRUCTURE[p.terrain] + (p.victoryPoints >= 5 ? 1 : 0) + (p.capital ? 1 : 0));
 }
 
-/** How many divisions a province can keep fully supplied. */
-export const supplyCapacity = (province: number): number => 4 + 3 * infrastructure(PROVINCES[province]);
+/** How many divisions a province can keep fully supplied (raised from 4 + 3 per level in version 1.3, so that a great front can feed the armies it had). */
+export const supplyCapacity = (province: number): number => 5 + 4 * infrastructure(PROVINCES[province]);
 
 /** Each country's depots: the capital, or the biggest city, of every separate piece of its home territory. */
 export const DEPOTS: Record<string, number[]> = (() => {

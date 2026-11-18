@@ -126,3 +126,15 @@ export function endedOperations(w: World, country: string): Operation[] {
   if (w.mode !== 'story' || country === w.player) return [];
   return OPERATIONS.filter((o) => o.by === country && o.ends && w.day >= dayOf(w.startDate, o.date) && o.ends(w));
 }
+
+/**
+ * Coasts kept for a landing whose date has not come yet: the commander makes no landing of his
+ * own there before it. Without this the British AI landed in France in 1942 and 1943 whenever a
+ * stretch of coast looked thinly held, two years before the real one.
+ */
+export function laterLandings(w: World, country: string): Set<number> {
+  const out = new Set<number>();
+  if (w.mode !== 'story' || country === w.player || w.story.lesson) return out;
+  for (const o of OPERATIONS) if (o.by === country && o.kind === 'landing' && w.day < dayOf(w.startDate, o.date)) for (const p of [...o.targets, ...o.area]) out.add(p);
+  return out;
+}

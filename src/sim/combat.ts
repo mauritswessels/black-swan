@@ -94,10 +94,17 @@ export const PUSH_PER_DAY = 10;
 export const BREAKTHROUGH_JUMP = 0.6;
 export const BREAKTHROUGH_JUMP_PURSUED = 0.85;
 
-/** How far the front line moves today, from each side's damage, the ground and any river. */
-export function linePush(attack: number, defence: number, line: number, ground: Ground = 'dry', riverShare = 0): number {
+/** Against an army that is reeling, the line can move this far in a day. */
+export const REELING_PUSH_MAX = 15;
+
+/**
+ * How far the front line moves today, from each side's damage, the ground and any river.
+ * Against an army caught by surprise or in shock (`reeling`) it gives way much faster: the push
+ * is 10 x (A - D) / the smaller of A and D, so twice the damage moves it 10 points, up to 15.
+ */
+export function linePush(attack: number, defence: number, line: number, ground: Ground = 'dry', riverShare = 0, reeling = false): number {
   if (attack + defence <= 0) return 0;
-  let push = (PUSH_PER_DAY * (attack - defence)) / (attack + defence);
+  let push = reeling && attack > 0 && defence > 0 ? Math.max(-PUSH_PER_DAY, Math.min(REELING_PUSH_MAX, (PUSH_PER_DAY * (attack - defence)) / Math.min(attack, defence))) : (PUSH_PER_DAY * (attack - defence)) / (attack + defence);
   push *= GROUND_PUSH[ground];
   if (push > 0 && line < BRIDGEHEAD) push *= 1 - (1 - RIVER_PUSH) * riverShare;
   return push;
@@ -262,7 +269,7 @@ export function outlook(attackers: Unit[], defenders: Unit[], province: number, 
     favours: ratio > 1.15 ? 'attacker' : ratio < 1 / 1.15 ? 'defender' : 'even',
     riverShare,
     river,
-    push: linePush(attackSum, defenceSum, line, ground, riverShare),
+    push: linePush(attackSum, defenceSum, line, ground, riverShare, defenders.some((u) => edges?.reeling?.(u.owner))),
     ground,
   };
 }
@@ -345,7 +352,8 @@ export function fightBattles(d: Draft, rng: Rng): Set<number> {
     battle.attackerLosses += hit(front, defenceDamage);
     // The front line moves by how the day went.
     const ground = d.ground?.[province] ?? 'dry';
-    battle.push = linePush(attackDamage, defenceDamage, battle.line ?? 0, ground, riverShare);
+    const reeling = !!d.edges?.reeling && battle.defenders.some((c) => d.edges!.reeling!(c));
+    battle.push = linePush(attackDamage, defenceDamage, battle.line ?? 0, ground, riverShare, reeling);
     battle.line = Math.max(0, Math.min(100, (battle.line ?? 0) + battle.push));
     for (const u of attackers) busy.add(u.id);
     for (const u of defenders) busy.add(u.id);

@@ -25,7 +25,7 @@ import { COAST, fleetPower, HOME_ZONES, seaDependence, seaRoute, TRADE_ROUTE, ZO
 import { supplyCapacity } from './supply';
 import type { Fleet, Order, Unit, World } from './types';
 import { atWar, enemiesOf } from './war';
-import { activeOperations, type Operation } from './operations';
+import { activeOperations, laterLandings, type Operation } from './operations';
 import { dayOf } from './agenda';
 import { ITALIAN_FUEL } from './story';
 
@@ -309,8 +309,9 @@ export function seaOrders(plan: SeaPlan): Order[] {
   // Not as a sideshow: a country that can reach the enemy on foot with most of its army fights there.
   if (plan.onLand ?? (plan.front.length > 0 && stranded.length < 0.3 * mine.length)) return orders;
   let best: { force: Unit[]; score: number; to: number } | null = null;
+  const later = laterLandings(w, country);
   for (const p of PROVINCES) {
-    if (!enemies.has(w.controller[p.id])) continue;
+    if (!enemies.has(w.controller[p.id]) || later.has(p.id)) continue;
     const zone = COAST[p.id].find((z) => sea.status(country, z) === 'own');
     if (zone === undefined) continue;
     // Enemy divisions close enough to counter-attack within days.

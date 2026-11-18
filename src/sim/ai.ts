@@ -82,6 +82,8 @@ export const KEY_CITY_VP = 10;
 /** A battle whose line moved forward yesterday, or that is this far in, is being won: the AI keeps at it and feeds it at this share of the usual margin. */
 export const WINNING_LINE = 50;
 export const WINNING_MARGIN = 0.6;
+/** Against an enemy that is reeling (caught by surprise, or in shock), attacks go in at this share of the usual margin. */
+export const REELING_MARGIN = 0.75;
 /** An attack takes divisions until its odds are this many times what it needs. */
 const ENOUGH = 1.6;
 /** A province this many times over what its roads can carry sends divisions away. */
@@ -436,7 +438,8 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
       }
     }
     const ratio = theirs > 0 ? ours / theirs : 99;
-    const margin = ratio >= OFFENSIVE_RATIO ? OFFENSIVE_MARGIN : 1;
+    // An enemy caught by surprise, or in shock, is attacked all-out before it can recover.
+    const margin = (ratio >= OFFENSIVE_RATIO ? OFFENSIVE_MARGIN : 1) * (edges.reeling?.(f.foe) ? REELING_MARGIN : 1);
     const defensive = ratio < DEFENSIVE_RATIO;
 
     // Encirclement: how many of the foe's divisions would lose their supply if we took each target?
@@ -571,7 +574,8 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
       ...(crowded ? PROVINCES[here].neighbours.filter(friendly).map((p): [number, number] => [p, 40]) : []),
     ];
     let best = -1;
-    let bestCost = Infinity;
+    // Staying put is a choice too: a division already on its front moves only for something better.
+    let bestCost = !crowded && zone.has(here) ? (main.includes(here) ? 0 : inLine ? 20 : 30) : Infinity;
     for (const [p, penalty] of choices) {
       if (p === here || piece[p] !== piece[here] || roomAt(p) <= 0) continue;
       if (inLine && !crowded && penalty > 0) continue; // do not shuffle sideways along the front for nothing

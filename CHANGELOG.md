@@ -1,5 +1,40 @@
 # Changelog
 
+## War game, Stage I-1: Learn to play, advisor tips and the codex (2026-11-17)
+
+- **Learn to play.** A new button on the title screen (key L) opens nine short lessons, about
+  36 minutes in all: the map table, time, moving divisions, battle, factories and production,
+  money, research with plans and the home front, diplomacy, and the navy and air force. Each is
+  a small prepared situation on the real map with you leading France. The battle lesson is the
+  Saar offensive of September 1939, when France really did attack Germany while most of the
+  German army was in Poland; the navy lesson starts the day after Italy declared war on France
+  in June 1940.
+- **A coach card leads each lesson.** It tells you one thing at a time, puts a glowing frame
+  around the button to press and rings the province to click on the map, and moves on by
+  itself once you have done it. Show me does a step for you. You can hide the card, leave a
+  lesson at any time, and take the lessons in any order; the game remembers which you have
+  finished. Lessons are never saved and never touch your autosave. Someone who has never played
+  sees Learn to play as the first button on the title screen.
+- **Advisor tips.** In a real game, the first time you open a panel (Production, the Economy,
+  a fleet, a battle and 16 others) a short note says what it is for and which lesson covers
+  it. Got it hides that tip; Turn tips off hides them all.
+- **The codex.** 14 new terms (97 in all): victory points, infantry, armour, artillery, game
+  speed, diplomatic mission, decision, peace terms, friendly government, fleet mission,
+  submarine, ground support, the range of aircraft and lockstep. Terms are sorted into six
+  groups with a button for each, plus one for the AP Macroeconomics terms. Click any underlined
+  word anywhere in the game to open the codex at that term.
+- **Groundwork for playing against friends later.** The engine now uses its own maths for
+  logarithms, sines and cosines and writes dates itself, because browsers can differ in the
+  last digit and two computers in a multiplayer game must agree exactly. A 14-digit fingerprint
+  of the world (`worldHash`) will let two computers check each day that they are still in step.
+  New tests play the same game twice and compare the fingerprint every day, check that a game
+  saved and loaded half way ends exactly like one that never stopped, and check that nothing
+  in the engine uses maths or clocks that differ between computers. Multiplayer itself is not
+  built yet.
+- **Tests.** 186 tests (16 new): every lesson is played from start to finish with Show me, and
+  must finish without a decision, a history card or the end of the game getting in the way.
+- **Saves.** Stage H saves still load. App version 0.11.0.
+
 ## War game, Stage H: Story mode, history cards and Free-for-all (2026-11-16)
 
 - **Two starts for Story mode.** The full campaign from 1 January 1936, and a short scenario

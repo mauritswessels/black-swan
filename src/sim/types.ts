@@ -435,6 +435,8 @@ export interface StoryState {
   endDay: number;
   /** Free-for-all games started from the menu: AI countries attack weak neighbours and look for allies on their own (opportunist.ts). */
   opportunist: boolean;
+  /** Set in a tutorial lesson (src/tutorial): no history cards, story events, random events or end of the game. */
+  lesson?: string;
 }
 
 export type PactKind = 'alliance' | 'guarantee' | 'nonAggression';

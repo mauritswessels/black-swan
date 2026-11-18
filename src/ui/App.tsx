@@ -4,6 +4,7 @@ import { MapTable } from './screens/MapTable';
 import { Codex, Help, Saves } from './screens/Overlays';
 import { EndReport } from './screens/StoryPanels';
 import { Setup } from './screens/Setup';
+import { Lessons } from './screens/Lessons';
 import { Title } from './screens/Title';
 import { useGame } from './store';
 import './screens/screens.css';
@@ -18,7 +19,7 @@ function useShortcuts() {
       const typing = el.tagName === 'INPUT' || el.tagName === 'SELECT' || el.tagName === 'TEXTAREA';
       if (k === 'escape') {
         if (g.overlay) return g.setOverlay(null);
-        if (g.screen === 'setup') return g.go('title');
+        if (g.screen === 'setup' || g.screen === 'lessons') return g.go('title');
         if (g.screen === 'game') {
           if (g.ordering) g.setOrdering(false);
           else g.select(null);
@@ -37,6 +38,7 @@ function useShortcuts() {
       if (g.screen === 'title') {
         if (k === 'n') g.chooseMode('story');
         if (k === 'f') g.chooseMode('freeForAll');
+        if (k === 'l') g.go('lessons');
         if (k === 'c' && readSave('auto')) g.load('auto');
         return;
       }
@@ -80,6 +82,7 @@ export function App() {
     <>
       {screen === 'title' && <Title />}
       {screen === 'setup' && <Setup />}
+      {screen === 'lessons' && <Lessons />}
       {screen === 'game' && <MapTable />}
       {overlay === 'codex' && <Codex />}
       {overlay === 'saves' && <Saves />}

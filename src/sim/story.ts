@@ -31,6 +31,7 @@ import { PROVINCES } from './map';
 import { Rng, seedFrom } from './rng';
 import type { ArmyEffect, Decision, LineKind, StartId, StoryState } from './types';
 import { warKey } from './war';
+import { dateWords } from './dmath';
 
 export { dayOf } from './agenda';
 
@@ -66,11 +67,7 @@ const clamp = (x: number, lo: number, hi: number): number => Math.max(lo, Math.m
 const fighting = (d: Pick<DipDraft, 'wars'>, a: string, b: string): boolean => d.wars.includes(warKey(a, b));
 const beaten = (d: Pick<DipDraft, 'capitulated' | 'story'>, name: string): boolean => d.capitulated.includes(name) || d.story.armistice.includes(name);
 const did = (d: Pick<DipDraft, 'diplomacy'>, aim: string): boolean => d.diplomacy.agenda[aim] === 'done';
-const dateOf = (startDate: string, day: number): string => {
-  const x = new Date(`${startDate}T00:00:00Z`);
-  x.setUTCDate(x.getUTCDate() + day);
-  return x.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
-};
+const dateOf = dateWords;
 /** A month's output of a country in money, counted from its factories. */
 const monthOutput = (d: DipDraft, name: string): number => {
   let factories = 0;
@@ -479,6 +476,8 @@ export function runStory(d: DipDraft, monthEnd: boolean, seed: number): void {
   if (me && d.wars.some((k) => k.split('|').includes(me))) s.playerWar = { first: s.playerWar.first ?? d.day, last: d.day, days: s.playerWar.days + 1 };
   if (s.effects.some((x) => x.until < d.day)) s.effects = s.effects.filter((x) => x.until >= d.day);
 
+  // A tutorial lesson is a prepared situation: nothing happens in it but what the lesson set up.
+  if (s.lesson) return;
   if (d.mode !== 'story') {
     if (monthEnd) randomEvents(d, seed);
     if (!s.ended && d.day >= s.endDay) s.ended = { day: d.day, why: 'The clock has run out.' };

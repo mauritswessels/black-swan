@@ -321,3 +321,37 @@ label.sb-goto { display: flex; flex-direction: column; gap: 6px; font-size: 13.5
 .sb .st-table { font-size: 13px; }
 .sb .st-table th, .sb .st-table td { padding: 5px 6px; }
 .sb .st-goals em { color: #8fa0bb; }
+
+/* ================= Stage I: the lesson coach ================= */
+.coach { position: fixed; left: 78px; top: 70px; z-index: 60; width: min(400px, calc(100vw - 480px)); min-width: 300px; background: rgba(10, 15, 26, 0.95); border-color: rgba(255, 196, 107, 0.55); box-shadow: 0 0 0 1px rgba(255, 196, 107, 0.15), 0 20px 60px rgba(0, 0, 0, 0.5); gap: 8px; }
+.coach.above { position: fixed; z-index: 90; left: 16px; top: auto; bottom: 16px; width: 300px; min-width: 0; }
+.coach-kicker { display: flex; justify-content: space-between; align-items: center; font: 600 12px var(--f-cond); letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); }
+.coach-x { border: 0; background: transparent; color: var(--dim); font-size: 18px; line-height: 1; cursor: pointer; padding: 0 4px; }
+.coach-x:hover { color: #fff; }
+.coach-title { margin: 0; font: 500 24px var(--f-cond); letter-spacing: 0.04em; color: #fff; }
+.coach-progress { display: flex; gap: 3px; }
+.coach-progress i { flex: 1; height: 3px; border-radius: 2px; background: rgba(156, 200, 255, 0.18); }
+.coach-progress i.done { background: rgba(255, 196, 107, 0.6); }
+.coach-progress i.now { background: var(--gold); box-shadow: 0 0 6px rgba(255, 196, 107, 0.7); }
+.coach-text { margin: 2px 0 0; font-size: 16px; line-height: 1.45; color: #fff; animation: rise 0.25s var(--ease); }
+.coach-why { margin: 0; font-size: 14px; line-height: 1.45; color: #c9d4e6; border-left: 2px solid rgba(255, 196, 107, 0.5); padding-left: 10px; }
+.coach-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 4px; }
+.coach-actions .btn { padding: 7px 14px; }
+.coach-actions .btn.quiet { margin-left: auto; background: transparent; border-color: transparent; color: var(--dim); }
+.coach-actions .btn.quiet:hover { color: #fff; box-shadow: none; }
+.coach-wait { font-size: 13px; color: var(--dim); font-style: italic; }
+.coach-step { margin: 0; font-size: 12px; color: var(--dim); }
+.coach-tab { position: fixed; left: 78px; top: 70px; z-index: 60; }
+.coach-spot { position: fixed; z-index: 70; pointer-events: none; border: 2px solid var(--gold); border-radius: 6px; box-shadow: 0 0 0 4px rgba(255, 196, 107, 0.18), 0 0 24px rgba(255, 196, 107, 0.55); animation: coach-pulse 1.4s ease-in-out infinite; transition: left 0.2s, top 0.2s, width 0.2s, height 0.2s; }
+@keyframes coach-pulse { 50% { box-shadow: 0 0 0 8px rgba(255, 196, 107, 0.06), 0 0 34px rgba(255, 196, 107, 0.8); } }
+.mt-lesson { fill: rgba(255, 196, 107, 0.16); stroke: var(--gold); stroke-width: 3; pointer-events: none; animation: lesson-ring 1.4s ease-in-out infinite; vector-effect: non-scaling-stroke; }
+@keyframes lesson-ring { 50% { fill: rgba(255, 196, 107, 0.04); stroke-opacity: 0.5; } }
+@media (prefers-reduced-motion: reduce) { .coach-spot, .mt-lesson, .coach-text { animation: none; } }
+
+/* Stage I: advisor tips at the top of a panel the first time it opens. */
+.sb-tip { margin: 0 0 4px; padding: 10px 12px; border: 1px solid rgba(255, 196, 107, 0.45); border-radius: 3px; background: rgba(255, 196, 107, 0.07); display: grid; gap: 6px; }
+.sb-tip-h { font: 600 11.5px var(--f-cond); letter-spacing: 0.2em; text-transform: uppercase; color: var(--gold); }
+.sb-tip p { margin: 0; font-size: 14px; line-height: 1.45; color: #e8edf6; }
+.sb-tip small { color: #b7c3d6; font-size: 13px; }
+.sb-tip-actions { display: flex; gap: 8px; }
+.sb-mini.quiet { border-color: transparent; color: var(--dim); }

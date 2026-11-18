@@ -5,6 +5,7 @@
  */
 import data from '../content/map/europe1936.json';
 import type { Province, Terrain, UnitType } from './types';
+import { asin, cos, PI, sin } from './dmath';
 
 export const PROVINCES = data.provinces as unknown as Province[];
 export const KNOWN_GAPS: string[] = data.knownGaps;
@@ -17,11 +18,13 @@ export const TERRAIN_SLOWDOWN: Record<Terrain, number> = { plains: 1, forest: 1.
 
 /** Distance between two points on the Earth in kilometres (the "haversine" formula). */
 export function distanceKm(a: [number, number], b: [number, number]): number {
-  const rad = Math.PI / 180;
+  const rad = PI / 180;
   const dLat = (b[1] - a[1]) * rad;
   const dLon = (b[0] - a[0]) * rad;
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a[1] * rad) * Math.cos(b[1] * rad) * Math.sin(dLon / 2) ** 2;
-  return 2 * 6371 * Math.asin(Math.sqrt(h));
+  const sLat = sin(dLat / 2);
+  const sLon = sin(dLon / 2);
+  const h = sLat * sLat + cos(a[1] * rad) * cos(b[1] * rad) * sLon * sLon;
+  return 2 * 6371 * asin(Math.sqrt(h));
 }
 
 /** Days for a unit to walk from one province to a neighbour. The terrain you walk INTO sets the pace. */

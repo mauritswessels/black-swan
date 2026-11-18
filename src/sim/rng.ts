@@ -9,6 +9,8 @@
  * world state so saving a game is trivial.
  */
 
+import { cos, ln, PI } from './dmath';
+
 export class Rng {
   private s: number;
 
@@ -39,7 +41,7 @@ export class Rng {
     let u = 0;
     while (u === 0) u = this.next();
     const v = this.next();
-    return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v) * sd;
+    return Math.sqrt(-2 * ln(u)) * cos(2 * PI * v) * sd;
   }
 
   /** True with the given probability. */

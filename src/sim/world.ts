@@ -27,6 +27,7 @@ import { cloneStory, runStory, startStory } from './story';
 import { DEPOTS, linkedProvinces, supplyCapacity, supplyLevels } from './supply';
 import type { Mode, Order, Unit, UnitType, World } from './types';
 import { atWar, canEnter, enemiesOf } from './war';
+import { dateWords } from './dmath';
 
 export type { Mode, World } from './types';
 
@@ -332,9 +333,7 @@ export function step(world: World, orders: Order[] = []): World {
 
 /** The current date in words, e.g. "7 March 1936". Uses UTC so it is the same on every computer. */
 export function dateLabel(w: Pick<World, 'startDate' | 'day'>): string {
-  const d = new Date(`${w.startDate}T00:00:00Z`);
-  d.setUTCDate(d.getUTCDate() + w.day);
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+  return dateWords(w.startDate, w.day);
 }
 
 /** Units standing in a province. */

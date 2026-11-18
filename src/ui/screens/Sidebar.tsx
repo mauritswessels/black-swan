@@ -1,6 +1,6 @@
 /** The details sidebar: opens for whatever you click on the map. All numbers come from the engine. */
 import { CardView, ChroniclePanel } from './StoryPanels';
-import { useRef, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { DIG_IN_PER_DAY, outlook, outlookAt, type Outlook } from '../../sim/combat';
 import { combatEdges } from '../../sim/mods';
 import { COUNTRIES, countryByName } from '../../sim/countries';
@@ -13,6 +13,9 @@ import type { BattleReport, Unit, World } from '../../sim/types';
 import { atWar, enemiesOf } from '../../sim/war';
 import { dateLabel } from '../../sim/world';
 import { TERRAIN_NOTE } from '../map/colours';
+import { saveTipState, tipState, type TipState } from '../lessonProgress';
+import { TIPS } from '../../tutorial/tips';
+import { LESSONS } from '../../tutorial/lessons';
 import { useGame, type Selection } from '../store';
 import { picturesOf } from '../forces';
 import { EconomyPanel, ProductionPanel } from './EconomyPanels';
@@ -49,6 +52,36 @@ export function Row({ label, value, bar, warn }: { label: string; value: ReactNo
   );
 }
 
+/** The first time a panel opens in a real game: a short note on what it is for. */
+function AdvisorTip() {
+  const kind = useGame((s) => (s.lesson ? null : s.selection?.kind ?? null));
+  const [state, setState] = useState(tipState);
+  const tip = kind ? TIPS[kind] : undefined;
+  if (!kind || !tip || !state.on || state.seen.includes(kind)) return null;
+  const save = (t: TipState) => {
+    saveTipState(t);
+    setState(t);
+  };
+  const lesson = tip.lesson ? LESSONS.findIndex((l) => l.id === tip.lesson) : -1;
+  return (
+    <div className="sb-tip" role="note" aria-label="Advisor tip">
+      <span className="sb-tip-h">Advisor</span>
+      <p>
+        {tip.text}
+        {lesson >= 0 && <small> Lesson {lesson + 1} of Learn to play covers this.</small>}
+      </p>
+      <div className="sb-tip-actions">
+        <button className="sb-mini" onClick={() => save({ ...state, seen: [...state.seen, kind] })}>
+          Got it
+        </button>
+        <button className="sb-mini quiet" onClick={() => save({ ...state, on: false })}>
+          Turn tips off
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function Frame({ kicker, title, sub, wide, children }: { kicker: string; title: string; sub?: ReactNode; wide?: boolean; children: ReactNode }) {
   const select = useGame((s) => s.select);
   return (
@@ -63,6 +96,7 @@ export function Frame({ kicker, title, sub, wide, children }: { kicker: string; 
         <h2>{title}</h2>
         {sub && <p className="sb-sub">{sub}</p>}
       </div>
+      <AdvisorTip />
       {children}
     </aside>
   );

@@ -98,7 +98,46 @@ export const GLOSSARY: Term[] = [
   { id: 'winter', term: 'Winter', definition: 'December, January and February in the Soviet Union and the Nordic countries.', why: 'An army from outside those countries attacks at 75% there in those months. The German army of 1941 had no winter clothing.' },
   { id: 'free-for-all', term: 'Free-for-all', definition: 'The game mode with every treaty torn up and no historical timetable.', why: 'AI countries attack weak neighbours when the odds are good and band together against a danger. Whoever holds the most victory points after ten years wins.' },
   { id: 'butterfly-effect', term: 'Butterfly effect', definition: 'A small change early on that leads to large changes later.', why: 'AI countries try to follow their real history, but each step has conditions. If you make Austria too well protected to bully in 1938, the steps that depended on it never happen, and the war you know may never start, or start somewhere else.' },
+
+  // Stage I: terms the lessons use.
+  { id: 'victory-points', term: 'Victory points', definition: 'What a province is worth in a war: 20 for a capital, 4 to 11 for a big city, 1 for the rest.', why: 'A country surrenders when its enemies hold 60% of its own land’s victory points, or 40% once its capital has fallen. Aim for the cities.' },
+  { id: 'infantry', term: 'Infantry', definition: 'Soldiers on foot with rifles and machine guns. Attack 10, defence 15: better at holding ground than taking it.', why: 'Most of every army in the 1930s was infantry, and most of its transport was still horses.' },
+  { id: 'armour', term: 'Armour', definition: 'Divisions built around tanks. Attack 22, defence 10, and they move faster than infantry.', why: 'Armour breaks through on open ground. In hills, forests and mountains it loses much of its edge.' },
+  { id: 'artillery', term: 'Artillery', definition: 'Divisions of heavy guns. Attack 16, defence 8.', why: 'Each artillery division in an attack removes a quarter of the defenders’ dig-in bonus. Bring it against troops who have had time to prepare.' },
+  { id: 'game-speed', term: 'Game speed', definition: 'How fast the days go by, from 1 (slow) to 5 (fast). The game can be paused at any time with Space.', why: 'Slow down for a battle or a crisis, speed up in quiet years. Decisions, history cards and attacks on you stop the clock by themselves.' },
+  { id: 'diplomatic-mission', term: 'Diplomatic mission', definition: 'Diplomats sent to another country to improve relations. It costs a little money each month while it lasts.', why: 'Relations settle 30 points higher while a mission is there. Friends are more willing to sign pacts and less likely to join your enemies.' },
+  { id: 'decision', term: 'Decision', definition: 'A question another country or the story puts to you: answer an ultimatum, defend an ally, accept a peace. The clock stops and it opens in the sidebar.', why: 'You have seven days. If you do nothing, the answer marked as the default is given for you.' },
+  { id: 'peace-terms', term: 'Peace terms', definition: 'How a war ends without a surrender: back to the old borders (a white peace), or each side keeps the land it holds.', why: 'The war score says who is ahead, and the sidebar says whether the enemy is likely to accept and why.' },
+  { id: 'friendly-government', term: 'Friendly government', definition: 'After a country surrenders to you, a new government of your kind that rules it and becomes your ally.', why: 'It costs less world tension than annexing the country, and its army fights beside yours, but its factories stay its own.' },
+  { id: 'fleet-mission', term: 'Fleet mission', definition: 'What a fleet does in its sea zone: patrol (fight and hold the zone), escort convoys, raid enemy convoys, or stay in port.', why: 'You never steer ships. You choose where each fleet goes and what it does there.' },
+  { id: 'submarine', term: 'Submarine', definition: 'A warship that attacks from under the water. Good at sinking merchant ships, poor in a stand-up fight.', why: 'Put submarines on Raid to cut an enemy’s imports. Escorts hunt them down.' },
+  { id: 'ground-support', term: 'Ground support', definition: 'Bombers helping the army in battles within their range.', why: 'With control of the sky over a battle, your side hits 15% harder and the enemy 15% less hard.' },
+  { id: 'air-range', term: 'Range of aircraft', definition: 'How far a wing flies from its base: 400 km for fighters and 800 km for bombers, more with research.', why: 'An air wing only helps where it can reach, so move bases forward as the front moves.' },
+  { id: 'lockstep', term: 'Lockstep', definition: 'A way of playing over the internet in which every computer runs the same game and only the players’ orders are sent between them.', why: 'It needs a game that gives exactly the same result from the same start and the same orders. Black Swan is built that way, so playing against friends can be added later.' },
 ];
+
+/** The groups the codex sorts its terms into. */
+export const GROUPS = [
+  { id: 'army', name: 'Army and battle' },
+  { id: 'economy', name: 'Economy and money' },
+  { id: 'home', name: 'Home front and research' },
+  { id: 'diplomacy', name: 'Diplomacy' },
+  { id: 'sea-air', name: 'Sea and air' },
+  { id: 'game', name: 'The game and history' },
+] as const;
+export type GroupId = (typeof GROUPS)[number]['id'];
+
+const GROUP_OF: Record<string, GroupId> = Object.fromEntries(
+  ([
+    ['army', 'province division strength organisation supply encirclement dig-in front-width depot attrition retreat capitulation counter outlook fog-of-war fortification winter surprise-attack victory-points infantry armour artillery'],
+    ['economy', 'inflation war-bonds budget-deficit money-supply rationing gdp consumer-goods guns-or-butter opportunity-cost production-line manpower national-debt real-interest-rate printing-money quantity-theory inflation-expectations hyperinflation inflation-tax price-controls crowding-out mefo-bills how-to-pay-for-the-war steel-and-oil autarky national-income conscription'],
+    ['home', 'stability war-support war-weariness home-front change-of-government research ahead-of-its-time national-plan'],
+    ['diplomacy', 'relations world-tension alliance guarantee non-aggression-pact cause-for-war claim ultimatum appeasement containment war-score truce occupation annexation demilitarised-zone diplomatic-mission decision peace-terms friendly-government'],
+    ['sea-air', 'sea-zone sea-control capital-ship convoy blockade landing air-wing air-superiority strategic-bombing fleet-mission submarine ground-support air-range'],
+  ] as [GroupId, string][]).flatMap(([g, ids]) => ids.split(' ').map((id) => [id, g])),
+);
+/** The group a term belongs to. Anything not listed is about the game and its history. */
+export const groupOf = (t: Term): GroupId => GROUP_OF[t.id] ?? 'game';
 
 const BY_ID = new Map(GLOSSARY.map((t) => [t.id, t]));
 export const termById = (id: string): Term | undefined => BY_ID.get(id);

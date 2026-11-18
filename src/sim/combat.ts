@@ -29,6 +29,7 @@ import { combatEdges, type Edges } from './mods';
 import { Rng } from './rng';
 import type { Battle, BattleReport, BattleTally, Cause, Economy, Terrain, Unit, UnitType, World } from './types';
 import { atWar } from './war';
+import { ln } from './dmath';
 
 export const STATS: Record<UnitType, { attack: number; defence: number }> = {
   infantry: { attack: 10, defence: 15 },
@@ -391,22 +392,22 @@ export function explain(b: Battle, winner: 'attacker' | 'defender'): Cause[] {
   };
 
   if (winner === 'defender') {
-    add(-Math.log(terrain), `attacking into ${place} (attackers hit ${pct(1 - terrain)} less hard)`);
-    add(Math.log(dugIn), `the defenders were dug in (+${pct(dugIn - 1)} defence)`);
-    add(Math.log(edge), `the defenders had better weapons or fortifications (${pct(edge - 1)} stronger)`);
-    add(2 * Math.log(Math.max(1, 2 - air)), 'the defenders controlled the sky (they hit 15% harder, the attackers 15% less hard)');
+    add(-ln(terrain), `attacking into ${place} (attackers hit ${pct(1 - terrain)} less hard)`);
+    add(ln(dugIn), `the defenders were dug in (+${pct(dugIn - 1)} defence)`);
+    add(ln(edge), `the defenders had better weapons or fortifications (${pct(edge - 1)} stronger)`);
+    add(2 * ln(Math.max(1, 2 - air)), 'the defenders controlled the sky (they hit 15% harder, the attackers 15% less hard)');
     add(landing * 0.5, 'the attackers were coming ashore from the sea (they hit 40% less hard, less with landing craft)');
-    add(-Math.log(aSupply), `the attackers were short of supply (${pct(1 - aSupply)} weaker)`);
-    add(Math.log(2 / Math.max(0.2, ratio)), ratio < 1 ? `the attackers were outnumbered (${versus})` : `too few attackers for an assault (${versus}; plan for about 2 to 1)`);
+    add(-ln(aSupply), `the attackers were short of supply (${pct(1 - aSupply)} weaker)`);
+    add(ln(2 / Math.max(0.2, ratio)), ratio < 1 ? `the attackers were outnumbered (${versus})` : `too few attackers for an assault (${versus}; plan for about 2 to 1)`);
     add(0.05, 'defending is easier than attacking (infantry defends at 15 but attacks at 10)');
   } else {
-    add(Math.log(Math.max(1, ratio)), `the attackers had the numbers (${versus})`);
-    add(Math.log(1 + (ATTACK_WIDTH_PER_EXTRA_DIRECTION / ATTACK_WIDTH) * (directions - 1)) * (ratio > 1 ? 1 : 0.5), `the attack came from ${Math.round(directions)} directions, so more divisions could join in`);
-    add(armour * Math.log(STATS.armour.attack / STATS.infantry.attack) * (terrain === 1 ? 1.5 : 1), terrain === 1 ? 'armour broke through on open ground' : 'armour led the attack');
-    add(artillery * Math.log(STATS.artillery.attack / STATS.infantry.attack) + (artillery > 0 ? 0.1 : 0), 'artillery broke up the dug-in positions');
-    add(2 * Math.log(Math.max(1, air)), 'the attackers controlled the sky (they hit 15% harder, the defenders 15% less hard)');
-    add(-Math.log(dSupply), `the defenders were short of supply (${pct(1 - dSupply)} weaker)`);
-    add(-Math.log(edge), `the attackers had better weapons (${pct(1 / edge - 1)} stronger)`);
+    add(ln(Math.max(1, ratio)), `the attackers had the numbers (${versus})`);
+    add(ln(1 + (ATTACK_WIDTH_PER_EXTRA_DIRECTION / ATTACK_WIDTH) * (directions - 1)) * (ratio > 1 ? 1 : 0.5), `the attack came from ${Math.round(directions)} directions, so more divisions could join in`);
+    add(armour * ln(STATS.armour.attack / STATS.infantry.attack) * (terrain === 1 ? 1.5 : 1), terrain === 1 ? 'armour broke through on open ground' : 'armour led the attack');
+    add(artillery * ln(STATS.artillery.attack / STATS.infantry.attack) + (artillery > 0 ? 0.1 : 0), 'artillery broke up the dug-in positions');
+    add(2 * ln(Math.max(1, air)), 'the attackers controlled the sky (they hit 15% harder, the defenders 15% less hard)');
+    add(-ln(dSupply), `the defenders were short of supply (${pct(1 - dSupply)} weaker)`);
+    add(-ln(edge), `the attackers had better weapons (${pct(1 / edge - 1)} stronger)`);
     add(b.surrendered, `${b.surrendered} surrounded ${b.surrendered === 1 ? 'division' : 'divisions'} had nowhere to retreat and surrendered`);
     add(0.05, 'the attackers wore the defenders down');
   }

@@ -4,11 +4,18 @@ A grand-strategy game set in Europe from 1936. You lead a real country through t
 the war that followed, and face what its leaders faced: armies, factories, money, allies and
 public support. It is built to teach the history and the economics as you play.
 
-> **Version 1.0.** The finished Mac app. Lead one of six great powers in Story mode, or any
+> **Version 1.1.** The finished Mac app, now with a war economy that can pay for a long war. Lead one of six great powers in Story mode, or any
 > of 31 countries in Free-for-all, from 1936 or September 1939: armies, a navy and air force,
 > factories and war finance, research, diplomacy and 53 history cards. The app updates itself
 > from GitHub, keeps its saves as files, and has a Settings screen. New to the game? Press
 > **Learn to play** on the title screen.
+>
+> New in 1.1: a war of attrition (wear and tear at the front, wounded who come back, a
+> gradual call-up), soldiers paid by what a worker earns, and wartime finance as it really
+> worked: forced saving under rationing, an interest rate capped below inflation, and
+> compulsory loans in the Soviet Union. Left to the AI, history now runs close to the real
+> war: France falls in the summer of 1940, the Soviet Union holds without runaway inflation,
+> and Germany is usually defeated in 1944.
 
 ## Installing the Mac app
 
@@ -119,13 +126,13 @@ You need [Node.js](https://nodejs.org) 20 or newer. Then, in this folder:
 npm install          # once
 npm run dev          # opens the game in your browser
 npm test             # run the unit tests
-npm run balance      # run the bot playtests (wars, finance, history to 1945) and write docs/balance-stage-i2.md
+npm run balance      # run the bot playtests (wars, finance, history to 1945) and write docs/balance-stage-j.md
 npm run typecheck    # check the types
 npm run build:map    # rebuild the 1936 map from Natural Earth data (rarely needed)
 ```
 
 The rules and every number behind them are in [MODEL.md](MODEL.md). The latest balance report
-is [docs/balance-stage-i2.md](docs/balance-stage-i2.md).
+is [docs/balance-stage-j.md](docs/balance-stage-j.md).
 
 ## Running it as a Mac app from the code
 
@@ -302,9 +309,10 @@ the middle of a modern region are therefore approximate:
 
 ## Plan
 
-Version 1.0 completes the plan (see CHANGELOG.md). Ideas for later versions: playing against
-friends over the internet (the engine is already deterministic, with a fingerprint check for
-it), the Pacific and the Americas, and a sharper war economy on the eastern front after 1941.
+Version 1.0 completes the plan and 1.1 fixes the war economy (see CHANGELOG.md). Ideas for
+later versions: playing against friends over the internet (the engine is already
+deterministic, with a fingerprint check for it), the Pacific and the Americas, and an army AI
+that can push deep on the eastern front (Barbarossa still stops close to the border).
 
 ## History and symbols
 

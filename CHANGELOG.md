@@ -3,6 +3,50 @@
 Versions from 1.0.0 on are numbered. Each one starts with a heading like `## 1.0.1: What it brings`;
 that section becomes the notes on the GitHub release and on the update card in the app.
 
+## 1.1.0: A war economy that can pay for a long war (2026-11-18)
+
+Until now the economy could not pay for the real war: left to the AI, Soviet prices rose
+24,000 times over, its government fell again and again, and Germany grew to more than 400
+divisions and never surrendered. This version gives every country the tools real governments
+used, and the costs they paid.
+
+- **A war of attrition.** A division next to the enemy that is not in a battle loses a little
+  strength every day (sickness, shelling, patrols), twice as much for an invader in a Russian
+  or Scandinavian winter. Over a long war this wear, not the big battles, is most of the cost.
+- **The wounded come back.** 40% of the strength a division loses returns to the manpower
+  pool over the following months.
+- **A gradual call-up.** Widening the conscription law brings 40% of the new men at once (the
+  reservists); the rest report over the next months, a sixth a month. The Production panel
+  shows how many are still to come. Each year young men come of age (6% of the law's total).
+- **Divisions take 25,000 men**: the division and its share of the supply troops, staffs and
+  depots behind it, as in the real armies. An air wing takes 20,000 (crews, mechanics,
+  airfields, flak). People in annexed land count at half for manpower.
+- **Soldiers cost what a worker earns.** Army upkeep is scaled by output per head, so a
+  Soviet or Italian division costs less to keep than a British one (Soviet 65%, British 109%).
+- **Forced saving.** At war with rationing on, people cannot spend their wages, so about 12%
+  of output goes into savings and war bonds, on top of what lenders buy. It fades once
+  inflation passes 30%. New codex term.
+- **Financial repression.** At war with rationing on, the interest rate on new bonds is capped
+  at 4%, so when prices rise faster the real rate r = i - pi is negative and inflation shrinks
+  the debt, as Britain did. New codex term.
+- **Compulsory loans.** A communist government at war orders its people to buy state loans out
+  of their wages, so lenders' confidence never falls below 60%.
+- **A more careful AI finance minister.** It stops forming new divisions as inflation climbs
+  from 15% to 50%, fights a total war only after losing real ground, rations in any war against
+  a great power, fills all its builders with construction, widens conscription ahead of need in
+  a serious war, and calls up its reserves at peace once the great powers are at war with each
+  other (armed neutrality, as Belgium, the Netherlands, Switzerland, Sweden and Norway did).
+- **History runs closer to the real war.** See docs/balance-stage-j.md: in six AI-only runs
+  (three from 1936, three from September 1939), Soviet prices end the war at 1.5 to 1.8 times
+  their 1936 level and its government never falls, Germany peaks at 350 to 365 divisions,
+  France falls in the summer of 1940, Norway holds out for two months, Italy changes sides in
+  the autumn of 1943, and Germany is defeated in 1944 (in one run it holds out to May 1945). Still to do: Barbarossa stops close to
+  the border, because the army AI cannot yet push deep; that is army work, not economy.
+- **Tests.** 226 tests (8 new): pay levels, the call-up, forced saving, the wartime rate cap,
+  compulsory loans, wear and tear at the front, and a 1936 story run in which the Soviet
+  economy holds and the German army stays near its real size. The lockstep test still passes.
+- **Saves.** 1.0 saves still load. Version 1.1.0.
+
 ## 1.0.0: The finished Mac app (2026-11-18)
 
 The first full version of Black Swan: lead Britain, France, Germany, Italy, the Soviet Union or

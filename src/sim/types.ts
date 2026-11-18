@@ -210,6 +210,11 @@ export interface Economy {
   plan: PlanState;
   /** Men available to recruit, in thousands. */
   manpower: number;
+  /**
+   * Men still to be called up under the current conscription law, in thousands: a wider law
+   * brings them in over the following months (see CALL_UP_RATE). Saves from before 1.1 have none.
+   */
+  callUp?: number;
   /** Finished equipment waiting to be used, by kind: division-sets, wings of aircraft, or ships. */
   stock: Record<LineKind, number>;
   lines: Record<LineKind, Line>;

@@ -58,8 +58,12 @@ export const WING_REPAIR = 1;
 export const WING_REST_REPAIR = 2.5;
 /** Days a wing cannot fly after moving to a new base. */
 export const REBASE_DAYS = 3;
-/** Thousands of men a new wing needs. */
-export const MEN_PER_WING = 2;
+/**
+ * Thousands of men a new wing needs: not only its hundred crews, but the mechanics, the airfield
+ * staff, the radar and signals men and the anti-aircraft guns that guard its bases. In 1941 the
+ * German air force had about 1.7 million men in uniform for some 4,500 front-line aircraft.
+ */
+export const MEN_PER_WING = 20;
 
 export const MISSIONS: Record<PlaneKind, WingMission[]> = { fighter: ['superiority', 'rest'], bomber: ['ground', 'strategic', 'naval', 'rest'] };
 export const WING_MISSION_NAME: Record<WingMission, string> = { superiority: 'Air superiority', ground: 'Ground support', strategic: 'Strategic bombing', naval: 'Naval strike', rest: 'Rest and repair' };

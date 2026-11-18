@@ -3,6 +3,47 @@
 Versions from 1.0.0 on are numbered. Each one starts with a heading like `## 1.0.1: What it brings`;
 that section becomes the notes on the GitHub release and on the update card in the app.
 
+## 1.3.0: Armies that hold and push (2026-11-18)
+
+Until now every division was moved by hand. Now you can group divisions into armies and give
+each army one order; it moves its own divisions from then on.
+
+- **Forming an army.** Hold Shift and drag a box around divisions on the map, then press A (or
+  click Form a new army). The army gets a name ("1st Army"), a flag on the map in its own colour
+  and a number key from 1 to 9. Press the key to select it, and again to look at it.
+- **Orders.** Drag the army's flag onto the map, or use the buttons in its sidebar:
+  - **Hold** a border: the army spreads along the whole border with that country, more
+    divisions where more enemies stand, and keeps the line filled.
+  - **Push** toward a target, at a pace: careful, steady or all-out (the odds it waits for
+    before each attack: 1.6, 1.3 or 1 to 1). It attacks on its own, with the same front code
+    as the computer's generals, goes round a target that is too strong, and holds the ground
+    around the target once it is taken. The map shows each push as a thick arrow.
+  - **Fall back** to a province: no more attacks, and the divisions dig in twice as fast.
+  - **Reserve** at a province: it waits behind the front and goes to help when the enemy breaks
+    in within two provinces, or counter-attacks a province just lost.
+- **Moving troops between fronts.** Drag a flag to another front, add selected divisions to an
+  army or take them out, and let one army take every new division you raise.
+- **Pincers.** Two armies pushing at the same place from different sides are labelled on the
+  map with the number of enemy divisions they would cut off; the sidebar and the news warn when
+  the jaws are closing.
+- **Commanders.** 24 real generals, four or five for each playable country, each with one
+  trait: bold (attack +10%), careful (defence +10%) or good at supply (organisation back 25%
+  faster). Every one has a codex entry, which says plainly where a general took part in or was
+  convicted of crimes.
+- **Keys.** 1 to 9 now select armies, so the game speed moved to Shift + 1 to 5. A forms an
+  army (or lists your armies).
+- **Barbarossa and the early landings** (from 1.2's known gaps). A province now feeds
+  5 + 4 x infrastructure divisions instead of 4 + 3 x, so a big army fits on its front; an army
+  caught by surprise or in shock gives way much faster (the front moves up to 15 points a day);
+  the AI attacks such an enemy at 0.75 of its usual margin and stops shuffling divisions
+  sideways along the front. Britain no longer lands in northern France on its own years before
+  the planned landing.
+- **Lesson and codex.** A new lesson, Armies (now 10 lessons), and 33 new codex terms: army,
+  army order, hold, push, pace, fall back, reserve, pincer, commander, and the 24 commanders.
+- **Balance.** See docs/balance-stage-k2.md.
+- **Tests.** 257 tests (18 new) for forming armies, every order, pushes, pincers, commanders,
+  1.2 saves and armies in lockstep. Saves are version 12; saves from 1.1 and 1.2 still load.
+
 ## 1.2.0: A front line that moves (2026-11-18)
 
 Until now a battle was all or nothing: the province stayed the same colour until it suddenly

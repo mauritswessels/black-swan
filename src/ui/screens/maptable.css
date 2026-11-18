@@ -63,6 +63,27 @@
 .mt-battle.picked circle { stroke: var(--gold); stroke-width: 3; }
 @keyframes mt-pulse { 50% { fill: #ffb08f; } }
 
+/* the front line: a band in the attackers' colour growing into the province under attack */
+.mt-fronts { pointer-events: none; }
+.mt-map .mt-band path { vector-effect: none; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.mt-band .fill { opacity: 0.78; }
+.mt-band .edge { stroke: #fff4d6; opacity: 0.9; }
+.mt-band.battle .edge { stroke: #ffd38a; animation: mt-band 1.6s ease-in-out infinite; }
+@keyframes mt-band { 50% { opacity: 0.45; } }
+
+/* the great rivers */
+.mt-river { fill: none; stroke: #4fa8ff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; opacity: 0.9; pointer-events: none; }
+
+/* pockets: divisions cut off from supply */
+.mt-pockets { pointer-events: none; }
+.mt-pocket .ring { fill: none; stroke: var(--gold); stroke-width: 2.5; stroke-dasharray: 7 4; animation: mt-ring 1.6s linear infinite; }
+.mt-pocket.own .ring { stroke: #ff6a3d; stroke-width: 3; }
+.mt-pocket .tag-back { fill: rgba(10, 15, 26, 0.92); stroke: var(--gold); stroke-width: 1; }
+.mt-pocket.own .tag-back { stroke: #ff6a3d; }
+.mt-pocket text { font: 600 11px var(--f-cond); letter-spacing: 0.05em; fill: #ffe1ad; text-anchor: middle; }
+.mt-pocket.own text { fill: #ffb08f; }
+@keyframes mt-ring { to { stroke-dashoffset: -22; } }
+
 /* ---------- top bar ---------- */
 .mt-top { position: absolute; left: 0; right: 0; top: 0; height: 56px; padding: 0 14px 0 78px; display: flex; align-items: center; gap: 24px; background: rgba(10, 15, 26, 0.92); border-bottom: 1px solid rgba(156, 200, 255, 0.28); z-index: 3; }
 .mt-country-btn { display: flex; flex-direction: column; gap: 1px; min-width: 210px; max-width: 330px; text-align: left; background: none; border: 0; padding: 4px 6px; margin-left: -6px; cursor: pointer; border-radius: 3px; }
@@ -169,6 +190,12 @@
 .sb-units button span:first-child { text-transform: capitalize; color: #fff; }
 .sb-units button:hover:not(:disabled) { background: rgba(156, 200, 255, 0.16); }
 .sb-units button:disabled { cursor: default; }
+.sb-front { display: flex; flex-direction: column; gap: 5px; }
+.sb-front h3 { margin: 0; }
+.sb-front-bar { position: relative; height: 14px; border-radius: 2px; background: rgba(156, 200, 255, 0.12); border: 1px solid rgba(156, 200, 255, 0.35); overflow: hidden; }
+.sb-front-bar i { position: absolute; left: 0; top: 0; bottom: 0; opacity: 0.85; transition: width 0.4s ease; }
+.sb-front-bar em { position: absolute; top: 0; bottom: 0; width: 2px; background: #4fa8ff; }
+.sb-front-scale { display: flex; justify-content: space-between; font-size: 11px; color: #8592a9; }
 .sb-outlook { padding: 10px 12px; border: 1px solid rgba(156, 200, 255, 0.28); border-radius: 3px; background: rgba(156, 200, 255, 0.05); display: flex; flex-direction: column; gap: 4px; }
 .sb-outlook h3 { margin: 0 0 2px; }
 .sb-outlook p { margin: 0; }

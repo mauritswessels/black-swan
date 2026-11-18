@@ -126,6 +126,7 @@ export function Help() {
     ['B', 'Selected divisions: go by sea (then click a coast)'],
     ['C', 'Chronicle: chapters, objectives and history cards (Standings in Free-for-all)'],
     ['O', 'Report: your game beside the real history'],
+    ['V', 'War replay: the front week by week, in about a minute'],
     ['X', 'Codex'],
     ['S', 'Save and load'],
     ['M', 'Sound on or off'],

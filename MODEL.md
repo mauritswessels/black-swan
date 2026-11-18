@@ -96,9 +96,12 @@ A division may only enter its own country's land or the land of a country it is 
 A battle starts when a division is ordered into a province where enemy divisions stand. Each
 day, each side's damage is:
 
-    damage = sum of [ attack or defence x strength/100 x terrain x dig-in x supply ] x luck
+    damage = sum of [ attack or defence x strength/100 x terrain x river x dig-in x supply ] x luck
 
 - **attack or defence**: attackers use attack, defenders use defence.
+- **river** (attackers only, Stage K1): 0.85 for a division attacking across one of the great
+  rivers (`src/sim/rivers.ts`), 1 otherwise. Mud also takes 20% off every attack into it (see
+  the seasons below).
 - **terrain** (attackers only, for the province being attacked): plains 1.0, desert 0.9,
   forest 0.8, hills 0.7, marsh 0.7, mountains 0.5. Armour loses a further x 0.7 in forest,
   marsh and mountains.
@@ -120,9 +123,44 @@ Each point costs a division 0.5 organisation and 0.06 strength.
   when it is chased across plains or desert by attackers of whom at least a fifth are armour.
   If there is nowhere to go, it surrenders and is removed.
 - An attacker below 10 organisation stops attacking and stays where it was.
-- When no defenders are left, the attackers win and walk in. They press forward during the
-  battle, so they usually arrive the same day. Arriving captures the province.
+- When no defenders are left, the attackers win. The front line (below) jumps forward and they
+  march the rest of the way in. Arriving captures the province.
 - When no attackers are left, the defenders win.
+
+**The front line** (Stage K1). Every battle has a line from 0 (the attackers are still at the
+border) to 100 (they have reached the far side). Each day it moves by
+
+    push = 10 x (attackers' damage - defenders' damage) / (attackers' damage + defenders' damage)
+           x ground   (dry 1, snow 0.75, mud 0.5)
+           x river    (only while the line is under 20 and moving forward:
+                       1 - 0.5 x the share of the attack coming across a river)
+
+and it stays between 0 and 100. A day where you deal twice the damage you take moves it
+10 x (2 - 1) / (2 + 1) = 3.3 points; a day where you take twice what you deal moves it 3.3
+points back. Attackers stand as far into the province as the line, and that is what the map
+draws: a band in their colour, growing from each border they attack across.
+
+- A new battle starts its line from how far the attackers had already walked in (so a
+  division that was 60% of the way into an empty province when defenders arrived starts at 60).
+- If the line reaches 100 while defenders still stand, they are all pushed out: each falls
+  back with the usual 10% loss, or surrenders if it has nowhere to go.
+- When the defenders break (0 organisation) and none are left, the line jumps 60% of the way
+  that is left, or 85% when the attackers' tanks can chase them (open ground, at least a fifth
+  of the attackers armour). The attackers then march the rest at their usual pace, and the
+  province changes hands when they arrive. So a battle won at line 30 by infantry has the
+  attackers at 30 + 0.6 x 70 = 72, with 28% of the walk still to go.
+- Walking into an empty enemy province is drawn the same way, from how far the division has
+  walked.
+- Who holds a province, for supply, factories and victory points, changes only at 100.
+
+**Rivers** (`src/sim/rivers.ts`). Sixteen great rivers and the Suez Canal lie on the province
+borders they follow most closely: the Rhine, Meuse, Elbe, Vistula, Narew, Bug, Dniester, Prut,
+Danube, Dnieper, Don, Svir, Po, Loire and Ebro. Attacking across one costs 25% of the attack and
+halves the line's pace until a bridgehead of 20 points is won.
+
+**The army AI and the front line.** An AI country keeps feeding a battle whose line moved
+forward yesterday or is at least 50 points in, at 60% of its usual margin, and never calls such
+a battle off.
 
 Worked example: 8 infantry attack 8 infantry on plains, nobody dug in. Attackers deal
 8 x 10 = 80, so each defender loses 80 / 8 x 0.5 = 5 organisation a day. Defenders deal
@@ -149,7 +187,34 @@ infantry defence), and for a defender on its own country's home soil, 1 plus its
 fortifications. The outlook shows the edge, and a battle report names it when it mattered.
 Each battle that ends moves the mood at home (see the home front below).
 
-Not in yet: air power (Stage G) and river crossings (the map has no rivers yet).
+Air power is in the formula through control of the sky (see "The air" below).
+
+## Seasons (`src/sim/seasons.ts`)
+
+Worked out from the date, so they are the same on every computer. Which country a province
+belonged to in 1936 decides its climate.
+
+| Season | Dates | Where | Effect |
+| --- | --- | --- | --- |
+| Snow | 1 December to the end of February | the Soviet Union, the Nordic countries, Poland, the Baltic states, Romania | marching at 75% speed, the line at 75% pace |
+| Winter cold | the same months | the Soviet Union, Finland, Norway, Sweden | an invader attacks at 75% and wears out twice as fast |
+| Mud | 15 March to 30 April, 10 October to 20 November | the Soviet Union, Poland, the Baltic states, Romania | marching takes twice as long, attacks hit 20% less hard, the line at half pace |
+| Desert heat | June to August | desert provinces | organisation comes back at half speed, twice the wear at the front |
+
+Marching slows only the walk, not route finding: divisions take the same roads, just more slowly.
+
+## Pockets (`src/sim/pockets.ts`)
+
+A pocket is a group of neighbouring provinces holding divisions of one country that get no
+supply at all. The map rings each one with its count ("12 divisions trapped"), red for your
+own and gold for the enemy's, and the news line warns when a new one forms.
+
+## The war replay (`src/sim/replay.ts`)
+
+On the first day of a game the engine writes down who holds every province, and every seventh
+day after that it adds whatever changed hands. The replay screen (key V, or from the report)
+plays the weeks back in about a minute, one picture a week. A whole war is a few dozen
+kilobytes in the save. Saves from 1.1 start recording on the day they are loaded.
 
 ## Supply (`src/sim/supply.ts`)
 

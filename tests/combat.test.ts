@@ -81,6 +81,8 @@ describe('battles', () => {
     const tank = div('France', 'Lorraine', 'armour');
     const foot = div('France', 'Lorraine');
     expect(attackPower(tank, id('Palatinate'))).toBe(STATS.armour.attack);
+    // Across the Rhine it hits at 85%.
+    expect(attackPower(tank, id('Württemberg'))).toBeCloseTo(STATS.armour.attack * 0.85);
     const mountain = PROVINCES.find((p) => p.terrain === 'mountains')!.id;
     expect(attackPower(tank, mountain) / attackPower(foot, mountain)).toBeCloseTo((22 * 0.7) / 10);
     const dug = div('Germany', 'Palatinate', 'infantry', { dugIn: 10 });

@@ -18,6 +18,8 @@ import { DAYS_PER_ZONE, zoneById, ZONE_INDEX, zonePath } from '../sim/sea';
 import { picturesOf } from './forces';
 import { applyOrders, dateLabel } from '../sim/world';
 import { readSave, writeSave, type Slot } from '../save/storage';
+import { upgradeWorld } from '../sim/upgrade';
+import { pocketsOf, pocketWords } from '../sim/pockets';
 import { sound } from './audio/sound';
 import { lessonById, type LessonView } from '../tutorial/lessons';
 import { markLessonDone } from './lessonProgress';
@@ -70,7 +72,7 @@ export const SPEED_MS = [1400, 700, 350, 160, 60];
 interface Store {
   screen: Screen;
   setupMode: Mode;
-  overlay: null | 'codex' | 'saves' | 'help' | 'report' | 'settings';
+  overlay: null | 'codex' | 'saves' | 'help' | 'report' | 'settings' | 'replay';
   /** The codex entry to show first when the codex opens. */
   codexTerm: string | null;
   /** Open the codex, at one term if given. */
@@ -202,6 +204,18 @@ function headlines(before: World, after: World): News[] {
   for (const c of after.story.chapters.slice(before.story.chapters.length)) {
     const met = c.met.filter(Boolean).length;
     add(`A chapter ends: you met ${met} of ${c.met.length} objectives`, met * 2 >= c.met.length ? 'good' : 'bad', undefined, { kind: 'chronicle' });
+  }
+  // Pockets: your divisions cut off, or enemy divisions you have cut off.
+  if (me) {
+    const old = pocketsOf(before);
+    for (const x of pocketsOf(after)) {
+      const mine = x.owner === me;
+      if (!mine && !atWar(after, me, x.owner)) continue;
+      if (old.some((y) => y.owner === x.owner && y.provinces.some((p) => x.provinces.includes(p)))) continue;
+      const place = PROVINCES[x.centre].city ?? PROVINCES[x.centre].name;
+      if (mine) add(`${pocketWords(x.divisions)} near ${place}: they are cut off from supply. Break out or open a way to them`, 'bad', x.centre, { kind: 'province', id: x.centre });
+      else add(`${x.owner}: ${pocketWords(x.divisions)} near ${place}. Close the ring before they break out`, 'good', x.centre, { kind: 'province', id: x.centre });
+    }
   }
   // Capitals changing hands.
   for (const p of PROVINCES) {
@@ -384,7 +398,7 @@ export const useGame = create<Store>((set, get) => {
     load: (slot) => {
       const file = readSave<World>(slot);
       if (!file) return false;
-      const world = file.state;
+      const world = upgradeWorld(file.state);
       const capital = PROVINCES.find((p) => p.owner === world.player && p.capital);
       set({ ...fresh, world, screen: 'game', overlay: null, defeated: !!world.player && world.capitulated.includes(world.player), focus: capital ? { province: capital.id, n: ++focusN } : null });
       if (!get().muted) sound.startAmbient();

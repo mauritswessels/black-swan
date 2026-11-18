@@ -17,8 +17,12 @@ import { inApp, invoke } from '../native';
 export const SLOTS = ['auto', '1', '2', '3'] as const;
 export type Slot = (typeof SLOTS)[number];
 
+/** The save format. Version 11 (game 1.2) added the front line in battles and the war replay; version 10 saves still load (see upgrade.ts). */
+export const SAVE_VERSION = 11;
+const READABLE = [10, 11];
+
 export interface SaveFile<State = unknown> {
-  version: 10;
+  version: number;
   /** Shown on the save screen, e.g. "France · 7 March 1936". */
   summary: string;
   state: State;
@@ -133,7 +137,7 @@ export const savesAreFiles = (): boolean => files !== null;
 export function writeSave<State>(slot: Slot, summary: string, state: State): boolean {
   let text: string;
   try {
-    const file: SaveFile<State> = { version: 10, summary, state, savedAt: new Date().toISOString() };
+    const file: SaveFile<State> = { version: SAVE_VERSION, summary, state, savedAt: new Date().toISOString() };
     text = JSON.stringify(file);
   } catch {
     return false;
@@ -154,7 +158,7 @@ export function readSave<State = unknown>(slot: Slot): SaveFile<State> | null {
   let file: SaveFile<State> | null = null;
   try {
     const f = JSON.parse(text) as SaveFile<State>;
-    file = f.version === 10 ? f : null;
+    file = READABLE.includes(f.version) ? f : null;
   } catch {
     file = null;
   }

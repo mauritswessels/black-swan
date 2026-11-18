@@ -15,6 +15,8 @@ export interface Settings {
   reduceMotion: boolean;
   /** Look for a new version each time the app starts. */
   checkUpdates: boolean;
+  /** A low rumble of guns that grows with the battles in view. */
+  battleSounds: boolean;
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -24,6 +26,7 @@ export const DEFAULT_SETTINGS: Settings = {
   textSize: 1,
   reduceMotion: false,
   checkUpdates: true,
+  battleSounds: true,
 };
 
 /** The sizes offered in Settings. */
@@ -39,7 +42,7 @@ const KEY = 'black-swan:settings';
 /** Settings from storage, with anything missing or broken replaced by its default. */
 export function cleanSettings(raw: unknown): Settings {
   const r = (raw && typeof raw === 'object' ? raw : {}) as Partial<Record<keyof Settings, unknown>>;
-  const bool = (k: 'pauseOnAttack' | 'pauseOnCard' | 'reduceMotion' | 'checkUpdates') => (typeof r[k] === 'boolean' ? (r[k] as boolean) : DEFAULT_SETTINGS[k]);
+  const bool = (k: 'pauseOnAttack' | 'pauseOnCard' | 'reduceMotion' | 'checkUpdates' | 'battleSounds') => (typeof r[k] === 'boolean' ? (r[k] as boolean) : DEFAULT_SETTINGS[k]);
   const volume = typeof r.volume === 'number' && Number.isFinite(r.volume) ? Math.min(1, Math.max(0, r.volume)) : DEFAULT_SETTINGS.volume;
   const textSize = TEXT_SIZES.some((t) => t.value === r.textSize) ? (r.textSize as number) : DEFAULT_SETTINGS.textSize;
   return {
@@ -49,6 +52,7 @@ export function cleanSettings(raw: unknown): Settings {
     textSize,
     reduceMotion: bool('reduceMotion'),
     checkUpdates: bool('checkUpdates'),
+    battleSounds: bool('battleSounds'),
   };
 }
 

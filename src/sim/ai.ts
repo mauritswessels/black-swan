@@ -25,6 +25,8 @@
  *          enemy cannot move his reserves to the one point under attack;
  *        - it puts first the provinces whose capture would cut enemy divisions off from their
  *          supply (an encirclement), and accepts a smaller margin for them;
+ *        - it keeps pushing a battle whose front line is moving forward, feeding it at a smaller
+ *          margin, and never calls it off while the line advances;
  *        - it calls off attacks by worn-out divisions, keeps a guard in each front province in
  *          proportion to the enemy next to it, and sends the rest to where the next attacks
  *          will start.
@@ -77,6 +79,9 @@ export const ENCIRCLE_DIVISIONS = 2;
 export const ENCIRCLE_MARGIN = 0.85;
 /** A city of its own with this many victory points, on the front line, is held in full strength. */
 export const KEY_CITY_VP = 10;
+/** A battle whose line moved forward yesterday, or that is this far in, is being won: the AI keeps at it and feeds it at this share of the usual margin. */
+export const WINNING_LINE = 50;
+export const WINNING_MARGIN = 0.6;
 /** An attack takes divisions until its odds are this many times what it needs. */
 const ENOUGH = 1.6;
 /** A province this many times over what its roads can carry sends divisions away. */
@@ -453,10 +458,13 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
       .map((t) => {
         const defence = defenceOf(t);
         const cut = defence > 0 ? cutOff(t) : 0;
-        return { t, defence, cut, ongoing: w.battles.some((b) => b.province === t), priority: (value(t) + 2 * cut + 1) / (defence + 1) };
+        const battle = w.battles.find((b) => b.province === t && b.attackers.includes(country));
+        // A battle whose front line is moving our way is one to keep pushing.
+        const winning = !!battle && (battle.push > 0 || battle.line >= WINNING_LINE);
+        return { t, defence, cut, ongoing: w.battles.some((b) => b.province === t), winning, priority: (value(t) + 2 * cut + 1) / (defence + 1) + (winning ? 1 : 0) };
       })
       .sort((a, b) => b.priority - a.priority || a.t - b.t);
-    for (const { t, defence, cut, ongoing } of scored) {
+    for (const { t, defence, cut, ongoing, winning } of scored) {
       const around = PROVINCES[t].neighbours.filter(friendly);
       if (defence === 0) {
         // Undefended: one fast division is enough, unless someone is already on the way.
@@ -497,10 +505,11 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
       };
       const odds = oddsOf([...force, ...already, ...beside]);
       // Joining a battle already under way needs less of an edge than starting one; so does an offensive or an encirclement.
-      const need = boldness * margin * (ongoing ? 0.8 : 1) * (cut >= ENCIRCLE_DIVISIONS ? ENCIRCLE_MARGIN : 1);
+      const need = boldness * margin * (ongoing ? 0.8 : 1) * (winning ? WINNING_MARGIN : 1) * (cut >= ENCIRCLE_DIVISIONS ? ENCIRCLE_MARGIN : 1);
       if (odds < need) {
-        // Not enough to win. If even the divisions already attacking plus these have little hope, call it off.
-        if (odds < boldness * 0.5) for (const u of already) orders.push({ type: 'halt', unit: u.id });
+        // Not enough to win. If even the divisions already attacking plus these have little hope, call it off,
+        // unless the front line is still moving forward.
+        if (odds < boldness * 0.5 && !winning) for (const u of already) orders.push({ type: 'halt', unit: u.id });
         continue;
       }
       // Send no more than it takes to win comfortably, taking turns from each direction, so that the

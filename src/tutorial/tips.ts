@@ -14,7 +14,7 @@ export const TIPS: Record<string, Tip> = {
   province: { text: 'A province’s victory points are what it is worth in a war. Take enough of an enemy’s and it surrenders, so capitals and big cities matter most.', lesson: 'map' },
   stack: { text: 'You only see foreign divisions on your own land, next to your divisions, or where your divisions stand. A province that looks empty may not be.', lesson: 'battle' },
   country: { text: 'Everything you can do with a country is here. A grey button always says why it is blocked, and the relations list says why they feel as they do.', lesson: 'diplomacy' },
-  battle: { text: 'The outlook says how many days each side can keep going. If the defenders can outlast your attackers, bring more divisions, attack from another side, or add artillery.', lesson: 'battle' },
+  battle: { text: 'The bar is the front line: the province is yours when it reaches the far side. The outlook says how many days each side can keep going. If the defenders can outlast your attackers, bring more divisions, attack from another side, or add artillery.', lesson: 'battle' },
   report: { text: 'The causes are listed biggest first. When an attack fails, the top cause tells you what to bring next time.', lesson: 'battle' },
   reports: { text: 'Every battle your divisions fought, won or lost. Open one to see why it went that way.', lesson: 'battle' },
   production: { text: 'Military factories make equipment on lines; civilian factories make goods for the shops and do the building. Moving a factory between lines costs speed for a while.', lesson: 'production' },

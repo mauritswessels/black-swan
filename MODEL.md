@@ -116,7 +116,9 @@ Each point costs a division 0.5 organisation and 0.06 strength.
 **How a battle ends.**
 
 - A defender at 0 organisation retreats to a neighbouring province its country controls (the
-  one nearest its capital). If there is none, it surrenders and is removed.
+  one nearest its capital), leaving 10% of its strength behind (guns and stragglers), or 20%
+  when it is chased across plains or desert by attackers of whom at least a fifth are armour.
+  If there is nowhere to go, it surrenders and is removed.
 - An attacker below 10 organisation stops attacking and stays where it was.
 - When no defenders are left, the attackers win and walk in. They press forward during the
   battle, so they usually arrive the same day. Arriving captures the province.
@@ -539,6 +541,46 @@ with Germany and Italy. If Paris is ever French again, the old government return
 | The shock of 1940 (France, Belgium) | x 0.65 | x 0.65 | 120 days from the day Germany, at war with France, attacks Belgium or the Netherlands |
 | Surprise landing (Oslo) | x 0.60 | x 0.60 | 30 days, for the defender |
 | Winter | x 0.75 | | December to February, for an outsider attacking into the Soviet Union, Finland, Norway or Sweden |
+| The Balkans, April 1941 (Greece, Yugoslavia) | x 0.60 | x 0.60 | 60 days from the day Germany attacks Greece while Italy is already at war with it |
+| Mussolini has fallen (Italy) | x 0.80 | x 0.80 | the 45 days between the fall and the armistice |
+
+**The Far East.** From 29 July 1938 (the border war with Japan) an AI Soviet Union keeps a
+quarter of its infantry in the Far East, off the map: each month the newest infantry from the
+interior goes there until it holds 25%. Those divisions still cost upkeep. From 15 October 1941,
+if the Soviet Union is fighting a great power, two fifths of them come back to Moscow at full
+strength in two waves, on the first of November and of December (the Siberian divisions).
+
+**Allies in time of need.** When Germany attacks Norway, or the Axis attacks Greece, while an AI
+Britain is already at war with the invader, the victim joins Britain (and France, if it is
+fighting) in an alliance.
+
+**Italy changes sides.** From 25 July 1943 an AI Italy whose fascist government is at war with
+Britain loses Mussolini once an enemy stands on Italian soil in Europe, or once Libya is lost
+and war support is under 35. The new government is authoritarian, war support drops to 20, and
+for 45 days the army fights at x 0.8 and the country does not surrender. Then it signs an
+armistice: peace with every enemy, an alliance with Britain, and the end of its alliance with
+Germany. An AI Germany then takes every Italian province its divisions stand in, disarms the
+Italian divisions in its own or its allies' land, and declares war. After the armistice Italy
+fights on like a small country (see Surrender).
+
+**Fuel.** From 1 November 1942 an AI Italy keeps its fleets in port: it had no oil for them.
+
+**Operations overseas** (`src/sim/operations.ts`) are the timetable of the real expeditions and
+landings, carried out by an AI Britain:
+
+| Operation | From | Kind | Where | First wave | Up to |
+| --- | --- | --- | --- | --- | --- |
+| Norway | 12 April 1940 | help | Narvik and central Norway | | 4 divisions, called home 25 days after the attack in the west begins or when France falls |
+| Greece | 7 March 1941 | help | Attica, Salonika | | 5 |
+| Sicily | 10 July 1943 | landing | Sicily, then Calabria, then Sardinia | 8 | 20 |
+| Salerno | 3 September 1943 | landing | Calabria, Campania, Apulia (once Sicily is taken) | 8 | 24 |
+| Normandy | 6 June 1944 | landing | Normandy, then Brittany, then Holland | 10 | 50 |
+| Provence | 15 August 1944 | landing | Provence, Languedoc | 6 | 12 |
+
+An operation waits while its conditions are not met (for Sicily: Britain must be at war with
+Italy), and is given up after its last day. A landing needs the sea off the beach (see The
+sea), so the British fleets away from home waters gather off the beach while a landing is due,
+if together they are stronger than the enemy there by a fifth.
 
 **Lend-Lease** adds equipment to the stock each month, free: to Britain from 11 March 1941
 (0.6 infantry sets, 0.2 artillery, 0.2 armour, 0.3 fighter wings, 0.15 bomber wings, 0.3 escort
@@ -573,7 +615,17 @@ or a bank failure costing 15% of a month's output. The game ends after 3,653 day
 ## Surrender and occupation
 
 A country surrenders when its enemies control 60% of the victory points of its own land, or
-40% once they hold its capital (France asked for an armistice eight days after Paris fell). Its
+40% once they hold its capital (France asked for an armistice eight days after Paris fell).
+Land it has annexed since 1936 counts for a quarter of its victory points. Three exceptions:
+a small country fights on while it holds some of its homeland and a great power fighting the
+same enemy has divisions on its soil (Norway in 1940); in Story mode, a government negotiating
+an armistice does not surrender (Italy, 1943); and in Story mode the Soviet Union, fighting a
+fascist Germany, gives up only when the enemy holds 75% of its victory points, capital or not
+(the government was ready to fight on from Kuibyshev).
+
+In Story mode no AI country makes a negotiated peace with a fascist Germany or Italy (or their
+allies beside them): the real war in Europe ended only in surrender, an armistice or a change
+of sides. Border wars for a few provinces are not affected. Its
 army leaves the map and the enemy holding most of it occupies the rest of its homeland;
 occupied factories work at 30%. Countries it had conquered itself are restored, and land it
 took from others goes back. An attacker with a limited aim (eastern Poland, Bessarabia, the
@@ -672,10 +724,48 @@ Divisions start in the homeland (the land connected to the capital), on the capi
 foreign borders first, at most half of what each province can supply. About 15% of the army
 garrisons overseas territories, one division each, the richest first.
 
-## The test AI (`src/sim/ai.ts`)
+## The army AI (`src/sim/ai.ts`)
 
-Leads the armies of every AI country at war. Each day it walks into
-undefended enemy provinces, attacks a defended one only if it expects to outlast the defenders
-by a margin of 1.3, pulls out divisions below 25 organisation, moves divisions out of
-overcrowded provinces and sends spare divisions towards the weakest valuable point in the
-enemy line.
+Leads the armies of every AI country at war, and of every country with a war planned in the
+next 45 days (100 days for a war on a great power), so that the army is in place on the day.
+
+**Fronts.** Each enemy is one front: the friendly provinces next to it (the line), the
+provinces one step behind (the depth), and the enemy provinces it can attack. A front's room is
+what its line and depth can feed (Supply). A front whose war is only planned gets a guard of one
+division per line province. A front against a small country wants enough to beat it: twice the
+enemy divisions near it, plus two, at most its room. A front against a great power wants 1.5
+times its room (the extra waits behind). The army is shared out in that order: every guard
+first, then the small fronts, then the great ones in proportion to the enemy divisions facing
+them. A big army (30 divisions or more) keeps a tenth at home. A front overseas gets what its
+operation calls for (see Story mode), or at most an eighth of the army, and nothing once its
+expedition has been called home.
+
+**Offensives.** When the divisions on a front outnumber the enemy's by 1.2 to 1 or more, the
+whole front attacks: it needs only 0.7 of the usual edge and keeps a smaller guard. Below 0.6
+to 1 it only defends and finishes battles already started.
+
+**Choosing targets.** Each enemy province the front can reach scores (victory points + 2 x the
+number of enemy divisions that would be cut off + 1) / (its defence + 1). An attack that would
+cut off two or more enemy divisions needs 15% less of an edge. Undefended provinces get one
+fast division. A defended one is attacked only if the divisions that can join, from every
+direction, are expected to outlast the defenders (the odds formula above) by the AI's margin
+of 1.3, or 1.04 if a battle there is already under way. Each province next to the target keeps
+a guard back: one division plus a third of the other enemy divisions next to it, never more
+than a quarter (offensive) or half of what the province can feed.
+
+**Moving up.** Divisions go first to their country's great cities in the line (the capital and
+any city of 10 victory points or more, kept at full strength), then to the provinces next to
+the three best targets, then anywhere in the line with room, then the depth. A division in a
+province more than a quarter overcrowded steps back to the nearest province with room. Those
+below 25 organisation pull out of the line to rest.
+
+**By sea.** Divisions that cannot reach a front on foot go to a front overseas through the
+nearest friendly port, sail on the expeditions and landings of the timetable, and otherwise
+make a landing of their own only when most of the army has no front on land: on a coast whose
+sea the country controls, with at least 4 rested divisions, where the enemy cannot answer with
+twice as many. A communist country and the others fight the same enemy on separate fronts:
+neither ships divisions to a front in the other's land.
+
+**Total war** (`src/sim/aiEconomy.ts`). An AI country with a communist government fighting
+on its own soil (the Soviet Union from 1941) forms every division it has equipment and men
+for, whatever the budget, until its army reaches 90% of what the land it holds can feed.

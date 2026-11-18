@@ -259,7 +259,7 @@ export interface Tally {
   bombed: number;
 }
 
-type Holdings = Pick<World, 'controller' | 'factories' | 'units' | 'wars'> & { declaredBy?: World['declaredBy']; owner?: string[]; diplomacy?: { tension: number }; fleets?: World['fleets']; wings?: World['wings']; bombed?: World['bombed'] };
+type Holdings = Pick<World, 'controller' | 'factories' | 'units' | 'wars'> & { declaredBy?: World['declaredBy']; owner?: string[]; diplomacy?: { tension: number }; fleets?: World['fleets']; wings?: World['wings']; bombed?: World['bombed']; story?: { farEast?: number } };
 
 export function tallies(w: Holdings): Map<string, Tally> {
   const out = new Map<string, Tally>();
@@ -291,6 +291,8 @@ export function tallies(w: Holdings): Map<string, Tally> {
   }
   for (const [name, total] of vpHome) get(name).homeLost = total ? (vpLost.get(name) ?? 0) / total : 0;
   for (const u of w.units) get(u.owner).divisions[u.type]++;
+  // The Soviet army in the Far East is off the map, but it is still paid for (story.ts).
+  if (w.story?.farEast) get('Soviet Union').divisions.infantry += w.story.farEast;
   for (const x of w.wings ?? []) get(x.owner).wings[x.type]++;
   for (const f of w.fleets ?? []) for (const k of SHIP_KINDS) get(f.owner).ships[k] += f.ships[k];
   for (const [name, t] of out) t.bombed = t.bombed > 0 ? t.bombed / Math.max(1, standing.get(name) ?? 1) : 0;
@@ -744,6 +746,7 @@ export interface EconomyDraft {
   declaredBy?: World['declaredBy'];
   economies: Record<string, Economy>;
   factories: World['factories'];
+  story?: { farEast?: number };
 }
 
 /** Is the day after `day` the first of a month? */

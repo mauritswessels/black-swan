@@ -163,6 +163,21 @@ describe('the story led by the AI (bot playtest, 1936 to the end of 1941)', () =
     expect(news(end).some((t) => /Lend-Lease: American equipment begins to reach the United Kingdom/.test(t))).toBe(true);
   });
 
+  it('keeps a quarter of the Red Army in the Far East until the autumn of 1941, then brings some of it west', () => {
+    const red = (w: World) => w.units.filter((u) => u.owner === 'Soviet Union').length;
+    expect(mid.story.farEast ?? 0).toBeGreaterThan(0.2 * red(mid));
+    expect(red(mid)).toBeLessThan(380);
+    expect(news(end).some((t) => /Siberian divisions reach Moscow/.test(t))).toBe(true);
+    expect(end.story.farEast ?? 0).toBeLessThan(mid.story.farEast ?? 0);
+  });
+
+  it('Norway holds out for weeks with British help, and the Soviet Union fights on through 1941', () => {
+    const norway = end.diplomacy.log.find((e) => /Norway surrenders/.test(e.text));
+    if (norway) expect(norway.day).toBeGreaterThan(dayOf(end.startDate, '1940-05-01'));
+    expect(end.capitulated).not.toContain('Soviet Union');
+    expect(atWar(end, 'Germany', 'Soviet Union')).toBe(true);
+  });
+
   it('keeps count for the end report', () => {
     expect(end.story.greatWar).toBe(dayOf(end.startDate, '1939-09-01'));
     expect(end.story.ended).toBeNull();

@@ -40,7 +40,10 @@ each army one order; it moves its own divisions from then on.
   the planned landing.
 - **Lesson and codex.** A new lesson, Armies (now 10 lessons), and 33 new codex terms: army,
   army order, hold, push, pace, fall back, reserve, pincer, commander, and the 24 commanders.
-- **Balance.** See docs/balance-stage-k2.md.
+- **Balance.** See docs/balance-stage-k2.md: Barbarossa now takes 2 to 7 of 28 Soviet provinces by
+  January 1942 (1.2: 1 to 3), Britain lands in northern France only in June 1944 or not at all,
+  and Germany falls in all 6 runs (October 1943 to December 1944). Italy changes sides in 5 of 6
+  runs. Greece no longer falls and Moscow falls in 2 of 3 runs from 1936, both to fix later.
 - **Tests.** 257 tests (18 new) for forming armies, every order, pushes, pincers, commanders,
   1.2 saves and armies in lockstep. Saves are version 12; saves from 1.1 and 1.2 still load.
 

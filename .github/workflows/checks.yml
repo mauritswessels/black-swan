@@ -1,0 +1,68 @@
+# Checks for every pull request: the tests, the types, the web build, and the Mac app itself
+# (built on one of GitHub's Macs, then opened to see that it starts).
+name: Checks
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Tests, types and web build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-fund --no-audit
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+
+  mac-app:
+    name: Mac app builds and starts
+    runs-on: macos-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+      - run: npm ci --no-fund --no-audit
+      - name: Build Black Swan.app
+        run: npx tauri build --bundles app
+      - name: The app is signed and starts
+        run: |
+          APP="src-tauri/target/release/bundle/macos/Black Swan.app"
+          codesign --verify --deep --strict --verbose=2 "$APP"
+          /usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$APP/Contents/Info.plist"
+          open "$APP"
+          sleep 20
+          if pgrep -f "Black Swan.app/Contents/MacOS" > /dev/null; then
+            echo "Black Swan is running."
+          else
+            echo "::error::Black Swan did not keep running after it was opened."
+            exit 1
+          fi
+          screencapture -x black-swan-on-mac.png || true
+          pkill -f "Black Swan.app/Contents/MacOS" || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mac-app-screenshot
+          path: black-swan-on-mac.png
+          if-no-files-found: ignore

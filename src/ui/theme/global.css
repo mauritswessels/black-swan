@@ -109,3 +109,6 @@ svg.chart .fade { opacity: 0; animation: fade 0.8s 0.4s forwards; }
   *, *::before, *::after { animation-duration: 0.001s !important; animation-delay: 0s !important; transition: none !important; }
   svg.chart .draw { stroke-dasharray: none; }
 }
+/* The same, switched on in Settings. */
+.reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { animation-duration: 0.001s !important; animation-delay: 0s !important; transition: none !important; }
+.reduce-motion svg.chart .draw { stroke-dasharray: none; }

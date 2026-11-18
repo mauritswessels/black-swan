@@ -129,6 +129,7 @@ export function Help() {
     ['X', 'Codex'],
     ['S', 'Save and load'],
     ['M', 'Sound on or off'],
+    ['⌘ ,', 'Settings (in the Mac app; or the Settings button)'],
     ['?', 'This help'],
     ['Esc', 'Close a panel or the sidebar'],
     ['N / F / C / L', 'On the title screen: Story, Free-for-all, Continue, Learn to play'],

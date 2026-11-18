@@ -6,6 +6,7 @@ let ctx: AudioContext | null = null;
 let master: GainNode | null = null;
 let drone: { stop: () => void } | null = null;
 let muted = false;
+let volume = 0.5;
 
 function audio(): AudioContext | null {
   if (muted) return null;
@@ -13,7 +14,7 @@ function audio(): AudioContext | null {
     if (!ctx) {
       ctx = new AudioContext();
       master = ctx.createGain();
-      master.gain.value = 0.5;
+      master.gain.value = volume;
       master.connect(ctx.destination);
     }
     if (ctx.state === 'suspended') void ctx.resume();
@@ -79,6 +80,11 @@ export const sound = {
         g.disconnect();
       },
     };
+  },
+  /** Loudness of everything, 0 to 1 (Settings). */
+  setVolume: (v: number) => {
+    volume = Math.min(1, Math.max(0, v));
+    if (master && ctx) master.gain.setTargetAtTime(volume, ctx.currentTime, 0.05);
   },
   setMuted: (m: boolean) => {
     muted = m;

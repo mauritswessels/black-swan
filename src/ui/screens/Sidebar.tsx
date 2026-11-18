@@ -380,7 +380,7 @@ function ForeignStack({ w, province, owner }: { w: World; province: number; owne
       ) : (
         enemy && <p className="sb-note">You have no divisions next to this province.</p>
       )}
-      <p className="sb-fine">You see foreign divisions only next to your own land and troops. For now the count is exact; estimates that can be wrong arrive with air reconnaissance.</p>
+      <p className="sb-fine">You see foreign divisions only next to your own land and troops. The count you see is exact: the game does not model scouting mistakes.</p>
       <div className="sb-actions">
         <Link to={{ kind: 'province', id: province }}>The province</Link>
         <Link to={{ kind: 'country', name: owner }}>{owner}: details and diplomacy</Link>

@@ -4,15 +4,28 @@ A grand-strategy game set in Europe from 1936. You lead a real country through t
 the war that followed, and face what its leaders faced: armies, factories, money, allies and
 public support. It is built to teach the history and the economics as you play.
 
-> **Status: Stage I-2 of the war game.** The AI generals are smarter. Each enemy is a front,
-> and the army is shared between fronts by what each needs and can feed; a front that
-> outnumbers the enemy attacks along its whole length, and attacks that cut off enemy divisions
-> come first. In Story mode Britain makes the real expeditions and landings (Norway 1940,
-> Greece 1941, Sicily 1943, Normandy 1944), a quarter of the Red Army waits in the Far East
-> until the Siberian divisions come west in late 1941, Norway holds out with British help,
-> Greece falls to the German attack of April 1941, and Italy drops Mussolini and changes sides
-> in 1943. New to the game? Press **Learn to play** on the title screen. Next and last:
-> the finished Mac app with automatic updates (I-3).
+> **Version 1.0.** The finished Mac app. Lead one of six great powers in Story mode, or any
+> of 31 countries in Free-for-all, from 1936 or September 1939: armies, a navy and air force,
+> factories and war finance, research, diplomacy and 53 history cards. The app updates itself
+> from GitHub, keeps its saves as files, and has a Settings screen. New to the game? Press
+> **Learn to play** on the title screen.
+
+## Installing the Mac app
+
+1. Open the [latest release](../../releases/latest) on GitHub and download `Black.Swan_..._universal.dmg`.
+2. Open the .dmg and drag **Black Swan** into Applications.
+3. The first time, macOS says it cannot check the app, because it is not signed with a paid
+   Apple Developer account. Open **System Settings → Privacy & Security**, scroll down and press
+   **Open Anyway** next to Black Swan. (Or, in Terminal:
+   `xattr -dr com.apple.quarantine "/Applications/Black Swan.app"`.) You only do this once:
+   updates install without asking again.
+
+From then on the app looks for a new version each time it opens. When there is one, the title
+screen shows what is new; press **Update and restart**. Your game is saved first. You can also
+use **Black Swan → Check for Updates…** in the menu bar, or Settings.
+
+Your saves are files in `~/Library/Application Support/app.blackswan.game/saves` (Settings →
+Saves → Show in Finder). Copy them to another Mac to carry a game over.
 
 ## How to play
 
@@ -107,15 +120,17 @@ npm install          # once
 npm run dev          # opens the game in your browser
 npm test             # run the unit tests
 npm run balance      # run the bot playtests (wars, finance, history to 1945) and write docs/balance-stage-i2.md
+npm run typecheck    # check the types
 npm run build:map    # rebuild the 1936 map from Natural Earth data (rarely needed)
 ```
 
 The rules and every number behind them are in [MODEL.md](MODEL.md). The latest balance report
 is [docs/balance-stage-i2.md](docs/balance-stage-i2.md).
 
-## Running it as a Mac app
+## Running it as a Mac app from the code
 
-The app is made with [Tauri](https://tauri.app), which wraps the game in a native Mac window.
+To play, install the app (above). To work on the game, run it from the code. The app is made
+with [Tauri](https://tauri.app), which wraps the game in a native Mac window.
 
 One-time set-up:
 
@@ -127,8 +142,11 @@ Then:
 ```bash
 npm install
 npm run app          # opens Black Swan in its own window (first run takes a few minutes)
-npm run app:build    # builds Black Swan.app and a .dmg
+npm run app:build    # builds Black Swan.app and a .dmg on your Mac
 ```
+
+The copy started with `npm run app` uses the same save files as the installed app. It does not
+update itself; `npm run update` (below) brings it up to date.
 
 ### Getting the newest version
 
@@ -142,9 +160,28 @@ npm run update       # pull the newest code, install new libraries, open the app
 Add `-- --browser` to open it in the browser instead, or `-- --no-start` to only update. If you
 have edited files yourself, it stops and tells you how to keep or discard them first.
 
-The built app is at `src-tauri/target/release/bundle/macos/Black Swan.app`. Drag it to
-Applications. The first time, right-click it and choose Open, because it is not signed with an
-Apple Developer account.
+An app built with `npm run app:build` is at `src-tauri/target/release/bundle/macos/Black Swan.app`.
+Built on your own Mac, it opens without the Open Anyway step.
+
+### Releasing a new version
+
+1. `npm run set-version -- 1.0.1` puts the new number in package.json, package-lock.json,
+   Cargo.toml and Cargo.lock (a test checks they agree).
+2. Add a section at the top of CHANGELOG.md that starts with `## 1.0.1: ` and a short title.
+   It becomes the release notes and the text on the update card.
+3. Merge to main. The **Release** workflow on GitHub sees a version with no release yet,
+   builds Black Swan for Apple Silicon and Intel Macs on one of GitHub's Macs (about 15
+   minutes), and publishes the release. Every installed copy then offers the update.
+
+Every pull request runs the **Checks** workflow: tests, types, the web build, and the Mac app,
+which is built and opened on a GitHub Mac to see that it starts.
+
+**The signing key (set up once).** Updates are signed so that the app only installs builds
+made by this project. The public half of the key is in `src-tauri/tauri.conf.json`
+(`plugins.updater.pubkey`). The private half is the repository secret
+`TAURI_SIGNING_PRIVATE_KEY` (GitHub → Settings → Secrets and variables → Actions). It never
+goes in the code. Keep a copy somewhere safe: if it is lost, a new key pair has to be made, and
+every installed copy then needs one manual reinstall.
 
 ## Keys
 
@@ -176,6 +213,7 @@ Apple Developer account.
 | X | Codex |
 | S | Save and load (3 slots plus an autosave) |
 | M | Sound on or off |
+| ⌘ , | Settings (Mac app; or the Settings button on the title screen and the rail) |
 | ? | All shortcuts |
 | Esc | Close a panel or the sidebar |
 | N / F / C | Title screen: Story, Free-for-all, Continue |
@@ -222,14 +260,21 @@ src/sim/          the game engine: pure TypeScript, no UI, fully testable
   rng.ts          seeded random numbers (same seed = same game)
 src/content/map/  the 1936 map data (built by scripts/build-map.mjs)
 src/content/      the codex and the history cards (history.ts)
-src/save/         save slots (whole game state as JSON)
+src/save/         save slots (whole game state as JSON): files in the Mac app, local storage in a browser
+src/native.ts     the bridge to the Mac app (save files, the menu, text size); does nothing in a browser
 src/ui/           React screens, widgets, sound and the War Room theme
   map/            the Map table: shapes, colours and the map itself
-  screens/        title, choose your country, the Map table, sidebar, overlays
-src-tauri/        the Mac app wrapper (Tauri); you rarely need to touch this
+  screens/        title, choose your country, the Map table, sidebar, overlays, Settings
+  settings.ts     the player's settings and their defaults
+  updates.ts      checking for, downloading and installing a new version
+  releaseNotes.ts release notes as plain text, and comparing version numbers
+src-tauri/        the Mac app wrapper (Tauri): save files, the menu, updates, the icon
+  tauri.release.conf.json  what the release build adds (signed update files)
+.github/workflows/ checks.yml (every pull request) and release.yml (publishes new versions)
 scripts/          build-map.mjs turns modern map data into 1936 provinces;
                   build-sea.mjs draws the sea zones and works out the coasts;
-                  update.mjs is `npm run update`
+                  update.mjs is `npm run update`; set-version.mjs is `npm run set-version`;
+                  release-notes.mjs takes a version's notes from CHANGELOG.md
 tests/            unit tests
 CHANGELOG.md      what each stage added
 ```
@@ -257,8 +302,9 @@ the middle of a modern region are therefore approximate:
 
 ## Plan
 
-See CHANGELOG.md for what is done. Next and last is Stage I-3: the finished Mac app with
-automatic updates.
+Version 1.0 completes the plan (see CHANGELOG.md). Ideas for later versions: playing against
+friends over the internet (the engine is already deterministic, with a fingerprint check for
+it), the Pacific and the Americas, and a sharper war economy on the eastern front after 1941.
 
 ## History and symbols
 

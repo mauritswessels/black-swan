@@ -442,7 +442,7 @@ export function ProductionPanel({ w, me }: { w: World; me: string }) {
           : v.steel.ratio < 1 || v.oil.ratio < 1
             ? `Without imports the lines run at ${pct(v.steel.ratio * 100)} speed${v.oil.ratio < 1 ? `, the armour line at ${pct(v.steel.ratio * v.oil.ratio * 100)}, and your armoured divisions go short of fuel` : ''}.`
             : 'You have all you need at home.'}{' '}
-        Military factories need steel; armour needs oil. What you do not use is sold abroad at {pct(Math.min(1, 0.5 + v.mods.exportShare) * 100)} of the world price{v.budget.exports > 0 ? ` (${money(v.budget.exports)} a month)` : ''}. From Stage G imports come by sea and can be sunk.
+        Military factories need steel; armour needs oil. What you do not use is sold abroad at {pct(Math.min(1, 0.5 + v.mods.exportShare) * 100)} of the world price{v.budget.exports > 0 ? ` (${money(v.budget.exports)} a month)` : ''}. Imports come by sea, so enemy submarines can sink them (Navy and air force, key F).
       </p>
       <div className="sb-actions">
         <Link to={{ kind: 'economy' }}>Economy: budget, taxes, debt and inflation</Link>

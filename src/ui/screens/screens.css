@@ -101,3 +101,41 @@
 .codex-group { margin-left: auto; font: 500 11.5px var(--f-cond); letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); }
 .codex > div.picked { border-left: 3px solid var(--gold); padding-left: 10px; background: rgba(255, 196, 107, 0.06); }
 .codex-foot { margin-top: 10px; font-size: 13px; }
+
+/* ================= 1.0: Settings and updates ================= */
+.settings { overflow-y: auto; display: grid; gap: 18px; padding-right: 6px; }
+.set-group { display: grid; gap: 2px; }
+.set-group h3 { margin: 0 0 4px; font: 600 12.5px var(--f-cond); letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); }
+.set-row { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 8px 0; border-bottom: 1px solid var(--edge); }
+.set-row > div:first-child { display: grid; gap: 2px; min-width: 0; }
+.set-row b { font: 600 16px var(--f-cond); letter-spacing: 0.04em; color: var(--white); }
+.set-row span { font-size: 13.5px; color: #a9b6cb; line-height: 1.4; }
+.set-row code { font-size: 12.5px; color: var(--txt); word-break: break-all; }
+.set-control { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.set-control input[type='range'] { width: 180px; accent-color: var(--gold); }
+.set-value { width: 3.5em; text-align: right; color: var(--white); font-variant-numeric: tabular-nums; }
+.set-status { margin: 6px 0 0; font-size: 14px; color: var(--txt); }
+.set-status:empty { margin: 0; }
+.set-status.warn { color: var(--hot); }
+.set-progress { width: 100%; height: 8px; accent-color: var(--gold); margin-top: 8px; }
+.set-update { display: grid; gap: 10px; justify-items: start; margin-top: 6px; }
+.switch { display: inline-flex; align-items: center; gap: 8px; min-width: 76px; padding: 5px 10px 5px 6px; border: 1px solid var(--edge-strong); border-radius: 14px; background: transparent; cursor: pointer; font: 600 12.5px var(--f-cond); letter-spacing: 0.12em; text-transform: uppercase; color: #a9b6cb; }
+.switch i { width: 26px; height: 14px; border-radius: 7px; background: rgba(156, 200, 255, 0.18); position: relative; transition: background 0.15s; }
+.switch i::after { content: ''; position: absolute; top: 2px; left: 2px; width: 10px; height: 10px; border-radius: 50%; background: #a9b6cb; transition: transform 0.15s, background 0.15s; }
+.switch[aria-checked='true'] { color: #fff; border-color: rgba(255, 196, 107, 0.6); }
+.switch[aria-checked='true'] i { background: rgba(255, 196, 107, 0.35); }
+.switch[aria-checked='true'] i::after { transform: translateX(12px); background: var(--gold); }
+.seg { display: inline-flex; border: 1px solid var(--edge-strong); border-radius: 3px; overflow: hidden; }
+.seg button { padding: 6px 11px; border: 0; border-right: 1px solid var(--edge); background: transparent; color: #cfe0f7; font: 600 12.5px var(--f-cond); letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; }
+.seg button:last-child { border-right: 0; }
+.seg button[aria-pressed='true'] { background: rgba(255, 196, 107, 0.16); color: #fff; box-shadow: inset 0 -2px 0 var(--gold); }
+.seg button:disabled { opacity: 0.45; cursor: not-allowed; }
+.notes { display: grid; gap: 6px; max-height: 240px; overflow-y: auto; padding-right: 6px; font-size: 14px; line-height: 1.45; }
+.notes p { margin: 0; }
+.notes p.li { padding-left: 14px; position: relative; }
+.notes p.li::before { content: ''; position: absolute; left: 2px; top: 0.6em; width: 5px; height: 5px; background: var(--gold); border-radius: 1px; }
+.update-card { position: absolute; right: 28px; bottom: 28px; width: min(420px, calc(100% - 56px)); z-index: 2; gap: 10px; text-align: left; border-color: rgba(255, 196, 107, 0.45); box-shadow: 0 0 40px rgba(255, 170, 80, 0.15), 0 20px 60px rgba(0, 0, 0, 0.45); }
+.update-card p { margin: 0; }
+.update-kicker { font: 600 13px var(--f-cond); letter-spacing: 0.18em; text-transform: uppercase; color: var(--gold); }
+.update-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+.title-version { position: absolute; left: 24px; bottom: 18px; font: 500 12px var(--f-cond); letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); }

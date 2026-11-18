@@ -1,5 +1,55 @@
 # Changelog
 
+Versions from 1.0.0 on are numbered. Each one starts with a heading like `## 1.0.1: What it brings`;
+that section becomes the notes on the GitHub release and on the update card in the app.
+
+## 1.0.0: The finished Mac app (2026-11-18)
+
+The first full version of Black Swan: lead Britain, France, Germany, Italy, the Soviet Union or
+Poland (or any of 31 countries in Free-for-all) from 1936 or September 1939, with armies, a navy
+and air force, factories, money, research, diplomacy and 53 history cards, plus nine lessons
+that teach it all. What this version adds:
+
+- **The app updates itself.** A few seconds after it opens, Black Swan asks GitHub whether
+  there is a newer version. If there is, the title screen shows what is new, with Update and
+  restart, or Later. Nothing is installed until you press the button; your game is saved
+  first, and after the restart the app says what changed. Settings has Check now, and a switch
+  for the check at start. In the Black Swan menu: Check for Updates.
+- **Safe updates.** Every update is signed with a private key that only the project's GitHub
+  holds, and the app refuses any download whose signature does not match. Updates come only
+  from this project's GitHub releases.
+- **GitHub builds the app.** When a new version number reaches main, GitHub builds Black Swan
+  on one of its Macs, for Apple Silicon and Intel Macs, and publishes it as a release with a
+  .dmg to install by hand and the file the app reads to find updates. Every pull request is
+  now also checked by GitHub: the tests, the types, and the Mac app itself, which is built
+  and opened to see that it starts.
+- **Settings** (on the title screen, on the rail in a game, or ⌘ , in the app): sound on or
+  off and its volume, pause when attacked, pause for history cards, advisor tips (and showing
+  them all again), the size of text and buttons (four sizes, Mac app), reduce motion, updates,
+  where your saves are, and the version. The clock settings are now remembered.
+- **Saves are files.** In the Mac app each save slot is a file in
+  ~/Library/Application Support/app.blackswan.game/saves, so saves survive updates, are shared
+  by the installed app and `npm run app`, and can be copied to another Mac (Settings, Show in
+  Finder). Saves from earlier versions are copied into files the first time the app opens. A
+  save is written to a temporary file and then renamed, so a crash never leaves half a save.
+- **A new icon**: a black swan on the glowing map table, on the water at dusk.
+- **The Mac app feels like a Mac app.** The window remembers its size and place, the Black
+  Swan menu has Settings and Check for Updates, About shows the version, and the app is
+  signed for Apple Silicon (ad hoc), so macOS lets it open after one approval.
+- **Polish.** No more mentions of unfinished stages in the game: the trade note on the
+  Economy panel, the note on enemy division counts and the codex entry on the fall of a
+  government now describe the finished game. The title screen has a new line about the game,
+  a Settings button and the version. Keys has moved into Settings on the rail (key ? still
+  opens it).
+- **For later versions.** `npm run set-version -- 1.0.1` puts a new number in every file that
+  holds one; add its section here, merge, and GitHub does the rest.
+- **Tests.** 218 tests (19 new): the version agrees in every file, the changelog has notes
+  for it, the updater only trusts our key and our releases, settings repair themselves,
+  versions compare correctly, and save files are written, read back at once, copied from
+  older saves, and kept safe in local storage if a file cannot be written. The lockstep test
+  still passes.
+- **Saves.** Stage I-2 saves still load. Version 1.0.0.
+
 ## War game, Stage I-2: Smarter army AI (2026-11-18)
 
 - **Fronts.** The AI general now sees each enemy as a front and shares the army out by what

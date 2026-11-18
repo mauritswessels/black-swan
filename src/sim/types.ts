@@ -394,6 +394,45 @@ export interface World {
   story: StoryState;
   /** Who held each province, once a week, for the war replay (see replay.ts). Games saved before version 1.2 start recording when loaded. */
   replay?: Replay;
+  /** Armies: groups of divisions with one order between them (armies.ts). Games saved before version 1.3 have none. */
+  armies?: Army[];
+  nextArmyId?: number;
+}
+
+/** How hard an army pushes: how good the odds must be before it attacks. */
+export type Pace = 'careful' | 'steady' | 'allOut';
+
+/**
+ * What an army is doing (armies.ts):
+ *   none      nothing by itself: you move its divisions by hand;
+ *   hold      spread along the border with `foe`, more divisions where more enemies stand;
+ *   push      attack toward `target`, on the provinces in the way, at a `pace`. At peace it deploys on the border instead;
+ *   fallBack  go back to `to` and the provinces next to it, and dig in there;
+ *   reserve   wait at `at`, and counter-attack any breakthrough within two provinces.
+ */
+export type ArmyOrder =
+  | { kind: 'none' }
+  | { kind: 'hold'; foe: string }
+  | { kind: 'push'; target: number; foe: string; pace: Pace }
+  | { kind: 'fallBack'; to: number }
+  | { kind: 'reserve'; at: number };
+
+/** A group of divisions under one order. */
+export interface Army {
+  id: number;
+  owner: string;
+  name: string;
+  /** 1 to 9: the number key that selects it. 0 when all nine are taken. */
+  slot: number;
+  /** Its divisions, by id. */
+  units: number[];
+  order: ArmyOrder;
+  /** The day the order was given. That day the army takes back every division; afterwards it leaves alone those you march by hand. */
+  orderDay: number;
+  /** New divisions join it as they are raised. */
+  reinforce: boolean;
+  /** Its commander (commanders.ts), if any. */
+  commander?: string;
 }
 
 /**
@@ -589,7 +628,8 @@ export interface Diplomacy {
 
 /** What a player or an AI can tell its units to do. */
 export type Order =
-  | { type: 'move'; unit: number; to: number }
+  /** March to a province. With `friendly`, only through your own and allied land (armies moving behind their front). */
+  | { type: 'move'; unit: number; to: number; friendly?: boolean }
   | { type: 'halt'; unit: number }
   // Navy and air (Stage G).
   /** Send a division by sea to a coastal province: a transport to friendly land, a landing on an enemy shore. */
@@ -643,4 +683,12 @@ export type Order =
   | { type: 'setResearch'; country: string; slot: number; tech: string | null }
   | { type: 'startPlan'; country: string; plan: string }
   /** Give up the plan under way. The work done on it is lost. */
-  | { type: 'cancelPlan'; country: string };
+  | { type: 'cancelPlan'; country: string }
+  // Armies (Stage K2). `country` is the country giving the order.
+  /** Make these divisions an army. They leave any army they were in. */
+  | { type: 'formArmy'; country: string; units: number[]; name?: string }
+  | { type: 'armyOrder'; country: string; army: number; order: ArmyOrder }
+  /** Move divisions into an army (out of any other), or take them out of it. */
+  | { type: 'armyUnits'; country: string; army: number; add?: number[]; remove?: number[] }
+  | { type: 'armySettings'; country: string; army: number; name?: string; reinforce?: boolean; commander?: string | null }
+  | { type: 'disbandArmy'; country: string; army: number };

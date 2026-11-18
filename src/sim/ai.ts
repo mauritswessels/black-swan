@@ -56,6 +56,18 @@ export interface AiOptions {
   air?: (attackers: string[], defenders: string[], province: number) => number;
   /** Countries this one is about to attack (agenda.ts `plannedWars`): its army deploys to their borders. */
   planned?: string[];
+  /** Command one army (armies.ts) instead of the whole country: only its divisions, on its one front. */
+  army?: ArmyCommand;
+}
+
+/** What an army pushing toward a target (armies.ts) asks of the commander. */
+export interface ArmyCommand {
+  /** The army's divisions. Every other division is left alone, though it still takes up room. */
+  units: Set<number>;
+  /** The one country it fights. At peace it deploys on the border with it. */
+  foe: string;
+  /** The enemy provinces it may attack today: the ones on the way to its target. */
+  targets: Set<number>;
 }
 
 /** A division is ready to attack when it is rested and fed. */
@@ -209,28 +221,31 @@ function unitsByProvince(w: World): Map<number, Unit[]> {
 export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order[] {
   const boldness = opts.boldness ?? 1.3;
   const enemies = new Set(enemiesOf(w, country));
-  const planned = opts.planned ?? [];
+  const army = opts.army;
+  const planned = army ? (enemies.has(army.foe) ? [] : [army.foe]) : opts.planned ?? [];
   if (!enemies.size && !planned.length) return [];
   const orders: Order[] = [];
-  const everyone = w.units.filter((u) => u.owner === country);
+  const everyone = w.units.filter((u) => u.owner === country && (!army || army.units.has(u.id)));
   if (!everyone.length) return [];
   // Divisions getting ready to sail, or coming ashore, already have their orders.
   const mine = everyone.filter((u) => !u.sea && !u.landing);
-  const edges = combatEdges(w.economies, { effects: w.story.effects, day: w.day, startDate: w.startDate });
+  const edges = combatEdges(w.economies, { effects: w.story.effects, day: w.day, startDate: w.startDate, armies: w.armies });
   const friends = allianceMap(w.diplomacy);
   const allies = friends.get(country);
 
   const at = unitsByProvince(w);
   const unitsAt = (p: number) => at.get(p) ?? [];
   const enemyAt = (p: number) => unitsAt(p).filter((u) => enemies.has(u.owner));
-  const mineAt = (p: number) => unitsAt(p).filter((u) => u.owner === country);
+  const mineAt = (p: number) => unitsAt(p).filter((u) => u.owner === country && (!army || army.units.has(u.id)));
   const friendly = (p: number) => w.controller[p] === country || !!allies?.has(w.controller[p]);
 
   let seaToday = opts.sea;
   const sea = () => (seaToday ??= navalPicture(w, friends));
 
   // 1. The fronts.
-  const fronts = frontsOf(w, country, planned);
+  const fronts = frontsOf(w, country, planned).filter((f) => !army || f.foe === army.foe);
+  // An army has one front, and all of it goes there.
+  if (army) for (const f of fronts) f.share = f.want = mine.length;
   const fighting = fronts.filter((f) => !f.planned);
 
   // Divisions in, or on their way to, each province. Other friendly armies there eat from the same roads.
@@ -239,15 +254,15 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
     const dest = u.path.length ? u.path[u.path.length - 1] : u.at;
     crowd.set(dest, (crowd.get(dest) ?? 0) + 1);
   }
-  for (const u of w.units) if (u.owner !== country && !enemies.has(u.owner)) crowd.set(u.at, (crowd.get(u.at) ?? 0) + 1);
+  for (const u of w.units) if ((u.owner !== country || (army && !army.units.has(u.id))) && !enemies.has(u.owner)) crowd.set(u.at, (crowd.get(u.at) ?? 0) + 1);
   const roomAt = (p: number) => supplyCapacity(p) - (crowd.get(p) ?? 0);
   // A division leaves a crowded province only when it is badly overcrowded: a quarter over still feeds it at 80%.
   const overcrowded = (p: number) => (crowd.get(p) ?? 0) > CROWDED * supplyCapacity(p);
 
   // Operations overseas (operations.ts): the planned landings and expeditions under way today.
-  const ops = activeOperations(w, country);
-  const ashore = landedOperations(w, country);
-  const ended = endedOperations(w, country);
+  const ops = army ? [] : activeOperations(w, country);
+  const ashore = army ? [] : landedOperations(w, country);
+  const ended = army ? [] : endedOperations(w, country);
   const landings = ops.filter((o) => o.kind === 'landing' && !ashore.includes(o));
   const helps = ops.filter((o) => o.kind === 'help');
   // Divisions allowed overseas: an eighth of the army, plus what the operations under way call for.
@@ -259,6 +274,7 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
   const elsewhere = mine.filter((u) => isAbroad(u) && !opsUnderWay.some((o) => o.area.includes(u.sea ? u.sea.to : u.at))).length;
   const abroadCap = abroadNow + Math.max(0, Math.floor(EXPEDITION_SHARE * mine.length) - elsewhere) + opsUnderWay.reduce((a, o) => a + Math.max(0, o.follow - inArea(o)), 0);
 
+  if (army && !fronts.length) return [];
   if (!fighting.length && enemies.size && !fronts.length) {
     // No front on land anywhere: the only way at the enemy is by sea.
     return seaOrders({ w, country, sea: sea(), enemies, allies, edges, boldness, stranded: mine.filter((u) => !u.path.length), front: [], crowd, abroadCap, landings, helps });
@@ -279,7 +295,7 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
   };
   for (const u of mine) {
     // Dunkirk: a worn-out division on a foreign shore, heavily outnumbered, is taken off by sea.
-    if (u.organisation < 30 && COAST[u.at].length && w.owner[u.at] !== country && !PROVINCES[u.at].neighbours.some((n) => w.controller[n] === country)) {
+    if (!army && u.organisation < 30 && COAST[u.at].length && w.owner[u.at] !== country && !PROVINCES[u.at].neighbours.some((n) => w.controller[n] === country)) {
       const around = PROVINCES[u.at].neighbours.reduce((a, n) => a + enemyAt(n).length, 0);
       if (around >= 2 * mineAt(u.at).length && around >= 3) {
         const to = homePort();
@@ -316,7 +332,7 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
   const homePiece = capital === null ? -1 : piece[capital];
   const touches = (f: Front, o: Operation) => [...f.provinces, ...f.targets].some((p) => o.area.includes(p));
   for (const f of fighting) {
-    if (homePiece < 0 || f.provinces.some((p) => piece[p] === homePiece)) continue;
+    if (army || homePiece < 0 || f.provinces.some((p) => piece[p] === homePiece)) continue;
     if (ended.some((o) => touches(f, o))) f.share = 0;
     else {
       const o = [...ops, ...ashore].filter((x) => touches(f, x));
@@ -458,6 +474,7 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
     };
 
     const scored = f.targets
+      .filter((t) => !army || army.targets.has(t))
       .map((t) => {
         const defence = defenceOf(t);
         const cut = defence > 0 ? cutOff(t) : 0;
@@ -599,7 +616,7 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
   const frontList = fighting.flatMap((f) => f.provinces).filter((p, i, a) => a.indexOf(p) === i && welcome(p)).sort((a, b) => a - b);
   // Reinforcements by sea go to the fronts overseas that are short.
   const overseas = fighting.filter((f) => members.get(f)!.length < f.share && !f.provinces.some((p) => piece[p] === homePiece)).flatMap((f) => f.provinces).filter(welcome);
-  if (enemies.size && (stranded.length || landings.length || helps.length)) {
+  if (!army && enemies.size && (stranded.length || landings.length || helps.length)) {
     const atHome = landings.length || helps.length ? mine.filter((u) => !used.has(u.id) && !u.path.length && piece[u.at] === homePiece && !lineOf.has(u.at) && !assigned.has(u.id)) : [];
     const sailing = [...stranded, ...atHome.filter((u) => !stranded.includes(u))];
     orders.push(...seaOrders({ w, country, sea: sea(), enemies, allies, edges, boldness, stranded: sailing, front: overseas.length ? overseas : frontList, crowd, abroadCap, landings, helps, onLand: fighting.length > 0 && stranded.length < 0.3 * mine.length }));

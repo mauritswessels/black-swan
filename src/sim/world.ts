@@ -30,6 +30,9 @@ import { DEPOTS, linkedProvinces, supplyCapacity, supplyLevels } from './supply'
 import type { Economy, Mode, Order, Unit, UnitType, World } from './types';
 import { atWar, canEnter, enemiesOf } from './war';
 import { dateWords } from './dmath';
+import { FALL_BACK_DIG, giveArmyOrder, isArmyOrder, keepArmies, type ArmyDraft } from './armies';
+import { commanderTraits } from './mods';
+import { TRAIT_RECOVERY } from './commanders';
 
 export type { Mode, World } from './types';
 
@@ -106,7 +109,7 @@ export function newWorld(mode: Mode, seedText: string, startDate = '1936-01-01',
   const factories = startFactories();
   const forces = startForces();
   const economies = startEconomies({ controller, factories, units, wars: [], fleets: forces.fleets, wings: forces.wings });
-  return { mode, player, seed, rng: rng.state, day: 0, startDate, units, nextUnitId: units.length, controller, owner: [...controller], diplomacy: startDiplomacy(economies), wars: [], declaredBy: {}, capitulated: [], battles: [], nextBattleId: 0, reports: [], economies, factories, ...forces, story: startStory('1936', 'close', seed), replay: startReplay(controller, 0) };
+  return { mode, player, seed, rng: rng.state, day: 0, startDate, units, nextUnitId: units.length, controller, owner: [...controller], diplomacy: startDiplomacy(economies), wars: [], declaredBy: {}, capitulated: [], battles: [], nextBattleId: 0, reports: [], economies, factories, ...forces, story: startStory('1936', 'close', seed), replay: startReplay(controller, 0), armies: [], nextArmyId: 0 };
 }
 
 /** Organisation regained per day of rest with full supply. */
@@ -130,9 +133,12 @@ const recover = (e: Economy | undefined, strength: number): void => {
 };
 export { SURRENDER_SHARE } from './diplomacy';
 
+type StepDraft = DipDraft & ForceDraft & ArmyDraft;
+
 /** A copy of the world that orders and diplomacy may change freely. */
-function draftOf(world: World): DipDraft & ForceDraft {
+function draftOf(world: World): StepDraft {
   return {
+    armies: (world.armies ?? []).map((a) => ({ ...a, units: [...a.units], order: { ...a.order } })), nextArmyId: world.nextArmyId ?? 0,
     fleets: world.fleets.map((f) => ({ ...f, ships: { ...f.ships } })), wings: world.wings.map((x) => ({ ...x })), nextForceId: world.nextForceId, bombed: { ...world.bombed },
     clashes: world.clashes, forceLog: world.forceLog, nextForceEventId: world.nextForceEventId,
     day: world.day, startDate: world.startDate, mode: world.mode, player: world.player,
@@ -143,7 +149,7 @@ function draftOf(world: World): DipDraft & ForceDraft {
 }
 
 /** Carry out orders on a world that is being changed. Orders that make no sense are ignored. */
-function giveOrders(d: DipDraft & ForceDraft, orders: Order[]): void {
+function giveOrders(d: StepDraft, orders: Order[]): void {
   let seas: Pictures | null = null;
   let units: Unit[] | null = null;
   let byId = new Map<number, Unit>();
@@ -157,6 +163,10 @@ function giveOrders(d: DipDraft & ForceDraft, orders: Order[]): void {
     }
     if (isEconomyOrder(order)) {
       giveEconomyOrder(d, d.capitulated, order);
+      continue;
+    }
+    if (isArmyOrder(order)) {
+      giveArmyOrder(d, order);
       continue;
     }
     if (order.type === 'aim' || isDiplomacyOrder(order)) {
@@ -181,7 +191,8 @@ function giveOrders(d: DipDraft & ForceDraft, orders: Order[]): void {
     } else {
       friends ??= allianceMap(d.diplomacy);
       const mine = friends.get(u.owner);
-      const route = findRoute(u.at, order.to, u.type, (p) => canEnter(d, u.owner, p, mine));
+      const safe = order.friendly ? (p: number) => d.controller[p] === u.owner || !!mine?.has(d.controller[p]) : () => true;
+      const route = findRoute(u.at, order.to, u.type, (p) => canEnter(d, u.owner, p, mine) && safe(p));
       if (!route) continue; // no way by land, or it would cross a country it is neither allied to nor at war with: ignored
       // Keep the progress already made if the new route starts the same way.
       if (route[0] !== u.path[0]) u.progress = 0;
@@ -191,8 +202,8 @@ function giveOrders(d: DipDraft & ForceDraft, orders: Order[]): void {
   }
 }
 
-const fromDraft = (world: World, d: DipDraft & ForceDraft): World => ({
-  ...world, fleets: d.fleets, wings: d.wings, nextForceId: d.nextForceId, bombed: d.bombed, clashes: d.clashes, forceLog: d.forceLog, nextForceEventId: d.nextForceEventId, units: d.units, nextUnitId: d.nextUnitId, controller: d.controller, owner: d.owner, wars: d.wars, declaredBy: d.declaredBy, capitulated: d.capitulated, economies: d.economies, factories: d.factories, diplomacy: d.diplomacy, story: d.story,
+const fromDraft = (world: World, d: StepDraft): World => ({
+  ...world, armies: d.armies, nextArmyId: d.nextArmyId, fleets: d.fleets, wings: d.wings, nextForceId: d.nextForceId, bombed: d.bombed, clashes: d.clashes, forceLog: d.forceLog, nextForceEventId: d.nextForceEventId, units: d.units, nextUnitId: d.nextUnitId, controller: d.controller, owner: d.owner, wars: d.wars, declaredBy: d.declaredBy, capitulated: d.capitulated, economies: d.economies, factories: d.factories, diplomacy: d.diplomacy, story: d.story,
 });
 
 /**
@@ -255,7 +266,7 @@ export function step(world: World, orders: Order[] = []): World {
   });
 
   // 3. Battles. Research, plans and forts give each side its edge; results move the mood at home.
-  d.edges = combatEdges(economies, { effects: dd.story.effects, day: world.day, startDate: world.startDate });
+  d.edges = combatEdges(economies, { effects: dd.story.effects, day: world.day, startDate: world.startDate, armies: dd.armies });
   const known = new Set(d.reports.map((r) => r.id));
   const before = new Map(d.units.map((u) => [u.id, u.strength]));
   const fought = fightBattles(d, rng);
@@ -329,6 +340,9 @@ export function step(world: World, orders: Order[] = []): World {
     return x;
   };
   const winter = isWinter(world.startDate, world.day);
+  // Armies: a commander good at supply speeds recovery; an army falling back digs in faster.
+  const traits = commanderTraits(dd.armies);
+  const digging = new Set(dd.armies.filter((a) => a.order.kind === 'fallBack').flatMap((a) => a.units));
   const front = new Map<string, boolean>();
   const atFront = (u: Unit): boolean => {
     const k = `${u.owner}@${u.at}`;
@@ -337,7 +351,7 @@ export function step(world: World, orders: Order[] = []): World {
     return x;
   };
   for (const u of d.units) {
-    u.dugIn = u.path.length ? 0 : Math.min(DIG_IN_MAX_DAYS, u.dugIn + 1);
+    u.dugIn = u.path.length ? 0 : Math.min(DIG_IN_MAX_DAYS, u.dugIn + (digging.has(u.id) ? FALL_BACK_DIG : 1));
     // Wear and tear at the front. Divisions in a battle take their losses there instead.
     const hot = ground[u.at] === 'heat';
     if (!fought.has(u.id) && atFront(u)) {
@@ -352,7 +366,7 @@ export function step(world: World, orders: Order[] = []): World {
     const resting = !fought.has(u.id);
     const rest = u.path.length ? 0.5 : 1; // marching divisions recover at half speed
     if (u.organisation > ceiling) u.organisation = Math.max(ceiling, u.organisation - ATTRITION_ORG);
-    else if (resting) u.organisation = Math.min(ceiling, u.organisation + ORG_RECOVERY * rest * recoveryOf(u.owner) * (hot ? 0.5 : 1));
+    else if (resting) u.organisation = Math.min(ceiling, u.organisation + ORG_RECOVERY * rest * recoveryOf(u.owner) * (hot ? 0.5 : 1) * (traits.has(u.id) ? TRAIT_RECOVERY[traits.get(u.id)!] : 1));
     if (u.supply === 0 && u.organisation === 0) u.strength -= ATTRITION_STRENGTH;
     else if (resting) u.strength = Math.min(100, u.strength + reinforce(economies[u.owner], u, u.supply * rest));
   }
@@ -364,6 +378,8 @@ export function step(world: World, orders: Order[] = []): World {
   dd.wars = d.wars;
   surrenders(dd);
   disband(dd, (name) => dd.capitulated.includes(name) || name in dd.diplomacy.conquered);
+  // Armies lose the divisions that are gone and take in the new ones.
+  keepArmies(dd, world.nextUnitId);
 
   // 7. Once a week, the front is written down for the war replay.
   return { ...fromDraft(world, dd), day: world.day + 1, rng: rng.state, battles: d.battles, nextBattleId: d.nextBattleId, reports: d.reports, replay: recordFront(world.replay, dd.controller, world.day + 1) };

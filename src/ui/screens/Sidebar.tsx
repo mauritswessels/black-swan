@@ -367,7 +367,7 @@ function ForeignStack({ w, province, owner }: { w: World; province: number; owne
   const c = countryByName(owner);
   // What it would look like if every division of yours next door attacked.
   const next = me ? w.units.filter((u) => u.owner === me && PROVINCES[province].neighbours.includes(u.at)) : [];
-  const o = enemy ? outlook(next.map((u) => ({ ...u, path: [province] })), units, province, combatEdges(w.economies, { effects: w.story.effects, day: w.day, startDate: w.startDate }), 1, groundOn(province, w.startDate, w.day)) : null;
+  const o = enemy ? outlook(next.map((u) => ({ ...u, path: [province] })), units, province, combatEdges(w.economies, { effects: w.story.effects, day: w.day, startDate: w.startDate, armies: w.armies }), 1, groundOn(province, w.startDate, w.day)) : null;
   if (!units.length) return <Frame kicker="Intelligence report" title="Nothing here now" sub={PROVINCES[province].name}>{null}</Frame>;
   return (
     <Frame kicker="Intelligence report" title={`${c.adjective} forces in ${PROVINCES[province].name}`} sub={enemy ? 'At war with you' : me && allianceMap(w.diplomacy).get(me)?.has(owner) ? 'Your ally' : 'Neutral'}>

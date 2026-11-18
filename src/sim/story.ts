@@ -26,7 +26,7 @@ import { CARDS, type HistoryCard } from '../content/history';
 import { AGENDA, dayOf, surpriseLanding } from './agenda';
 import { CHAPTERS } from './chapters';
 import { COUNTRIES } from './countries';
-import { addPact, alive, allied, ask, governmentOf, hasPact, isMajor, note, raiseTension, relation, restore, setEventHook, shift, startWar, type DipDraft } from './diplomacy';
+import { addPact, alive, allied, ask, between, dropPacts, endWar, governmentOf, hasPact, isMajor, note, raiseTension, relation, restore, setEventHook, shift, startWar, type DipDraft } from './diplomacy';
 import { PROVINCES } from './map';
 import { Rng, seedFrom } from './rng';
 import type { ArmyEffect, Decision, LineKind, StartId, StoryState } from './types';
@@ -49,12 +49,37 @@ export const RHINELAND_DELAY = 300;
 export const PURGE = { from: '1937-06-11', to: '1942-06-30', attack: 0.85, defence: 0.9 };
 /** France in the weeks after Germany attacks through the Low Countries. */
 export const SHOCK = { days: 120, power: 0.65 };
+/** Greece and Yugoslavia when Germany attacks them in April 1941. */
+export const BALKAN_SHOCK = { days: 60, power: 0.6 };
 export const LEND_LEASE = { britain: '1941-03-11', soviet: '1941-10-01' };
+/**
+ * The Soviet Far East. From the border war with Japan in 1938 the Soviet Union kept about a
+ * quarter of its army in Siberia and Mongolia, which are not on this map. In the autumn of 1941
+ * its spy in Tokyo, Richard Sorge, reported that Japan would strike south instead, and the
+ * "Siberian divisions" came west in time for the battle of Moscow. In the game those divisions
+ * leave the map (they are still paid for), and two fifths of them come back to Moscow in two
+ * halves from November 1941 if the Soviet Union is at war with a great power in Europe by then.
+ */
+export const FAR_EAST = { from: '1938-07-29', share: 0.25, until: '1941-10-15', back: 0.4 };
+/**
+ * Short of fuel oil, the Italian fleet hardly left harbour after the autumn of 1942: its last
+ * big sortie was in June 1942. From this date an AI Italy in Story mode keeps its fleets in port.
+ */
+export const ITALIAN_FUEL = { country: 'Italy', from: '1942-11-01' };
 /** Sets of equipment, wings of aircraft and ships that arrive each month under Lend-Lease. */
 export const LEND_LEASE_GOODS: Record<string, Partial<Record<LineKind, number>>> = {
   'United Kingdom': { infantry: 0.6, artillery: 0.2, armour: 0.2, fighter: 0.3, bomber: 0.15, escort: 0.3 },
   'Soviet Union': { infantry: 0.6, armour: 0.3, fighter: 0.3 },
 };
+/**
+ * Italy changes sides. From 25 July 1943, once the Allies stand on Italian soil in Europe (or
+ * Italy has lost Libya and its people have had enough), the King dismisses Mussolini. Six weeks
+ * later Italy signs an armistice, makes peace with its enemies, and joins the Allies; Germany,
+ * if it is still ruled as before, invades its former ally. This happens only to an AI Italy.
+ */
+export const ITALY_FALL = { from: '1943-07-25', days: 45, warSupport: 35 };
+/** Italy's provinces in Europe, as opposed to its colonies in Africa. */
+const ITALY_EUROPE = ['Sicily', 'Calabria', 'Campania', 'Apulia', 'Lazio', 'Umbria', 'Emilia', 'Lombardy', 'Piedmont', 'Veneto', 'Sardinia'];
 /** The line every atrocity card carries. */
 export const ATROCITY_LINE = 'This card records real history. The game does not model these crimes, and nothing you do in it causes or rewards them.';
 
@@ -526,6 +551,11 @@ export function runStory(d: DipDraft, monthEnd: boolean, seed: number): void {
     s.fired = [...s.fired, 'sickle-cut'];
     for (const name of ['France', 'Belgium']) if (alive(d, name)) effect(d, { id: 'shock', country: name, until: d.day + SHOCK.days, attack: SHOCK.power, defence: SHOCK.power, why: 'its generals expected the war of 1914 again, and the armour came through the Ardennes' });
   }
+  // April 1941: the Greek army is in Albania facing Italy, and the German armour comes through Yugoslavia behind it.
+  if (!s.fired.includes('balkan-blitz') && fighting(d, 'Germany', 'Greece') && fighting(d, 'Italy', 'Greece')) {
+    s.fired = [...s.fired, 'balkan-blitz'];
+    for (const name of ['Greece', 'Yugoslavia']) if (alive(d, name) && fighting(d, 'Germany', name)) effect(d, { id: 'shock', country: name, until: d.day + BALKAN_SHOCK.days, attack: BALKAN_SHOCK.power, defence: BALKAN_SHOCK.power, why: name === 'Greece' ? 'most of its army was in Albania facing Italy, and the German armour came round through Yugoslavia' : 'its army was spread along every border, and was cut to pieces in days' });
+  }
   // The Red Army after the Terror.
   if (on(PURGE.from) && alive(d, 'Soviet Union') && governmentOf(d, 'Soviet Union') === 'communist')
     effect(d, { id: 'purge', country: 'Soviet Union', until: dayOf(d.startDate, PURGE.to), attack: PURGE.attack, defence: PURGE.defence, why: 'most senior commanders were shot or dismissed in 1937 and 1938' });
@@ -553,6 +583,10 @@ export function runStory(d: DipDraft, monthEnd: boolean, seed: number): void {
       askEvent(d, e, me);
     }
   }
+
+  if (monthEnd) farEast(d);
+  allies(d);
+  italyChangesSides(d);
 
   // Lend-Lease, once a month.
   if (monthEnd) {
@@ -587,6 +621,123 @@ export function runStory(d: DipDraft, monthEnd: boolean, seed: number): void {
     else if (s.greatWar !== null && !majorsFighting && d.day > s.greatWar + 90 && (!me || s.playerWar.last === null || d.day > s.playerWar.last + 30)) s.ended = { day: d.day, why: 'The great powers are at peace again.' };
     else if (s.start === '1939' && d.day >= dayOf(d.startDate, SCENARIO_END)) s.ended = { day: d.day, why: 'It is 1 January 1942: the September 1939 scenario ends here.' };
   }
+}
+
+/**
+ * Small countries invaded by the Axis join the Allies when Britain is already at war with the
+ * invader: Norway in April 1940, Greece in October 1940. Allied land is friendly ground, so
+ * British troops can come to help (operations.ts). Not for a British player, who decides alone.
+ */
+function allies(d: DipDraft): void {
+  const uk = 'United Kingdom';
+  if (d.player === uk || !alive(d, uk) || governmentOf(d, uk) !== 'democracy') return;
+  for (const [name, by] of [['Norway', ['Germany']], ['Greece', ['Italy', 'Germany']]] as const) {
+    const key = `allies-${name.toLowerCase()}`;
+    if (d.story.fired.includes(key) || !alive(d, name) || d.player === name) continue;
+    const invader = by.find((x) => fighting(d, name, x) && fighting(d, uk, x));
+    if (!invader) continue;
+    d.story.fired = [...d.story.fired, key];
+    if (allied(d.diplomacy, uk, name)) continue;
+    addPact(d, 'alliance', uk, name);
+    if (alive(d, 'France') && fighting(d, 'France', invader) && !allied(d.diplomacy, 'France', name) && d.player !== 'France') addPact(d, 'alliance', 'France', name);
+    note(d, 'pact', `${name} joins the Allies: Britain promises to send troops`, [uk, name]);
+  }
+}
+
+/** Italy dismisses Mussolini, and six weeks later changes sides (see ITALY_FALL). */
+function italyChangesSides(d: DipDraft): void {
+  const s = d.story;
+  const it = 'Italy';
+  if (d.player === it || !alive(d, it) || d.day < dayOf(d.startDate, ITALY_FALL.from) || s.fired.includes('italy-armistice')) return;
+  if (!s.fired.includes('italy-fall')) {
+    if (governmentOf(d, it) !== 'fascist' || !fighting(d, it, 'United Kingdom')) return;
+    const invaded = PROVINCES.some((p) => p.owner === it && ITALY_EUROPE.includes(p.name) && d.controller[p.id] !== it && fighting(d, it, d.controller[p.id]));
+    const libya = [P('Tripolitania'), P('Cyrenaica')].every((p) => d.controller[p] !== it) && (d.economies[it]?.warSupport ?? 50) < ITALY_FALL.warSupport;
+    if (!invaded && !libya) return;
+    s.fired = [...s.fired, 'italy-fall'];
+    const e = d.economies[it];
+    if (e) {
+      e.government = 'authoritarian';
+      e.warSupport = Math.min(e.warSupport, 20);
+    }
+    effect(d, { id: 'italy-fall', country: it, until: d.day + ITALY_FALL.days, attack: 0.8, defence: 0.8, why: 'Mussolini has fallen and the new government is looking for a way out of the war' });
+    note(d, 'government', 'The King of Italy dismisses Mussolini and has him arrested. Marshal Badoglio forms a government and says the war goes on', [it]);
+    return;
+  }
+  if (s.effects.some((x) => x.id === 'italy-fall' && x.country === it && x.until >= d.day)) return;
+  // The armistice: peace with every enemy, the end of the alliance with Germany, and a new side.
+  s.fired = [...s.fired, 'italy-armistice'];
+  const uk = 'United Kingdom';
+  const de = 'Germany';
+  // Britain first, so that its troops already in Italy stay as allies.
+  if (alive(d, uk) && governmentOf(d, uk) === 'democracy' && d.player !== uk) {
+    addPact(d, 'alliance', uk, it);
+    if (fighting(d, it, uk)) endWar(d, it, uk, 'white');
+  }
+  note(d, 'peace', 'Italy signs an armistice with the Allies and changes sides', [it, uk]);
+  if (alive(d, de) && governmentOf(d, de) === 'fascist' && d.player !== de) {
+    // Germany seizes every Italian-held province where its divisions stand, and disarms the Italian divisions in its reach.
+    const reach = new Set<string>([de, ...d.diplomacy.pacts.filter((p) => p.kind === 'alliance' && (p.a === de || p.b === de) && p.a !== it && p.b !== it).map((p) => (p.a === de ? p.b : p.a))]);
+    for (const p of PROVINCES) if (d.controller[p.id] === it && d.units.some((u) => u.at === p.id && u.owner === de)) d.controller[p.id] = de;
+    const disarmed = d.units.filter((u) => u.owner === it && reach.has(d.controller[u.at])).length;
+    d.units = d.units.filter((u) => !(u.owner === it && reach.has(d.controller[u.at])));
+    dropPacts(d, (p) => p.kind === 'alliance' && (p.a === it || p.b === it) && (p.a !== uk && p.b !== uk));
+    startWar(d, de, it, 'attack');
+    note(d, 'war', `German troops occupy the Italian provinces they stand in and disarm ${disarmed} Italian divisions`, [de, it]);
+  } else dropPacts(d, (p) => p.kind === 'alliance' && (p.a === it || p.b === it) && (p.a !== uk && p.b !== uk));
+  for (const key of [...d.wars]) {
+    const [a, b] = key.split('|');
+    if ((a === it || b === it) && !key.split('|').includes(de)) endWar(d, a, b, 'white');
+  }
+}
+
+/** Once a month: Soviet divisions go east to face Japan, or come back west (see FAR_EAST). */
+function farEast(d: DipDraft): void {
+  const s = d.story;
+  const name = 'Soviet Union';
+  if (!alive(d, name) || governmentOf(d, name) !== 'communist' || d.day < dayOf(d.startDate, FAR_EAST.from)) return;
+  const away = s.farEast ?? 0;
+  const mine = d.units.filter((u) => u.owner === name);
+  const fightingMajor = d.wars.some((k) => k.split('|').includes(name) && k.split('|').some((x) => x !== name && isMajor(x)));
+  if (d.day < dayOf(d.startDate, FAR_EAST.until)) {
+    const want = Math.floor(FAR_EAST.share * (mine.length + away)) - away;
+    if (want <= 0) return;
+    // Infantry from the interior goes, the newest first: never a division at a border, marching or fighting.
+    const border = (p: number) => PROVINCES[p].neighbours.some((n) => d.controller[n] !== name);
+    const going = mine
+      .filter((u) => u.type === 'infantry' && !u.path.length && !u.sea && !u.landing && d.controller[u.at] === name && !border(u.at))
+      .sort((a, b) => b.id - a.id)
+      .slice(0, want);
+    if (!going.length) return;
+    const ids = new Set(going.map((u) => u.id));
+    d.units = d.units.filter((u) => !ids.has(u.id));
+    s.farEast = away + going.length;
+    if (!s.fired.includes('far-east')) {
+      s.fired = [...s.fired, 'far-east'];
+      note(d, 'info', `After the fighting with Japan at Lake Khasan, the Soviet Union keeps a quarter of its army in the Far East, off this map (${s.farEast} divisions so far)`, [name]);
+    }
+    return;
+  }
+  // From the autumn of 1941: the Siberian divisions come west in two halves, if there is a great war to fight. The rest stay.
+  if (!away || !fightingMajor || s.fired.includes('siberians-2')) return;
+  const at = musterOf(d, name);
+  if (at === null) return;
+  // Each half is a fifth of the Far East army as it stood before the first left.
+  const half = FAR_EAST.back / 2;
+  const first = !s.fired.includes('siberians-1');
+  const n = Math.min(away, Math.round(first ? half * away : (half / (1 - half)) * away));
+  s.fired = [...s.fired, first ? 'siberians-1' : 'siberians-2'];
+  if (!n) return;
+  for (let i = 0; i < n; i++) d.units.push({ id: d.nextUnitId++, owner: name, type: 'infantry', at, strength: 100, organisation: 100, path: [], progress: 0, dugIn: 0, supply: 1 });
+  s.farEast = away - n;
+  note(d, 'info', `Siberian divisions reach ${PROVINCES[at].name}: Japan will not attack, so ${n} divisions of the Far East army come west`, [name]);
+}
+
+/** Where new divisions of a country gather: its capital, or failing that its biggest city still in its hands. */
+function musterOf(d: DipDraft, name: string): number | null {
+  const cap = PROVINCES.find((p) => p.capital && p.owner === name && d.controller[p.id] === name);
+  if (cap) return cap.id;
+  return PROVINCES.filter((p) => p.owner === name && d.controller[p.id] === name).sort((a, b) => b.victoryPoints - a.victoryPoints || a.id - b.id)[0]?.id ?? null;
 }
 
 /** What the story says to the player about a date, for labels in the screen. */

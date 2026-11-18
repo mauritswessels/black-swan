@@ -4,13 +4,15 @@ A grand-strategy game set in Europe from 1936. You lead a real country through t
 the war that followed, and face what its leaders faced: armies, factories, money, allies and
 public support. It is built to teach the history and the economics as you play.
 
-> **Status: Stage I-1 of the war game.** New to the game? Press **Learn to play** on the title
-> screen: nine short lessons on the real map teach the map table, time, moving divisions, battle,
-> factories, money, research and the home front, diplomacy, and the navy and air force. Each
-> lesson's card tells you one thing at a time, lights up what to click, and moves on when you
-> have done it, or press **Show me** and watch. In real games an advisor explains each panel the
-> first time you open it, and every underlined word opens the codex. The rest of Stage I comes
-> next: smarter army AI (I-2) and the finished Mac app with automatic updates (I-3).
+> **Status: Stage I-2 of the war game.** The AI generals are smarter. Each enemy is a front,
+> and the army is shared between fronts by what each needs and can feed; a front that
+> outnumbers the enemy attacks along its whole length, and attacks that cut off enemy divisions
+> come first. In Story mode Britain makes the real expeditions and landings (Norway 1940,
+> Greece 1941, Sicily 1943, Normandy 1944), a quarter of the Red Army waits in the Far East
+> until the Siberian divisions come west in late 1941, Norway holds out with British help,
+> Greece falls to the German attack of April 1941, and Italy drops Mussolini and changes sides
+> in 1943. New to the game? Press **Learn to play** on the title screen. Next and last:
+> the finished Mac app with automatic updates (I-3).
 
 ## How to play
 
@@ -104,12 +106,12 @@ You need [Node.js](https://nodejs.org) 20 or newer. Then, in this folder:
 npm install          # once
 npm run dev          # opens the game in your browser
 npm test             # run the unit tests
-npm run balance      # run the bot playtests (wars and finance) and write docs/balance-stage-h.md
+npm run balance      # run the bot playtests (wars, finance, history to 1945) and write docs/balance-stage-i2.md
 npm run build:map    # rebuild the 1936 map from Natural Earth data (rarely needed)
 ```
 
 The rules and every number behind them are in [MODEL.md](MODEL.md). The latest balance report
-is [docs/balance-stage-h.md](docs/balance-stage-h.md).
+is [docs/balance-stage-i2.md](docs/balance-stage-i2.md).
 
 ## Running it as a Mac app
 
@@ -191,7 +193,9 @@ src/sim/          the game engine: pure TypeScript, no UI, fully testable
   agenda.ts       what each AI country wants and when (the real timetable of 1936 to 1941),
                   and the conditions that let the player change it
   story.ts        Story mode: history cards, decisions on real dates, Spain, Vichy,
-                  Lend-Lease, surprise and the purge, chapters, how a game ends
+                  Lend-Lease, surprise and the purge, the Far East army, Italy's change
+                  of sides, chapters, how a game ends
+  operations.ts   the timetable of real expeditions and landings an AI Britain carries out
   scenario.ts     starting a game: the 1936 and September 1939 starts, and Free-for-all
   chapters.ts     the three chapters and each country's objectives
   opportunist.ts  Free-for-all: AI countries that look after themselves
@@ -208,7 +212,7 @@ src/sim/          the game engine: pure TypeScript, no UI, fully testable
   mods.ts         adds up what research and finished plans change
   aiEconomy.ts    a simple finance minister for AI countries (it also picks research and plans)
   testeconomy.ts  finance playtests, used by the balance report
-  ai.ts           a simple army commander for AI countries
+  ai.ts           the army commander for AI countries: fronts, offensives, encirclement
   game.ts         advance(): one day with a player, the AI leading every other country
   intel.ts        what a country can see (fog of war)
   testwar.ts      AI against AI test wars, used by the balance report
@@ -253,8 +257,8 @@ the middle of a modern region are therefore approximate:
 
 ## Plan
 
-See CHANGELOG.md for what is done. Next and last is Stage I: polish, a tutorial, the codex
-and the finished Mac app.
+See CHANGELOG.md for what is done. Next and last is Stage I-3: the finished Mac app with
+automatic updates.
 
 ## History and symbols
 

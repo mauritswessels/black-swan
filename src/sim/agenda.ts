@@ -410,24 +410,37 @@ export function carryOutAim(d: DipDraft, id: string, go: boolean): void {
   }
 }
 
-/** An AI army starts moving to the border this many days before a war its government has planned. */
+/** An AI army starts moving to the border this many days before a war its government has planned: longer for a great power, whose army has further to come. */
 export const MASS_DAYS = 45;
+export const MASS_DAYS_MAJOR = 100;
 /** The wars AI governments are about to start: [attacker, target]. Their armies deploy to the border first (ai.ts). */
 export function plannedWars(w: World): [string, string][] {
   const out: [string, string][] = [];
   for (const aim of AGENDA) {
-    // Only the great campaigns: a small neighbour is attacked with whatever stands near.
-    if (aim.act.do !== 'war' || aim.country === w.player || !isMajor(aim.act.on) || aim.act.limited) continue;
+    // Not the border wars for a few provinces: those are fought with whatever stands near.
+    if (aim.act.do !== 'war' || aim.country === w.player || aim.act.limited) continue;
     const mark = w.diplomacy.agenda[aim.id];
     if (mark === 'done' || mark === 'dropped') continue;
     const left = aimDay(w, aim) - w.day;
-    if (left > MASS_DAYS || left < -GIVE_UP_DAYS) continue;
+    if (left > (isMajor(aim.act.on) ? MASS_DAYS_MAJOR : MASS_DAYS) || left < -GIVE_UP_DAYS) continue;
     if (!alive(w, aim.country) || !alive(w, aim.act.on) || governmentOf(w, aim.country) !== aim.regime || fighting(w, aim.country, aim.act.on) || allied(w.diplomacy, aim.country, aim.act.on)) continue;
     // Before the date it deploys in any case; after it, only while it is still weighing its odds.
     if (left <= 0 && aim.needs?.(w)) continue;
     out.push([aim.country, aim.act.on]);
   }
   return out;
+}
+
+/**
+ * In Story mode no AI country makes a negotiated peace with Germany or Italy while they are
+ * ruled by their fascist governments, or with an ally of theirs at war beside them: the real
+ * war in Europe ended only in surrender, an armistice or a change of sides. (A player may still
+ * offer peace, and the AI answers it in the usual way.) Border wars for a few provinces are not
+ * affected.
+ */
+export function toTheEnd(w: Pick<World, 'mode' | 'economies' | 'capitulated' | 'diplomacy'>, a: string, b: string): boolean {
+  if (w.mode !== 'story' || w.diplomacy.aims[warKey(a, b)]) return false;
+  return [a, b].some((x) => (x === 'Germany' || x === 'Italy') && alive(w, x) && governmentOf(w, x) === 'fascist');
 }
 
 /** Today's diplomatic orders for every country the AI leads. */
@@ -466,6 +479,7 @@ export function aiDiplomacyOrders(w: World): Order[] {
       const [a, b] = key.split('|');
       if (a !== me && b !== me) continue;
       const other = a === me ? b : a;
+      if (other !== w.player && toTheEnd(w, me, other)) continue;
       if ((dip.rebuffs[`${me}>${other}:peace`] ?? 0) > w.day) continue;
       const aim = dip.aims[key];
       const { score } = warScore(w, me, other);

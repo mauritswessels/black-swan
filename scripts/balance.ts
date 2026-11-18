@@ -4,14 +4,14 @@
  * years of AI peace, to check research, national plans and the home front; and three runs of
  * the whole story with every country led by the AI, to check that it follows real history.
  *
- *   npm run balance            200 wars, 24 finance runs, a peace run and three history runs, writes docs/balance-stage-h.md
+ *   npm run balance            200 wars, 24 finance runs, a peace run and three history runs, writes docs/balance-stage-i2.md
  *   npm run balance -- 40      a quicker run with fewer wars
  *
  * Every war uses the real 1936 map and starting armies, with both sides led by the simple AI
  * in src/sim/ai.ts and the AI finance minister in src/sim/aiEconomy.ts. The same command always gives the same report (seeded random numbers).
  */
 import fs from 'node:fs';
-import { quiet } from '../src/sim/agenda';
+import { dayOf, quiet } from '../src/sim/agenda';
 import { PROVINCES } from '../src/sim/map';
 import { scores } from '../src/sim/report';
 import { newGame } from '../src/sim/scenario';
@@ -103,22 +103,58 @@ const EVENTS: [string, string, RegExp][] = [
   ['Germany invades the Soviet Union', '22 June 1941', /Germany declares war on the Soviet Union|Germany declares war on Soviet Union/],
   ['Britain and the Soviet Union become allies', '12 July 1941', /Soviet Union and the United Kingdom become allies/],
   ['Lend-Lease reaches the Soviet Union', '1 October 1941', /Lend-Lease: American equipment begins to reach the Soviet Union/],
+  ['Yugoslavia falls', '17 April 1941', /Yugoslavia surrenders/],
+  ['Greece falls', '23 April 1941', /Greece surrenders/],
+  ['Siberian divisions reach Moscow', 'November 1941', /Siberian divisions reach Moscow/],
+  ['Mussolini falls', '25 July 1943', /dismisses Mussolini/],
+  ['Italy signs an armistice and changes sides', '8 September 1943', /Italy signs an armistice with the Allies/],
+  ['Moscow falls', 'never', /^MOSCOW FALLS$/],
+  ['The Soviet Union surrenders', 'never', /Soviet Union surrenders/],
+  ['Germany surrenders', '8 May 1945', /Germany surrenders/],
 ];
+/** Landings the AI makes (forceLog), with the real ones they stand for. */
+const LANDINGS: [string, string, string[]][] = [
+  ['The Allies land in Sicily or southern Italy', '10 July 1943', ['Sicily', 'Calabria', 'Sardinia', 'Campania', 'Apulia']],
+  ['The Allies land in northern France or the Low Countries', '6 June 1944', ['Normandy', 'Brittany', 'Holland', 'Île-de-France', 'Poitou', 'Gascony']],
+  ['The Allies land in the south of France', '15 August 1944', ['Provence', 'Languedoc']],
+];
+const END = '1945-05-08';
 const SEEDS = ['history-1', 'history-2', 'history-3'];
 // The world keeps only its latest news, so the whole of each run's news is gathered here as it happens.
 const allNews = new Map<World, { day: number; text: string }[]>();
-const played = (start: World, days: number): World => {
+/** The eastern front on 1 January of each year, for each run: Soviet provinces held by the enemy, and the two armies. */
+const eastRows: string[] = [];
+const MOSCOW = PROVINCES.find((p) => p.name === 'Moscow')!.id;
+const played = (start: World, days: number, seed?: string): World => {
   let w = start;
   const news: { day: number; text: string }[] = [];
   let last = -1;
+  let moscow = false;
+  const soviet = PROVINCES.filter((p) => p.owner === 'Soviet Union');
   for (let d = 0; d < days; d++) {
     w = advance(w);
     for (const e of w.diplomacy.log) if (e.id > last) { last = e.id; news.push({ day: e.day, text: e.text }); }
+    if (!moscow && w.controller[MOSCOW] !== 'Soviet Union') (moscow = true), news.push({ day: w.day, text: 'MOSCOW FALLS' });
+    const date = dateLabel(w);
+    if (seed && /^1 January 19(4[2-5])$/.test(date)) {
+      const lost = soviet.filter((p) => w.controller[p.id] !== 'Soviet Union').length;
+      const n = (c: string) => w.units.filter((u) => u.owner === c).length;
+      const out = PROVINCES.filter((p) => p.owner === 'Germany' && w.controller[p.id] !== 'Germany').length;
+      eastRows.push(`| ${seed} | ${date} | ${w.capitulated.includes('Soviet Union') ? 'surrendered' : `${lost} of ${soviet.length}`} | ${out} | ${n('Germany')} | ${n('Soviet Union')} | ${n('United Kingdom')} | ${w.capitulated.includes('Italy') ? 'fallen' : w.story.fired.includes('italy-armistice') ? 'with the Allies' : 'with Germany'} |`);
+    }
   }
   allNews.set(w, news);
   return w;
 };
-const histories = SEEDS.map((seed) => played(newWorld('story', seed), 365 * 6 + 2));
+const histories = SEEDS.map((seed) => played(newWorld('story', seed), dayOf('1936-01-01', END), seed));
+const landingRows = LANDINGS.map(([what, real, where]) => {
+  const ids = new Set(where.map((n) => PROVINCES.find((p) => p.name === n)!.id));
+  const when = histories.map((w) => {
+    const e = w.forceLog.find((x) => x.kind === 'landing' && x.countries[0] === 'United Kingdom' && / lands /.test(x.text) && x.province !== undefined && ids.has(x.province));
+    return e ? dateLabel({ startDate: w.startDate, day: e.day }) : 'did not happen';
+  });
+  return `| ${what} | ${real} | ${when.join(' | ')} |`;
+});
 const historyRows = EVENTS.map(([what, real, text]) => {
   const when = histories.map((w) => {
     const e = allNews.get(w)!.find((x) => text.test(x.text));
@@ -159,9 +195,11 @@ console.log(ffaRows.join('\n'));
 console.log(forceRows.join('\n'));
 console.log(seaRows.join('\n'));
 console.log(historyRows.join('\n'));
+console.log(landingRows.join('\n'));
+console.log(eastRows.join('\n'));
 console.log(endRows.join('\n'));
 
-const report = `# Balance report, Stage H: ${all.length} AI against AI wars, ${financeRows.length} finance playtests, four years of peace, three runs of history and three free-for-alls
+const report = `# Balance report, Stage I-2: ${all.length} AI against AI wars, ${financeRows.length} finance playtests, four years of peace, three runs of history and three free-for-alls
 
 Made by \`npm run balance\`. Do not edit the tables by hand; run the command again instead.
 
@@ -207,7 +245,7 @@ ${peaceRows.join('\n')}
 
 ## Does the AI follow history?
 
-Story mode from 1 January 1936 to 1 January 1942, three times with different random numbers,
+Story mode from 1 January 1936 to 8 May 1945, three times with different random numbers,
 every country led by the AI and no player. The table shows the date each event happened in the
 game beside its real date.
 
@@ -215,7 +253,23 @@ game beside its real date.
 | --- | --- | --- | --- | --- |
 ${historyRows.join('\n')}
 
-How each run stood on 1 January 1942:
+Landings by the British AI (the first one on each stretch of coast; there is no American army on this map, so British divisions stand in for all the Allies):
+
+| Landing | Really happened | ${SEEDS.join(' | ')} |
+| --- | --- | --- | --- | --- |
+${landingRows.join('\n')}
+
+## The eastern front
+
+On 1 January of each year: how many of the Soviet Union's own provinces the enemy holds, how
+many German provinces the enemy holds, and the size of the three biggest armies on the map
+(the Soviet Union also has an army in the Far East that is not on this map until the autumn of 1941).
+
+| Run | Date | Soviet provinces lost | German provinces lost | German divisions | Soviet divisions | British divisions | Italy |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+${eastRows.join('\n')}
+
+How each run stood on 8 May 1945:
 
 | Run | World tension | Countries that have fallen | Wars still being fought |
 | --- | --- | --- | --- |
@@ -223,7 +277,7 @@ ${endRows.join('\n')}
 
 ## Story mode in the same runs
 
-How each run stood on 1 January 1942. "Soviet provinces lost" shows how far the eastern front
+How each run stood on 8 May 1945. "Soviet provinces lost" shows how far the eastern front
 has moved; losses are in divisions' worth of men and equipment.
 
 | Run | History cards filed | Spain | Armistice signed by | Soviet provinces lost | Heaviest battle losses |
@@ -240,7 +294,7 @@ ${ffaRows.join('\n')}
 
 ## The war at sea and in the air
 
-The same three runs on 1 January 1942. Ships are capital ships / escort flotillas / submarine
+The same three runs on 8 May 1945. Ships are capital ships / escort flotillas / submarine
 flotillas; wings are fighters + bombers; "imports sunk" is the share of the country's imports
 lost at sea that day.
 
@@ -248,14 +302,14 @@ lost at sea that day.
 | --- | --- | --- | --- | --- | --- | --- |
 ${forceRows.join('\n')}
 
-Over the six years of each run:
+Over the nine years of each run:
 
 | Run | Naval battles | Fleets destroyed | Landings | Air wings lost | Provinces with bomb damage at the end |
 | --- | --- | --- | --- | --- | --- |
 ${seaRows.join('\n')}
 `;
 fs.mkdirSync('docs', { recursive: true });
-const file = 'docs/balance-stage-h.md';
+const file = 'docs/balance-stage-i2.md';
 // Keep the hand-written notes below the tables when the numbers are refreshed.
 const marker = '\n## What the results say';
 const old = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';

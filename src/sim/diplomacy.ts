@@ -117,6 +117,12 @@ export const SURPRISE_POWER = 0.6;
 export const SURRENDER_SHARE = 0.6;
 /** Once its capital has fallen, a country gives up at this smaller share. France asked for an armistice eight days after Paris fell. */
 export const SURRENDER_SHARE_NO_CAPITAL = 0.4;
+/**
+ * In Story mode the Soviet Union, fighting a fascist Germany's war of annihilation, does not give
+ * up when Moscow falls: in October 1941 the government left for Kuibyshev, ready to fight on from
+ * the Volga. It surrenders only when enemies hold this share of its victory points.
+ */
+export const LAST_STAND_SHARE = 0.75;
 
 /** A standing claim: a cause for war that never runs out, and (when it names a demand) the right to send an ultimatum. */
 export interface Claim {
@@ -521,10 +527,10 @@ export const addPact = (d: DipDraft, kind: PactKind, a: string, b: string): void
   d.diplomacy.pacts.push({ kind, a, b, since: d.day });
   shift(d.diplomacy, a, b, 10);
 };
-const dropPacts = (d: DipDraft, test: (p: Pact) => boolean): void => {
+export const dropPacts = (d: DipDraft, test: (p: Pact) => boolean): void => {
   d.diplomacy.pacts = d.diplomacy.pacts.filter((p) => !test(p));
 };
-const between = (a: string, b: string) => (p: Pact) => (p.a === a && p.b === b) || (p.a === b && p.b === a);
+export const between = (a: string, b: string) => (p: Pact) => (p.a === a && p.b === b) || (p.a === b && p.b === a);
 
 /** Divisions standing where they may no longer be (after a peace or the end of an alliance) go home by rail. */
 export function sendHome(d: DipDraft): void {
@@ -675,7 +681,7 @@ function honour(d: DipDraft, protector: string, aggressor: string, friend: strin
 }
 
 /** Hand land back or over when two countries stop fighting, and call the armies home. */
-function endWar(d: DipDraft, a: string, b: string, terms: PeaceTerms): void {
+export function endWar(d: DipDraft, a: string, b: string, terms: PeaceTerms): void {
   const key = warKey(a, b);
   if (!d.wars.includes(key)) return;
   const dip = d.diplomacy;
@@ -1169,6 +1175,25 @@ export function onGovernmentFell(d: DipDraft, name: string, was: Government): vo
   d.diplomacy.justifying = d.diplomacy.justifying.filter((j) => j.by !== name);
 }
 
+/**
+ * A small country fights on while a great-power ally has divisions on its own soil and it still
+ * holds some of its land: its government can leave the capital and carry on the war (Norway in
+ * April and May 1940).
+ */
+export function fightsOn(d: Pick<DipDraft, 'units' | 'controller' | 'owner' | 'diplomacy' | 'capitulated' | 'wars'> & { story?: { fired: string[] } }, name: string): boolean {
+  // Italy after its armistice (story.ts) fights on beside the Allies like a small country.
+  if (isMajor(name) && !(name === 'Italy' && d.story?.fired.includes('italy-armistice'))) return false;
+  const mine = PROVINCES.filter((p) => p.owner === name && d.owner[p.id] === name);
+  if (!mine.some((p) => d.controller[p.id] === name)) return false;
+  const friends = allianceMap(d.diplomacy).get(name);
+  if (!friends) return false;
+  const home = new Set(mine.map((p) => p.id));
+  return d.units.some((u) => home.has(u.at) && friends.has(u.owner) && isMajor(u.owner) && alive(d, u.owner) && d.wars.some((k) => k.split('|').includes(u.owner) && k.split('|').some((x) => x !== u.owner && fighting(d, name, x))));
+}
+
+/** In deciding when a country surrenders, land it has annexed since 1936 counts for this share of its victory points. */
+export const ANNEXED_WEIGHT = 0.25;
+
 /** Surrender: every country whose enemies hold enough of its land gives up, to whoever holds most of it. */
 export function surrenders(d: DipDraft): void {
   for (const loser of [...new Set(d.wars.flatMap((k) => k.split('|')))].sort()) {
@@ -1178,14 +1203,20 @@ export function surrenders(d: DipDraft): void {
     const held = new Map<string, number>();
     for (const p of PROVINCES) {
       if (d.owner[p.id] !== loser) continue;
-      total += p.victoryPoints;
+      // Land annexed since 1936 counts for a quarter: losing it does not break a nation's will to fight.
+      const vp = p.victoryPoints * (p.owner === loser ? 1 : ANNEXED_WEIGHT);
+      total += vp;
       const holder = d.controller[p.id];
       if (!fighting(d, loser, holder)) continue;
-      held.set(holder, (held.get(holder) ?? 0) + p.victoryPoints);
+      held.set(holder, (held.get(holder) ?? 0) + vp);
       if (p.capital && p.owner === loser) capitalLost = true;
     }
     const lost = [...held.values()].reduce((a, b) => a + b, 0);
-    if (!total || lost / total < (capitalLost ? SURRENDER_SHARE_NO_CAPITAL : SURRENDER_SHARE)) continue;
+    const lastStand = d.mode === 'story' && loser === 'Soviet Union' && [...held.keys()].some((h) => governmentOf(d, h) === 'fascist');
+    if (!total || lost / total < (lastStand ? LAST_STAND_SHARE : capitalLost ? SURRENDER_SHARE_NO_CAPITAL : SURRENDER_SHARE)) continue;
+    if (fightsOn(d, loser)) continue;
+    // A government that has already deposed its dictator is negotiating an armistice instead (story.ts).
+    if (d.story.effects.some((x) => x.id === 'italy-fall' && x.country === loser && x.until >= d.day)) continue;
     const victor = [...held.entries()].sort((x, y) => y[1] - x[1] || (x[0] < y[0] ? -1 : 1))[0][0];
     capitulate(d, loser, victor);
   }

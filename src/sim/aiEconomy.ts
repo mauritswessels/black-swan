@@ -13,7 +13,10 @@
  */
 import { cannotRaiseWing } from './air';
 import { cannotRaise, conscriptionBlocked, CONSCRIPTION, economyView, FORCE_UPKEEP, LINE_KINDS, MEN_PER_DIVISION, monthEnds, musterPoint, PLANE_KINDS, tallies, TAX_MIN, UNIT_TYPES, UPKEEP, WAR_UPKEEP, type Tally } from './economy';
+import { PROVINCES } from './map';
 import { HOME_ZONES } from './sea';
+import { supplyCapacity } from './supply';
+import { atWar } from './war';
 import { cannotStartPlan, plansFor } from './plans';
 import { cannotResearch, TECHS, yearAt, type Branch } from './research';
 import type { Government, LineKind, Order, World } from './types';
@@ -26,6 +29,18 @@ const ALARM_DEFICIT = 0.06;
 const WAR_DEFICIT = 0.1;
 /** At war it keeps forming divisions until the deficit reaches this share of output. */
 const WAR_ARMY_DEFICIT = 0.2;
+/**
+ * A command economy fighting on its own soil forms every division it has equipment and men for,
+ * whatever the budget says: the state takes what it needs, and the people pay in hunger and
+ * rising prices rather than in taxes (the Soviet Union from 1941).
+ */
+const totalWar = (w: World, country: string): boolean =>
+  w.economies[country]?.government === 'communist' &&
+  PROVINCES.some((p) => p.owner === country && w.owner[p.id] === country && w.controller[p.id] !== country && atWar(w, country, w.controller[p.id])) &&
+  // ...but only up to what its land can feed: beyond that, new divisions would only starve in the crowd.
+  w.units.filter((u) => u.owner === country).length < TOTAL_WAR_FEED * PROVINCES.reduce((a, p) => a + (w.controller[p.id] === country ? supplyCapacity(p.id) : 0), 0);
+/** Share of the supply capacity of its land (supply.ts) up to which a country at total war forms divisions. */
+const TOTAL_WAR_FEED = 0.9;
 const PEACE_TAX_MAX = 0.35;
 const WAR_TAX_MAX = 0.45;
 /** The mix of military factories the army aims for: mostly infantry, some guns, some tanks. */
@@ -75,10 +90,11 @@ export function aiEconomyOrders(w: World, country: string, tally?: Tally): Order
   const armyLimit = (v.atWar ? WAR_ARMY_DEFICIT : peaceDeficit) * v.nominalGDP;
   let manpower = e.manpower;
   let balance = v.budget.balance;
+  const total = v.atWar && totalWar(w, country);
   for (const k of UNIT_TYPES) {
     for (let stock = e.stock[k]; stock >= 1 && manpower >= MEN_PER_DIVISION && !cannotRaise(e, k); stock--) {
       const upkeep = UPKEEP[k] * (v.atWar ? WAR_UPKEEP : 1) * (e.priceLevel / 100);
-      if (balance - upkeep < -armyLimit) break;
+      if (balance - upkeep < -armyLimit && !total) break;
       orders.push({ type: 'raise', country, unit: k });
       manpower -= MEN_PER_DIVISION;
       balance -= upkeep;

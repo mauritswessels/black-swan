@@ -437,6 +437,8 @@ export interface StoryState {
   opportunist: boolean;
   /** Set in a tutorial lesson (src/tutorial): no history cards, story events, random events or end of the game. */
   lesson?: string;
+  /** Soviet divisions kept in the Far East, facing Japan, off this map (story.ts). Missing in older saves means none. */
+  farEast?: number;
 }
 
 export type PactKind = 'alliance' | 'guarantee' | 'nonAggression';

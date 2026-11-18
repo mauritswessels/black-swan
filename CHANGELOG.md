@@ -1,5 +1,54 @@
 # Changelog
 
+## War game, Stage I-2: Smarter army AI (2026-11-18)
+
+- **Fronts.** The AI general now sees each enemy as a front and shares the army out by what
+  each front needs and can feed: a guard on every border first, then enough to beat a small
+  country, then the rest to the great wars, with a tenth of a big army kept at home. A war that
+  is only planned gets its army in place beforehand (45 days, or 100 before attacking a great
+  power), so Germany is ready on 22 June 1941 instead of arriving tired from France.
+- **Front-wide offensives and encirclement.** A front that outnumbers the enemy by 1.2 to 1
+  attacks along its whole length with less caution; one that is outnumbered 0.6 to 1 only
+  defends. Attacks that would cut off enemy divisions come first and need less of an edge.
+  Beaten defenders now leave 10% of their strength behind when they retreat, 20% when tanks
+  chase them across open ground, so breakthroughs cost the loser more. Great cities in the line
+  (the capital and any of 10 victory points or more) are held at full strength, and divisions
+  no longer pile up in a province that cannot feed them.
+- **The Red Army of 1941.** From the border war with Japan in 1938 the Soviet Union keeps a
+  quarter of its infantry in the Far East, off the map (still paid for). In November and
+  December 1941 two fifths of it come back to Moscow as the Siberian divisions. The Soviet army
+  on the map in June 1941 is about 310 to 335 divisions instead of 420. Once invaded, a communist
+  country raises every division it has the equipment and men for, whatever the budget, up to
+  what its land can feed.
+- **A second front without a player.** In Story mode an AI Britain carries out the real
+  expeditions and landings on their dates (new file `src/sim/operations.ts`): help for Norway
+  from April 1940 (called home when the battle for France goes wrong), help for Greece in 1941,
+  Sicily from 10 July 1943, Salerno, Normandy from 6 June 1944 and Provence. Its fleets gather
+  off the beach first. From November 1942 the Italian fleet stays in port, short of fuel, as it
+  really did. Britain no longer sends divisions to the Soviet front.
+- **History follows more closely.** Norway and Greece join Britain when they are invaded, and a
+  small country fights on while a great ally has troops on its soil, so Norway now holds out
+  for about two months instead of ten days. Germany's attack on Greece in April 1941 catches the
+  Greek army facing Italy (60 days at x 0.6), so Greece can fall in the spring (it did in one
+  of three test runs, on 1 June 1941). From July 1943 an
+  AI Italy drops Mussolini once the Allies stand in Italy, signs an armistice 45 days later,
+  joins the Allies, and Germany turns on it. No AI country makes a negotiated peace with Hitler
+  or Mussolini, and the Soviet Union does not give up when Moscow falls. Annexed land counts a
+  quarter in deciding when a country surrenders, so losing the Baltic states no longer breaks
+  the Soviet Union.
+- **Balance report.** `npm run balance` now plays history to 8 May 1945 three times and reports
+  the landings and the eastern front year by year (docs/balance-stage-i2.md). Italy changed
+  sides in September 1943 in two runs of three, Sicily was landed on in August 1943 in two and
+  Normandy in July 1944 in one.
+- **Still to fix.** After 1941 the eastern front settles: in two runs Germany holds a few Soviet
+  provinces until 1945, and in one it takes Moscow and the Soviet Union gives up in 1943. The
+  cause is mostly the war economy (Soviet inflation, a German army of over 400 divisions), not
+  the generals, and Germany never surrenders by May 1945.
+- **Tests.** 199 tests (13 new): sharing the army between fronts, the operations timetable,
+  fighting to the end, Norway fighting on, the Soviet last stand, Italy changing sides, and the
+  Far East army in the 1936 to 1941 bot playtest.
+- **Saves.** Stage I-1 saves still load. App version 0.12.0.
+
 ## War game, Stage I-1: Learn to play, advisor tips and the codex (2026-11-17)
 
 - **Learn to play.** A new button on the title screen (key L) opens nine short lessons, about

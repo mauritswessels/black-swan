@@ -3,11 +3,11 @@
  * other country, then step().
  *
  * Every AI country runs its economy (aiEconomy.ts) and its diplomacy (agenda.ts) every day.
- * Its army commander (ai.ts), admirals and air marshals (aiForces.ts) give orders only while
- * the country is at war.
+ * Its army commander (ai.ts) gives orders while the country is at war, or about to start a war
+ * its government has planned; its admirals and air marshals (aiForces.ts) only while it is at war.
  */
 import { aiDiplomacyOrders, plannedWars } from './agenda';
-import { aiOrders, massOrders } from './ai';
+import { aiOrders } from './ai';
 import { aiForceOrders } from './aiForces';
 import { allianceMap, isDiplomacyOrder } from './diplomacy';
 import { pictures } from './forces';
@@ -41,12 +41,17 @@ export function ownOrders(w: World, orders: Order[]): Order[] {
 
 export function advance(w: World, playerOrders: Order[] = []): World {
   const fighting = aiCountries(w);
-  // Control of the sea and the sky today, worked out once for every AI commander.
-  const friends = fighting.length ? allianceMap(w.diplomacy) : null;
-  const seen = friends ? pictures(w, friends) : undefined;
-  const ai = fighting.flatMap((c) => [...aiOrders(w, c, { sea: seen?.sea, air: seen?.air.battle }), ...(seen && friends ? aiForceOrders(w, c, seen.sea, friends) : [])]);
   // An army moves up to the border in the weeks before a war its government has planned.
-  for (const [by, on] of plannedWars(w)) ai.push(...massOrders(w, by, on));
+  const planned = new Map<string, string[]>();
+  for (const [by, on] of plannedWars(w)) planned.set(by, [...(planned.get(by) ?? []), on]);
+  const commanded = [...new Set([...fighting, ...planned.keys()])].sort();
+  // Control of the sea and the sky today, worked out once for every AI commander.
+  const friends = commanded.length ? allianceMap(w.diplomacy) : null;
+  const seen = friends ? pictures(w, friends) : undefined;
+  const ai = commanded.flatMap((c) => [
+    ...aiOrders(w, c, { sea: seen?.sea, air: seen?.air.battle, planned: planned.get(c) }),
+    ...(seen && friends && fighting.includes(c) ? aiForceOrders(w, c, seen.sea, friends) : []),
+  ]);
   // Every other country runs its own economy and its own diplomacy, at peace or at war.
   return step(w, [...ownOrders(w, playerOrders), ...ai, ...allAiEconomyOrders(w), ...aiDiplomacyOrders(w), ...opportunistOrders(w)]);
 }

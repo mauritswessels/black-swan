@@ -16,7 +16,9 @@
  *
  * The damage is shared equally among the enemy divisions in the fight. It wears down
  * organisation, and a little strength. A defender at zero organisation retreats, or surrenders
- * if it has nowhere to go. An attacker below 10 organisation gives up the attack.
+ * if it has nowhere to go. A retreat costs a tenth of the division's strength, a fifth when the
+ * attackers' tanks can chase it across open ground. An attacker below 10 organisation gives up
+ * the attack.
  *
  * Two more multipliers apply to a whole side. Air: the side that controls the sky over the
  * province hits 15% harder and the other 15% less hard (air.ts). Landings: a division coming
@@ -54,6 +56,13 @@ export const DEFENCE_WIDTH = 8;
 export const ATTACK_WIDTH = 8;
 /** Extra attackers that fit for each further direction the attack comes from. */
 export const ATTACK_WIDTH_PER_EXTRA_DIRECTION = 4;
+
+/** A beaten defender that falls back loses this share of its strength (guns and stragglers left behind). */
+export const ROUT_LOSS = 0.1;
+/** Twice as much when the attackers' tanks can chase it: open ground, and at least a fifth of the attackers in the fight are armour. */
+export const ROUT_LOSS_PURSUED = 0.2;
+export const OPEN_GROUND: Terrain[] = ['plains', 'desert'];
+export const PURSUIT_ARMOUR_SHARE = 0.2;
 
 /** Organisation and strength lost per point of damage a division takes. */
 export const ORG_PER_DAMAGE = 0.5;
@@ -304,6 +313,7 @@ export function fightBattles(d: Draft, rng: Rng): Set<number> {
     t.artilleryShare += share('artillery');
 
     // Beaten defenders fall back, or surrender if they are surrounded.
+    const pursuit = OPEN_GROUND.includes(PROVINCES[province].terrain) && front.filter((u) => u.type === 'armour').length >= PURSUIT_ARMOUR_SHARE * front.length;
     for (const u of holding) {
       if (u.organisation > 0 && u.strength > 0) continue;
       const to = u.strength > 0 ? retreatTarget(d, u, CAPITAL_OF.get(u.owner)) : -1;
@@ -314,6 +324,10 @@ export function fightBattles(d: Draft, rng: Rng): Set<number> {
         }
         removed.add(u.id);
       } else {
+        // A beaten division leaves guns and stragglers behind, more of them when tanks chase it across open country.
+        const loss = Math.min(u.strength - 1, u.strength * (pursuit ? ROUT_LOSS_PURSUED : ROUT_LOSS));
+        u.strength -= loss;
+        battle.defenderLosses += loss / 100;
         u.at = to;
         u.path = [];
         u.progress = 0;

@@ -25,6 +25,9 @@ import { COAST, fleetPower, HOME_ZONES, seaDependence, seaRoute, TRADE_ROUTE, ZO
 import { supplyCapacity } from './supply';
 import type { Fleet, Order, Unit, World } from './types';
 import { atWar, enemiesOf } from './war';
+import { activeOperations, type Operation } from './operations';
+import { dayOf } from './agenda';
+import { ITALIAN_FUEL } from './story';
 
 /** Orders for a country's fleets and wings today. */
 export function aiForceOrders(w: World, country: string, sea: SeaPicture, friends: Map<string, Set<string>>): Order[] {
@@ -55,7 +58,31 @@ function fleetOrders(w: World, country: string, enemies: string[], sea: SeaPictu
   const send = (f: Fleet, zone: number, mission: Fleet['mission']) => {
     if (ZONES[zone].id !== f.zone || mission !== f.mission) orders.push({ type: 'fleet', fleet: f.id, zone: ZONES[zone].id === f.zone ? undefined : ZONES[zone].id, mission });
   };
+  // A planned landing (operations.ts) needs the sea off its beaches: the fleets away from home
+  // waters gather there together, if together they are stronger than the enemy in it.
+  const sent = new Set<number>();
+  for (const op of activeOperations(w, country)) {
+    if (op.kind !== 'landing') continue;
+    const beach = op.targets.find((p) => enemies.includes(w.controller[p]));
+    if (beach === undefined) continue;
+    const zones = COAST[beach].filter((z) => !(sea.status(country, z) === 'own'));
+    if (zones.length < COAST[beach].length) continue; // already one zone off the beach is ours
+    const homeZones = new Set(HOME_ZONES[country] ?? []);
+    for (const z of [...zones].sort((a, b) => power(a, foe) - power(b, foe) || a - b).slice(0, 1)) {
+      const group = fleets.filter((f) => !sent.has(f.id) && f.ships.capital + f.ships.escort >= 0.5 && !homeZones.has(ZONE_INDEX[f.zone]) && (zonePath(ZONE_INDEX[f.zone], z)?.length ?? 99) <= 4);
+      const strength = group.reduce((a, f) => a + fleetPower(f), 0) + power(z, (n) => mine(n) && !group.some((f) => f.owner === n));
+      if (!group.length || strength < 1.2 * power(z, foe)) continue;
+      for (const f of group) (send(f, z, 'patrol'), sent.add(f.id));
+    }
+  }
+  // Story mode: no fuel for the Italian fleet (story.ts).
+  const noFuel = w.mode === 'story' && country === ITALIAN_FUEL.country && w.day >= dayOf(w.startDate, ITALIAN_FUEL.from) && !w.story.lesson;
   for (const f of fleets) {
+    if (sent.has(f.id)) continue;
+    if (noFuel) {
+      send(f, ZONE_INDEX[f.zone], 'port');
+      continue;
+    }
     const here = ZONE_INDEX[f.zone];
     const steps = (z: number) => zonePath(here, z)?.length ?? 99;
     if (f.ships.capital + f.ships.escort < 0.5) {
@@ -178,6 +205,14 @@ export interface SeaPlan {
   front: number[];
   /** Divisions in, or on their way to, each province. */
   crowd: Map<number, number>;
+  /** Divisions it may have overseas in all. Missing: an eighth of the army. */
+  abroadCap?: number;
+  /** Expeditions to help an ally due today (operations.ts). */
+  helps?: Operation[];
+  /** Planned landings due today (operations.ts): they go ahead of any landing of the commander's own. */
+  landings?: Operation[];
+  /** Most of the army can reach a front on foot: no landings as a sideshow, except planned ones. */
+  onLand?: boolean;
 }
 
 /** Share of its army a country will send overseas. */
@@ -197,13 +232,15 @@ export function seaOrders(plan: SeaPlan): Order[] {
   const mine = w.units.filter((u) => u.owner === country);
   // At most an eighth of the army goes overseas, and never the last division in a province.
   const abroad = mine.filter((u) => u.sea || u.landing || w.owner[u.at] !== country).length;
-  const room = Math.floor(EXPEDITION_SHARE * mine.length) - abroad;
-  if (room <= 0) return orders;
+  const room = (plan.abroadCap ?? Math.floor(EXPEDITION_SHARE * mine.length)) - abroad;
+  // A planned landing goes ahead even when other expeditions have used up the share.
+  const planned = Math.max(0, ...(plan.landings ?? []).map((o) => o.size), ...(plan.helps ?? []).map((o) => o.follow));
+  if (room <= 0 && !planned) return orders;
   const here = new Map<number, number>();
   for (const u of mine) if (!u.sea && !u.landing) here.set(u.at, (here.get(u.at) ?? 0) + 1);
   const free: Unit[] = [];
   for (const u of [...stranded].sort((a, b) => b.id - a.id)) {
-    if (free.length >= room) break;
+    if (free.length >= Math.max(room, planned)) break;
     if (u.sea || u.landing || !COAST[u.at].length || (here.get(u.at) ?? 0) <= 1) continue;
     here.set(u.at, here.get(u.at)! - 1);
     free.push(u);
@@ -212,6 +249,21 @@ export function seaOrders(plan: SeaPlan): Order[] {
   const friendly = (p: number) => w.controller[p] === country || !!allies?.has(w.controller[p]);
   const used = new Set<number>();
 
+  // A help expedition (operations.ts) goes straight to its ally's ports, up to its size, even before there is a front there.
+  for (const op of plan.helps ?? []) {
+    let want = op.follow - mine.filter((u) => op.area.includes(u.sea ? u.sea.to : u.at)).length;
+    for (const u of free) {
+      if (want <= 0 || used.size >= SHIPPED_PER_DAY) break;
+      if (used.has(u.id)) continue;
+      const port = op.targets.find((p) => friendly(p) && w.controller[p] !== country && (crowd.get(p) ?? 0) < supplyCapacity(p) && !('why' in seaRoute(sea, country, u.at, p, false)));
+      if (port === undefined) break;
+      crowd.set(port, (crowd.get(port) ?? 0) + 1);
+      used.add(u.id);
+      want--;
+      orders.push({ type: 'ship', unit: u.id, to: port });
+    }
+  }
+
   // A. Reinforce a front overseas: friendly ports linked by land to the front, the nearest to it first.
   if (plan.front.length) {
     const steps = new Map<number, number>(plan.front.map((p) => [p, 0]));
@@ -219,7 +271,7 @@ export function seaOrders(plan: SeaPlan): Order[] {
     for (let i = 0; i < queue.length; i++) for (const n of PROVINCES[queue[i]].neighbours) if (friendly(n) && !steps.has(n)) (steps.set(n, steps.get(queue[i])! + 1), queue.push(n));
     const ports = queue.filter((p) => COAST[p].length).sort((a, b) => steps.get(a)! - steps.get(b)! || a - b).slice(0, 12);
     for (const u of free) {
-      if (used.size >= SHIPPED_PER_DAY) break;
+      if (used.size >= Math.min(SHIPPED_PER_DAY, room)) break;
       const port = ports.find((p) => (crowd.get(p) ?? 0) < supplyCapacity(p) && !('why' in seaRoute(sea, country, u.at, p, false)));
       if (port === undefined) continue;
       crowd.set(port, (crowd.get(port) ?? 0) + 1);
@@ -230,9 +282,32 @@ export function seaOrders(plan: SeaPlan): Order[] {
 
   // B. A landing. One at a time, with rested divisions, where the sea is ours and the coast is thinly held.
   const ready = free.filter((u) => !used.has(u.id) && u.organisation >= 60);
-  // Not as a sideshow: a country that can reach the enemy on foot with most of its army fights there.
-  if (ready.length < 4 || mine.some((u) => u.sea?.landing || u.landing) || (plan.front.length > 0 && stranded.length < 0.3 * mine.length)) return orders;
+  if (ready.length < 4 || mine.some((u) => u.sea?.landing || u.landing)) return orders;
   const enemyUnits = w.units.filter((u) => enemies.has(u.owner));
+  // A planned landing first: the first of its beaches the enemy holds and the navy can reach.
+  for (const op of plan.landings ?? []) {
+    for (const p of op.targets) {
+      if (!enemies.has(w.controller[p])) continue;
+      const zone = COAST[p].find((z) => sea.status(country, z) === 'own');
+      if (zone === undefined) continue;
+      let afloat = 0;
+      for (const [name, n] of sea.ships[zone]) if (name === country || allies?.has(name)) afloat += n;
+      const force = ready.filter((u) => !('why' in seaRoute(sea, country, u.at, p, true))).slice(0, Math.min(op.size, LANDING_BASE + Math.floor(afloat)));
+      if (force.length < 4) continue;
+      const holders = enemyUnits.filter((u) => u.at === p);
+      if (holders.length) {
+        const defence = holders.map((u) => defencePower(u, 1, plan.edges.defence(u, p))).sort((a, b) => b - a).slice(0, DEFENCE_WIDTH).reduce((a, b) => a + b, 0);
+        const power = force.map((u) => attackPower(u, p, plan.edges.attack(u) * AMPHIBIOUS)).sort((a, b) => b - a).slice(0, ATTACK_WIDTH).reduce((a, b) => a + b, 0);
+        const odds = (power * force.reduce((a, u) => a + Math.max(0, u.organisation - 10), 0)) / (defence * (holders.reduce((a, u) => a + u.organisation, 0) + 1));
+        if (odds < plan.boldness) continue;
+      }
+      for (const u of force) orders.push({ type: 'ship', unit: u.id, to: p });
+      return orders;
+    }
+  }
+  if (room < 4) return orders;
+  // Not as a sideshow: a country that can reach the enemy on foot with most of its army fights there.
+  if (plan.onLand ?? (plan.front.length > 0 && stranded.length < 0.3 * mine.length)) return orders;
   let best: { force: Unit[]; score: number; to: number } | null = null;
   for (const p of PROVINCES) {
     if (!enemies.has(w.controller[p.id])) continue;

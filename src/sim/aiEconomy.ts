@@ -12,11 +12,12 @@
  * game: until world tension reaches 50).
  */
 import { cannotRaiseWing } from './air';
-import { cannotRaise, conscriptionBlocked, CONSCRIPTION, economyView, FORCE_UPKEEP, LINE_KINDS, MEN_PER_DIVISION, monthEnds, musterPoint, PLANE_KINDS, tallies, TAX_MIN, UNIT_TYPES, UPKEEP, WAR_UPKEEP, type Tally } from './economy';
+import { BUILDERS_PER_PROJECT, cannotRaise, conscriptionBlocked, CONSCRIPTION, economyView, FORCE_UPKEEP, LINE_KINDS, MEN_PER_DIVISION, monthEnds, musterPoint, payLevel, PLANE_KINDS, tallies, TAX_MIN, UNIT_TYPES, UPKEEP, WAR_UPKEEP, type Tally } from './economy';
+import { isMajor, MAJORS } from './diplomacy';
 import { PROVINCES } from './map';
 import { HOME_ZONES } from './sea';
 import { supplyCapacity } from './supply';
-import { atWar } from './war';
+import { atWar, enemiesOf, warKey } from './war';
 import { cannotStartPlan, plansFor } from './plans';
 import { cannotResearch, TECHS, yearAt, type Branch } from './research';
 import type { Government, LineKind, Order, World } from './types';
@@ -30,18 +31,33 @@ const WAR_DEFICIT = 0.1;
 /** At war it keeps forming divisions until the deficit reaches this share of output. */
 const WAR_ARMY_DEFICIT = 0.2;
 /**
- * A command economy fighting on its own soil forms every division it has equipment and men for,
- * whatever the budget says: the state takes what it needs, and the people pay in hunger and
- * rising prices rather than in taxes (the Soviet Union from 1941).
+ * A command economy fighting on its own soil forms divisions until the deficit reaches
+ * TOTAL_WAR_DEFICIT of output, far beyond what any other government accepts: the state takes
+ * what it needs, and the people pay in hunger and rising prices rather than in taxes (the
+ * Soviet Union from 1941). Beyond that, printing money would ruin the economy that feeds the army.
  */
-const totalWar = (w: World, country: string): boolean =>
+const TOTAL_WAR_DEFICIT = 0.35;
+const totalWar = (w: World, country: string, t: Tally): boolean =>
   w.economies[country]?.government === 'communist' &&
-  PROVINCES.some((p) => p.owner === country && w.owner[p.id] === country && w.controller[p.id] !== country && atWar(w, country, w.controller[p.id])) &&
+  t.homeLost >= TOTAL_WAR_LOST &&
   // ...but only up to what its land can feed: beyond that, new divisions would only starve in the crowd.
   w.units.filter((u) => u.owner === country).length < TOTAL_WAR_FEED * PROVINCES.reduce((a, p) => a + (w.controller[p.id] === country ? supplyCapacity(p.id) : 0), 0);
 /** Share of the supply capacity of its land (supply.ts) up to which a country at total war forms divisions. */
 const TOTAL_WAR_FEED = 0.9;
+/** Share of its home victory points in enemy hands that makes a war one for survival: a border province or two is not enough. */
+const TOTAL_WAR_LOST = 0.05;
+/**
+ * A finance minister who sees prices running away stops adding to the bill: above
+ * CAREFUL_INFLATION a year the deficit it accepts for new divisions shrinks, and at
+ * RECKLESS_INFLATION it forms no more at all.
+ */
+const CAREFUL_INFLATION = 15;
+const RECKLESS_INFLATION = 50;
 const PEACE_TAX_MAX = 0.35;
+/** The conscription law a country at peace moves to once the great powers are at war with each other. */
+export const ARMED_NEUTRALITY = 2;
+/** Days a war must last before the AI widens conscription for it (unless the enemy is on its soil). */
+const LONG_WAR = 90;
 const WAR_TAX_MAX = 0.45;
 /** The mix of military factories the army aims for: mostly infantry, some guns, some tanks. */
 const ARMY_MIX = { infantry: 0.6, armour: 0.2, artillery: 0.2 };
@@ -87,14 +103,15 @@ export function aiEconomyOrders(w: World, country: string, tally?: Tally): Order
   const limit = (v.atWar ? WAR_DEFICIT : peaceDeficit) * v.nominalGDP;
 
   // New divisions, as long as there are men for them and money to keep them.
-  const armyLimit = (v.atWar ? WAR_ARMY_DEFICIT : peaceDeficit) * v.nominalGDP;
+  const total = v.atWar && totalWar(w, country, t);
+  const prudence = Math.max(0, Math.min(1, 1 - (e.inflation - CAREFUL_INFLATION) / (RECKLESS_INFLATION - CAREFUL_INFLATION)));
+  const armyLimit = (total ? TOTAL_WAR_DEFICIT : v.atWar ? WAR_ARMY_DEFICIT : peaceDeficit) * v.nominalGDP * prudence;
   let manpower = e.manpower;
   let balance = v.budget.balance;
-  const total = v.atWar && totalWar(w, country);
   for (const k of UNIT_TYPES) {
     for (let stock = e.stock[k]; stock >= 1 && manpower >= MEN_PER_DIVISION && !cannotRaise(e, k); stock--) {
-      const upkeep = UPKEEP[k] * (v.atWar ? WAR_UPKEEP : 1) * (e.priceLevel / 100);
-      if (balance - upkeep < -armyLimit && !total) break;
+      const upkeep = UPKEEP[k] * (v.atWar ? WAR_UPKEEP : 1) * payLevel(country) * (e.priceLevel / 100);
+      if (balance - upkeep < -armyLimit) break;
       orders.push({ type: 'raise', country, unit: k });
       manpower -= MEN_PER_DIVISION;
       balance -= upkeep;
@@ -104,7 +121,7 @@ export function aiEconomyOrders(w: World, country: string, tally?: Tally): Order
   // New wings from finished aircraft, once the wings it has are up to strength (spares go to them first).
   for (const k of PLANE_KINDS) {
     if (cannotRaiseWing(e, k) || manpower < MEN_PER_DIVISION || w.wings.some((x) => x.owner === country && x.type === k && x.strength < 60)) continue;
-    const upkeep = FORCE_UPKEEP[k] * (v.atWar ? WAR_UPKEEP : 1) * (e.priceLevel / 100);
+    const upkeep = FORCE_UPKEEP[k] * (v.atWar ? WAR_UPKEEP : 1) * payLevel(country) * (e.priceLevel / 100);
     if (balance - upkeep < -armyLimit) continue;
     orders.push({ type: 'raiseWing', country, plane: k });
     balance -= upkeep;
@@ -118,11 +135,29 @@ export function aiEconomyOrders(w: World, country: string, tally?: Tally): Order
   else if (v.budget.balance > 0.01 * v.nominalGDP && e.taxRate > Math.max(TAX_MIN, 0.15)) orders.push({ type: 'setTax', country, rate: e.taxRate - 0.01 });
 
   // Rationing when the shops are emptying or prices are running away; lifted once things are calm.
-  if (!e.rationing && (v.shortage > 0.1 || (v.atWar && e.inflation > 15))) orders.push({ type: 'setRationing', country, on: true });
+  // A war against a great power means rationing from the start, as in every warring country after 1939.
+  const greatWar = enemiesOf(w, country).some(isMajor);
+  if (!e.rationing && (v.shortage > 0.1 || (v.atWar && (e.inflation > 15 || greatWar)))) orders.push({ type: 'setRationing', country, on: true });
   else if (e.rationing && !v.atWar && v.shortage === 0 && e.inflation < 5) orders.push({ type: 'setRationing', country, on: false });
 
   // Call up more men when the pool runs dry in wartime.
-  if (v.atWar && e.manpower < 3 * MEN_PER_DIVISION && e.conscription < CONSCRIPTION.length - 2 && !conscriptionBlocked(e, country, e.conscription + 1)) orders.push({ type: 'setConscription', country, level: e.conscription + 1 });
+  // It looks ahead (equipment waiting in the depots for men to use it is a reason too), but it
+  // waits until most of the last call-up has reported before it widens the law again.
+  const waiting = UNIT_TYPES.reduce((a, k) => a + Math.floor(e.stock[k]), 0);
+  // A short war is not worth a call-up. A serious one is: against a great power still standing,
+  // one that has lasted LONG_WAR days, or one fought on its own soil.
+  const standing = (x: string) => {
+    const home = PROVINCES.filter((p) => p.owner === x);
+    return home.filter((p) => w.controller[p.id] === x).length >= 0.7 * home.length;
+  };
+  const invaded = PROVINCES.some((p) => w.owner[p.id] === country && w.controller[p.id] !== country && atWar(w, country, w.controller[p.id]));
+  const longWar = invaded || enemiesOf(w, country).some((x) => (isMajor(x) && standing(x)) || w.day - (w.diplomacy.warStart[warKey(country, x)] ?? w.day) >= LONG_WAR);
+  // Armed neutrality: once the great powers are at war with each other, a country at peace
+  // calls up its reserves too, as Belgium, the Netherlands, Switzerland, Sweden and Norway did in
+  // September 1939.
+  const greatPowersAtWar = [...MAJORS].some((x) => enemiesOf(w, x).some(isMajor));
+  if (!v.atWar && greatPowersAtWar && e.conscription < ARMED_NEUTRALITY && !conscriptionBlocked(e, country, e.conscription + 1)) orders.push({ type: 'setConscription', country, level: e.conscription + 1 });
+  else if (v.atWar && longWar && e.manpower + (e.callUp ?? 0) < Math.max(3, waiting) * MEN_PER_DIVISION && (e.callUp ?? 0) < 0.1 * v.manpowerCap && e.conscription < CONSCRIPTION.length - 2 && !conscriptionBlocked(e, country, e.conscription + 1)) orders.push({ type: 'setConscription', country, level: e.conscription + 1 });
 
   // Put idle military factories to work on whichever line is furthest below the mix.
   // It also moves one factory a month from the line furthest above the mix to one well below it.
@@ -146,9 +181,11 @@ export function aiEconomyOrders(w: World, country: string, tally?: Tally): Order
   const arming = v.atWar || alarmed || government === 'fascist' || government === 'communist';
   const builders = Math.max(v.civ >= 2 ? 1 : 0, Math.round((arming ? 0.25 : 0.15) * v.civ));
   if (builders !== e.constructionFactories) orders.push({ type: 'setConstruction', country, factories: builders });
-  if (!e.construction.length && builders > 0 && v.budget.balance > -limit) {
+  // Enough projects for every builder (five work on each).
+  // At war new arms factories are part of the war effort, so they go ahead within the army's deficit limit.
+  if (builders > 0 && e.construction.length < Math.ceil(builders / BUILDERS_PER_PROJECT) && v.budget.balance > -(v.atWar ? armyLimit : limit)) {
     const at = musterPoint(w.controller, country, w.owner);
-    if (at !== null) orders.push({ type: 'build', country, kind: arming ? 'mil' : 'civ', province: at });
+    if (at !== null) for (let n = e.construction.length; n < Math.ceil(builders / BUILDERS_PER_PROJECT); n++) orders.push({ type: 'build', country, kind: arming ? 'mil' : 'civ', province: at });
   }
 
   // Research: idle teams take the technology that is most due, weapons first for arming countries.

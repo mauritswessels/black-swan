@@ -4,7 +4,7 @@
  */
 import type { ReactNode } from 'react';
 import {
-  BUILD_COST, BUILDERS_PER_PROJECT, cannotRaise, FORCE_UPKEEP, CONSCRIPTION, conscriptionBlocked, economyView, FACTORY_COST, KIT_COST, MEN_PER_DIVISION, musterPoint, TAX_MAX, TAX_MIN, TAX_STABILITY, TRAINING_DAYS, UNIT_TYPES, UPKEEP, WAR_UPKEEP,
+  BUILD_COST, BUILDERS_PER_PROJECT, cannotRaise, FORCE_UPKEEP, CONSCRIPTION, conscriptionBlocked, economyView, FACTORY_COST, KIT_COST, MEN_PER_DIVISION, musterPoint, payLevel, WAR_RATE_CAP, TAX_MAX, TAX_MIN, TAX_STABILITY, TRAINING_DAYS, UNIT_TYPES, UPKEEP, WAR_UPKEEP,
   type EconomyView, type Reason,
 } from '../../sim/economy';
 import { cannotRaiseWing, MEN_PER_WING } from '../../sim/air';
@@ -127,7 +127,7 @@ export function EconomyPanel({ w, me }: { w: World; me: string }) {
     ['Taxes', b.taxes],
     ['Exports of steel and oil', b.exports],
     ['Civil government', -b.government, 'Schools, pensions, officials: 12% of output.'],
-    [`Army upkeep${v.atWar ? ` (at war: x${WAR_UPKEEP})` : ''}`, -b.upkeep],
+    [`Army upkeep${v.atWar ? ` (at war: x${WAR_UPKEEP})` : ''}`, -b.upkeep, `Pay, food and ammunition. Soldiers here cost ${pct(payLevel(me) * 100)} of the usual, because pay follows what a worker earns in this country.`],
     ['Military factories', -b.military],
     ['Construction', -b.construction],
     ['National plan', -b.plan],
@@ -182,13 +182,15 @@ export function EconomyPanel({ w, me }: { w: World; me: string }) {
         <span>Borrow it all</span>
       </div>
       <p className="sb-fine">
-        Lenders will buy up to {money(v.bondCapacity)} of bonds a month (confidence {pct(v.confidence * 100)}{v.atWar ? `, war support ${signed((v.patriotism - 1) * 100, 0)}%` : ''}). Bonds nobody buys are paid for with printed money anyway. Bonds cost interest for years; printing costs nothing now and shows up
+        Lenders will buy up to {money(v.bondCapacity)} of bonds a month (confidence {pct(v.confidence * 100)}{v.atWar ? `, war support ${signed((v.patriotism - 1) * 100, 0)}%` : ''}{v.forcedSaving > 0 ? `, of which ${money(v.forcedSaving)} is forced saving` : ''}). Bonds nobody buys are paid for with printed money anyway. Bonds cost interest for years; printing costs nothing now and shows up
         as inflation a few months later.
       </p>
       <Toggle on={e.rationing} onChange={(on) => order({ type: 'setRationing', on })}>
         <Term id="rationing">Rationing</Term> and price controls
       </Toggle>
-      <p className="sb-fine">People may buy a quarter less, and shortages and printed money push prices up less. It costs 5 stability, and a black market takes 5% of your taxes.</p>
+      <p className="sb-fine">
+        People may buy a quarter less, and shortages and printed money push prices up less. It costs 5 stability, and a black market takes 5% of your taxes. In wartime it also brings <Term id="forced-saving">forced saving</Term>: with little in the shops, people put about 12% of output into war bonds and savings, as long as prices are fairly steady. And the state caps the interest it pays at {WAR_RATE_CAP}% (<Term id="financial-repression">financial repression</Term>).
+      </p>
 
       <h3>
         <Term id="inflation">Prices</Term>
@@ -406,6 +408,7 @@ export function ProductionPanel({ w, me }: { w: World; me: string }) {
       </h3>
       <div className="sb-rows">
         <Row label="Available to recruit" value={`${men(e.manpower)} (${Math.floor(e.manpower / MEN_PER_DIVISION)} divisions)`} />
+        {(e.callUp ?? 0) >= 1 && <Row label="Still to be called up" value={`${men(e.callUp ?? 0)}, about a sixth a month (new call-ups and the wounded)`} />}
       </div>
       <div className="sb-laws" role="radiogroup" aria-label="Conscription law">
         {CONSCRIPTION.map((law, i) => {
@@ -422,7 +425,7 @@ export function ProductionPanel({ w, me }: { w: World; me: string }) {
         })}
       </div>
       <p className="sb-fine">
-        A wider <Term id="conscription">conscription</Term> law calls up more men at once but takes workers out of the factories. Each step up costs 2 stability on the day, and the two widest laws cost more for as long as they last. The wider laws need the public behind them: see <Term id="war-support">war support</Term> on the Home front panel.
+        A wider <Term id="conscription">conscription</Term> law calls up more men but takes workers out of the factories. The reservists (40%) come at once and the rest over the following months, while young men come of age every year. Each division takes {MEN_PER_DIVISION},000 men: the soldiers in it and its share of the supply troops, staffs and depots behind it. Each step up costs 2 stability on the day, and the two widest laws cost more for as long as they last. The wider laws need the public behind them: see <Term id="war-support">war support</Term> on the Home front panel.
       </p>
 
       <h3>Steel and oil</h3>

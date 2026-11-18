@@ -169,6 +169,10 @@ What supply does:
 - Organisation cannot stay above 100 x supply. Above that it falls 3 a day; a rested division
   below it regains 3 a day (half that while marching).
 - A cut-off division at 0 organisation loses 2 strength a day until it is gone.
+- **Wear and tear** (Stage J). A division next to an enemy province that is not in a battle
+  loses 0.05 strength a day (sickness, shelling, patrols), twice that in a Russian, Finnish or
+  Scandinavian winter for an army from outside. In a long war this, not the big battles, is most
+  of the cost.
 - A rested, supplied division regains up to 0.5 strength a day, if there is equipment in store
   and manpower for it (see "Production" below).
 - Armoured divisions of a country that is short of oil have their supply capped at the share
@@ -211,11 +215,18 @@ Speed of all factories:
 | --- | --- |
 | Taxes | tax rate x nominal output (5% less under rationing: the black market) |
 | Civil government | 12% of nominal output |
-| Army upkeep | infantry 0.3m, artillery 0.45m, armour 0.6m per division; **x 3 at war** |
+| Army upkeep | infantry 0.3m, artillery 0.45m, armour 0.6m per division; **x 3 at war**; x the country's pay level |
 | Military factories | 2m for each one working |
 | Construction | 2m for each civilian factory building |
 | Imports, exports | steel 1.5m, oil 2.5m a unit; exports earn half price |
 | Interest | debt x average interest rate / 12 |
+
+**Pay level** (Stage J). Soldiers are paid, fed and clothed at about what a worker earns, so a
+division costs less where output per head is low:
+
+    pay level = 0.4 + 0.6 x (factories per million people / 0.7), kept between 0.5 and 1.2
+
+Britain 1.09, France 1.01, Germany 0.99, Italy 0.78, Poland 0.68, the Soviet Union 0.65.
 
 Everything except interest rises with the price level. Money moves every day (a thirtieth of the
 monthly figures).
@@ -247,10 +258,21 @@ New bonds are sold at i. The average rate on the debt is the weighted average of
 bonds, and one sixtieth of the debt rolls over to today's rate each month. What a lender really
 earns is r = i - pi (pi is today's inflation).
 
-    lenders buy up to 25% of a month's output x confidence
+    lenders buy up to 25% of a month's output x confidence x war support bonus  +  forced saving
     confidence = (1 - (debt ratio - 1.5) / 1.5)   falls from debt of 150% of output, gone at 300%
                x (1 - (inflation - 10) / 20)      falls from 10% inflation, gone at 30%
                x (1 - 1.5 x home points lost)     people lend to likely winners
+
+Three wartime rules (Stage J), all from how the real war was paid for:
+
+- **Forced saving.** At war with rationing on, people cannot spend their wages, so 12% of a
+  month's output goes into savings and war bonds on top of what lenders would buy. It fades
+  as inflation rises from 30% and is gone at 100%: people spend money before it loses value.
+- **Financial repression.** At war with rationing on, the rate on new bonds is capped at 4%,
+  so when prices rise faster the real rate r = i - pi is negative and inflation shrinks the
+  debt (Britain paid about 3% on war debt).
+- **Compulsory loans.** A communist government at war orders its people to buy bonds out of
+  their wages (the Soviet state loans), so its confidence never falls below 60%.
 
 **Printing** adds to the money supply, and shows up in prices over the following months.
 
@@ -309,7 +331,9 @@ and gains 0.25 points a day, so it reaches 100% after 200 days. Factories added 
 at 50% and pull its average down; taking factories away costs nothing; an emptied line starts
 again from 50%.
 
-Raising a division takes one set of equipment and 15,000 men, then 30 days of training
+Raising a division takes one set of equipment and 25,000 men (the division slice: about 15,000
+in the division and its share of the supply troops, staffs and depots behind it; a new air wing
+takes 20,000, crews, mechanics, airfields and flak), then 30 days of training
 (artillery 40, armour 60). It joins the army at 40% organisation, at the capital while that holds
 fewer divisions than half of what it can feed, otherwise in the least crowded home province.
 
@@ -328,9 +352,15 @@ imports cannot be cut off.
 | Mass mobilisation | 10% | 88% |
 | Every adult serves | 15% | 78% |
 
-Only people in home provinces you still hold count. Changing the law adds (or removes) the
-difference at once; each step up costs 2 stability that day, and the two widest laws cost 3 and
-6 for as long as they last. The pool also grows by 2% of the law's total a year. Britain starts
+Only people in home provinces you still hold count; the people of annexed land count at half
+(Austrians served, Czechs and Poles were not called up). Widening the law adds 40% of the
+difference at once (the reservists) and puts the rest in a call-up queue, of which a sixth
+reports each month; narrowing it takes from the queue first. Each step up costs 2 stability that
+day, and the two widest laws cost 3 and 6 for as long as they last. Each year 6% of the law's
+total comes of age.
+
+**Wounded.** 40% of the strength a division loses, in battle or at the front, comes back to the
+call-up queue as wounded men who recover. Britain starts
 on volunteers, everyone else on limited conscription.
 
 ### Stability
@@ -418,9 +448,16 @@ the interest lenders ask for, the tax threshold, stability and war support.
 Every country you do not lead forms new divisions whenever equipment and men are ready and the
 shortfall stays inside its limit: 2% of output for democracies at peace, 3% for authoritarian
 governments, 8% for the Soviet Union, 10% for the fascist dictatorships, and 20% for anyone at
-war. On the first of each month it also moves taxes two points towards its limit (at most 35% at
-peace, 45% at war), rations when shops run short, widens conscription when men run out in
-wartime (if war support allows), gives idle military factories a line (60% infantry, 20%
+war. A communist government that has lost 5% of its home victory points fights a total war and
+goes to 35% (only up to what its land can feed). Since Stage J the limit shrinks as inflation
+rises above 15% and is zero at 50%: a finance minister who sees prices running away stops adding
+to the bill. On the first of each month it also moves taxes two points towards its limit (at most 35% at
+peace, 45% at war), rations when shops run short, prices pass 15% or it is at war with a great power, widens
+conscription in a serious war (a great power still standing, a war of 90 days, or one on its
+soil) when men and the call-up queue cannot fill the equipment waiting in its depots, calls up
+its reserves to extensive conscription at peace once the great powers are at war with each
+other (armed neutrality, September 1939), queues as many construction projects as it has
+builders for, gives idle military factories a line (60% infantry, 20%
 artillery, 20% armour) and sets 15% to 25% of its civilian factories to building. It borrows
 whatever it can and prints the rest.
 

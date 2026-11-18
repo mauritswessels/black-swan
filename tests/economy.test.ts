@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { quiet } from '../src/sim/agenda';
 import { aiOrders } from '../src/sim/ai';
 import { COUNTRIES } from '../src/sim/countries';
-import { BUILD_COST, CONSCRIPTION, economyView, KIT_COST, LINE_START, MEN_PER_DIVISION, NEW_DIVISION_ORGANISATION, tallies, TRAINING_DAYS, WAR_UPKEEP } from '../src/sim/economy';
+import { BUILD_COST, CONSCRIPTION, economyView, RESERVISTS, KIT_COST, LINE_START, MEN_PER_DIVISION, NEW_DIVISION_ORGANISATION, tallies, TRAINING_DAYS, WAR_UPKEEP } from '../src/sim/economy';
 import { advance } from '../src/sim/game';
 import { PROVINCES, provinceByName } from '../src/sim/map';
 import { POLICIES, runFinance } from '../src/sim/testeconomy';
@@ -298,7 +298,10 @@ describe('manpower', () => {
     const e = w.economies.France;
     const wide = give(w, { type: 'setConscription', country: 'France', level: 3 });
     const people = tallies(w).get('France')!.population;
-    expect(wide.economies.France.manpower).toBeCloseTo(e.manpower + (CONSCRIPTION[3].share - CONSCRIPTION[1].share) * people * 1000, 6);
+    // Reservists report at once; the rest are called up over the next months.
+    const change = (CONSCRIPTION[3].share - CONSCRIPTION[1].share) * people * 1000;
+    expect(wide.economies.France.manpower).toBeCloseTo(e.manpower + RESERVISTS * change, 6);
+    expect(wide.economies.France.callUp).toBeCloseTo((e.callUp ?? 0) + (1 - RESERVISTS) * change, 6);
     expect(economyView(wide, 'France').outputFactor).toBeCloseTo(0.88, 9);
     expect(wide.economies.France.stability).toBe(e.stability - 4);
     expect(economyView(wide, 'France').realGDP).toBeLessThan(economyView(w, 'France').realGDP);

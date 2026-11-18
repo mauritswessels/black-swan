@@ -17,15 +17,15 @@ import { DIG_IN_MAX_DAYS, fightBattles, type Draft } from './combat';
 import { COUNTRIES } from './countries';
 import { carryOutAim } from './agenda';
 import { allianceMap, cloneDiplomacy, giveDiplomacyOrder, isDiplomacyOrder, onGovernmentFell, runDiplomacy, startDiplomacy, surrenders, type DipDraft } from './diplomacy';
-import { cloneEconomies, giveEconomyOrder, isEconomyOrder, monthEnds, moraleOf, onBattleEnded, reinforce, runEconomies, startEconomies, startFactories } from './economy';
+import { cloneEconomies, giveEconomyOrder, isEconomyOrder, MEN_PER_DIVISION, monthEnds, moraleOf, onBattleEnded, reinforce, runEconomies, startEconomies, startFactories } from './economy';
 import { disband, giveForceOrder, isForceOrder, pictures, runForces, startForces, type Pictures } from './forces';
-import { combatEdges, modsOf } from './mods';
+import { combatEdges, isWinter, modsOf, WINTER_LANDS } from './mods';
 import type { ForceDraft } from './navy';
 import { daysToEnter, findRoute, PROVINCES } from './map';
 import { Rng, seedFrom } from './rng';
 import { cloneStory, runStory, startStory } from './story';
 import { DEPOTS, linkedProvinces, supplyCapacity, supplyLevels } from './supply';
-import type { Mode, Order, Unit, UnitType, World } from './types';
+import type { Economy, Mode, Order, Unit, UnitType, World } from './types';
 import { atWar, canEnter, enemiesOf } from './war';
 import { dateWords } from './dmath';
 
@@ -112,6 +112,20 @@ export const ORG_RECOVERY = 3;
 /** Organisation lost per day while above what the division's supply can sustain, and strength lost per day once a cut-off division has none left. */
 export const ATTRITION_ORG = 3;
 export const ATTRITION_STRENGTH = 2;
+/**
+ * Strength a division in the front line loses a day even when no battle is fought: sickness,
+ * shelling, raids, accidents. A front is any province next to one held by an enemy. The loss is
+ * made good from the equipment stock and the manpower pool like any other, so holding a long
+ * front for years drains a country's men and factories: a war of attrition. Twice as much in
+ * the northern winter for an army that is not used to it.
+ */
+export const FRONT_WASTAGE = 0.05;
+/** Share of the men lost in battle or to wear and tear who are wounded or sick and come back from hospital (see callUp in economy.ts). */
+export const WOUNDED_RETURN = 0.4;
+/** Points of strength lost: the wounded among them start on their way back to the manpower pool. */
+const recover = (e: Economy | undefined, strength: number): void => {
+  if (e) e.callUp = (e.callUp ?? 0) + (strength / 100) * MEN_PER_DIVISION * WOUNDED_RETURN;
+};
 export { SURRENDER_SHARE } from './diplomacy';
 
 /** A copy of the world that orders and diplomacy may change freely. */
@@ -239,7 +253,13 @@ export function step(world: World, orders: Order[] = []): World {
   // 3. Battles. Research, plans and forts give each side its edge; results move the mood at home.
   d.edges = combatEdges(economies, { effects: dd.story.effects, day: world.day, startDate: world.startDate });
   const known = new Set(d.reports.map((r) => r.id));
+  const before = new Map(d.units.map((u) => [u.id, u.strength]));
   const fought = fightBattles(d, rng);
+  // Many of the men a battle costs are wounded, not killed or taken prisoner: they come back to the pool from hospital.
+  for (const u of d.units) {
+    const lost = (before.get(u.id) ?? u.strength) - u.strength;
+    if (lost > 0) recover(economies[u.owner], lost);
+  }
   for (const r of d.reports) {
     if (known.has(r.id)) continue;
     for (const [side, lost] of [[r.attackers, r.attackerLosses], [r.defenders, r.defenderLosses + r.surrendered]] as const) for (const name of side) dd.story.losses[name] = (dd.story.losses[name] ?? 0) + lost / side.length;
@@ -306,8 +326,22 @@ export function step(world: World, orders: Order[] = []): World {
     }
     return x;
   };
+  const winter = isWinter(world.startDate, world.day);
+  const front = new Map<string, boolean>();
+  const atFront = (u: Unit): boolean => {
+    const k = `${u.owner}@${u.at}`;
+    let x = front.get(k);
+    if (x === undefined) front.set(k, (x = PROVINCES[u.at].neighbours.some((n) => atWar(d, u.owner, d.controller[n]))));
+    return x;
+  };
   for (const u of d.units) {
     u.dugIn = u.path.length ? 0 : Math.min(DIG_IN_MAX_DAYS, u.dugIn + 1);
+    // Wear and tear at the front. Divisions in a battle take their losses there instead.
+    if (!fought.has(u.id) && atFront(u)) {
+      const worn = Math.min(u.strength, FRONT_WASTAGE * (winter && WINTER_LANDS.has(PROVINCES[u.at].owner) && !WINTER_LANDS.has(u.owner) ? 2 : 1));
+      u.strength -= worn;
+      recover(economies[u.owner], worn);
+    }
     if (u.landing && !u.path.length) u.landing = undefined; // ashore, or the landing was beaten off
     // Supply sets a ceiling on organisation: a division getting 70% of its supply cannot stay
     // above 70 organisation. A division that is cut off sinks to zero and then starts to starve.

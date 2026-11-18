@@ -44,6 +44,23 @@ export const FACTORY_COST = 2;
 /** Monthly cost of a division at peace. At war it costs WAR_UPKEEP times as much (ammunition, fuel, losses). */
 export const UPKEEP: Record<UnitType, number> = { infantry: 0.3, armour: 0.6, artillery: 0.45 };
 export const WAR_UPKEEP = 3;
+/**
+ * A soldier's pay, food and clothing cost about what a worker earns, so a poorer country keeps a
+ * division for less: that is how the Soviet Union fed the biggest army in Europe on a smaller
+ * economy than Germany's. Fuel, ammunition and spare parts cost the same everywhere. So each
+ * country pays this share of the upkeep above:
+ *
+ *   pay level = 0.4 + 0.6 x (factories per head / PAY_REFERENCE), between 0.5 and 1.2
+ *
+ * PAY_REFERENCE is about the level of France and Germany in 1936, so they pay the full figure,
+ * Britain about a tenth more, Italy about four fifths and the Soviet Union about two thirds.
+ */
+export const PAY_FIXED = 0.4;
+export const PAY_REFERENCE = 0.7;
+export const PAY_LEVEL: Readonly<Record<string, number>> = Object.fromEntries(
+  COUNTRIES.map((c) => [c.name, Math.round(100 * Math.max(0.5, Math.min(1.2, PAY_FIXED + ((1 - PAY_FIXED) * ((c.industry.civ + c.industry.mil) / c.industry.population)) / PAY_REFERENCE))) / 100]),
+);
+export const payLevel = (country: string): number => PAY_LEVEL[country] ?? 1;
 
 /** Factory-days of work to equip one division. */
 export const KIT_COST: Record<LineKind, number> = { infantry: 120, armour: 300, artillery: 180, fighter: 80, bomber: 120, capital: 800, escort: 160, submarine: 130 };
@@ -51,8 +68,13 @@ export const KIT_COST: Record<LineKind, number> = { infantry: 120, armour: 300, 
 export const TRAINING_DAYS: Record<UnitType, number> = { infantry: 30, armour: 60, artillery: 40 };
 /** A new division arrives with this much organisation: it needs a few weeks to shake down. */
 export const NEW_DIVISION_ORGANISATION = 40;
-/** Thousands of men in a division. */
-export const MEN_PER_DIVISION = 15;
+/**
+ * Thousands of men a division takes from the manpower pool: about 15,000 in the division itself,
+ * and its share of everything behind the front that keeps it fighting (supply columns, staffs,
+ * depots, training camps, anti-aircraft guns, hospitals). In 1941 the German army had about
+ * 25,000 men in uniform for every division it put in the field.
+ */
+export const MEN_PER_DIVISION = 25;
 /** Strength a resting, supplied division can regain a day, if there is equipment and manpower for it. */
 export const REINFORCE_PER_DAY = 0.5;
 
@@ -87,6 +109,23 @@ export const TAX_DRAG = 0.5;
 export const TAX_MIN = 0.1;
 export const TAX_MAX = 0.6;
 
+/**
+ * Each year about 0.6% of a country's people (the young men turning 18 and fit to serve) come of
+ * age. Under mass mobilisation (10%) that adds 6% of the law's total a year; the same share
+ * applies under every law.
+ */
+export const YOUTH = 0.06;
+/**
+ * A wider conscription law does not put every man in uniform overnight. Trained reservists
+ * (RESERVISTS of the extra men) report at once; the call-up papers for the rest go out class by
+ * class, and each month this share of the men still to be called up joins the pool (about two
+ * thirds within six months, nine in ten within a year).
+ */
+export const CALL_UP_RATE = 1 / 6;
+/** Share of the men a wider law calls up who are trained reservists and report at once. */
+export const RESERVISTS = 0.4;
+/** Share of the people of annexed land that count for manpower (Austrians and Sudeten Germans served; Czechs and Poles were not called up). */
+export const ANNEXED_PEOPLE = 0.5;
 /** Conscription laws: the share of the population that can serve, and what it does to factory output. */
 export const CONSCRIPTION: { name: string; share: number; output: number }[] = [
   { name: 'Volunteers only', share: 0.015, output: 1 },
@@ -104,6 +143,28 @@ export const START_DEBT = 0.5;
 export const START_MONEY = 0.5;
 /** Bonds the public will buy in a month, as a share of a month's output, when confidence is full. */
 export const BOND_APPETITE = 0.25;
+/**
+ * Forced saving. In wartime, with rationing, people earn more than the shops are allowed to sell
+ * them, so the money piles up in savings banks, and the banks lend it to the state. This is how
+ * Germany, Britain and the Soviet Union borrowed so much without runaway prices. It adds this
+ * share of a month's output to the bonds that sell, whatever lenders think of the debt, until
+ * inflation passes FORCED_SAVING_GONE_AT: then people would rather buy anything than hold money.
+ */
+export const FORCED_SAVING = 0.12;
+/**
+ * State loans in a command economy at war are not a choice: a share of every wage is paid in
+ * bonds (the Soviet war loans of 1942 to 1945). Bonds sell at least at this share of full
+ * confidence, however high the debt or prices.
+ */
+export const COMPULSORY_LOANS = 0.6;
+/**
+ * In wartime, with rationing and price controls, governments also fixed what they paid on new
+ * bonds (Britain fought a "three per cent war"; the Soviet war loans paid less). With prices
+ * rising faster than that, the real return r = i - pi is negative: savers pay for the war too.
+ */
+export const WAR_RATE_CAP = 4;
+export const FORCED_SAVING_FROM = 30;
+export const FORCED_SAVING_GONE_AT = 100;
 /** Money the banks create anyway each year, in per cent. With no printing this gives 2% inflation. */
 export const BANK_CREDIT = 2;
 /** Where stability settles when nothing is wrong. */
@@ -285,7 +346,8 @@ export function tallies(w: Holdings): Map<string, Tally> {
     standing.set(holder, (standing.get(holder) ?? 0) + w.factories.civ[p.id] + w.factories.mil[p.id]);
     t.steel += STEEL[p.id] * (own ? 1 : OCCUPIED_RESOURCES);
     t.oil += OIL[p.id] * (own ? 1 : OCCUPIED_RESOURCES);
-    if (own) t.population += POPULATION[p.id];
+    // The people of annexed land count only in part: few of them would be trusted with a rifle, or serve willingly.
+    if (own) t.population += POPULATION[p.id] * (p.owner === holder ? 1 : ANNEXED_PEOPLE);
     vpHome.set(owner, (vpHome.get(owner) ?? 0) + p.victoryPoints);
     if (!own) vpLost.set(owner, (vpLost.get(owner) ?? 0) + p.victoryPoints);
   }
@@ -344,6 +406,8 @@ export interface EconomyView {
   /** Bonds the public will buy this month, and how willing they are (0 to 1). */
   bondCapacity: number;
   confidence: number;
+  /** The part of bondCapacity that is forced saving (rationing in wartime). */
+  forcedSaving: number;
   /** At war, how much war support adds to or takes from bond sales (1 = no change). */
   patriotism: number;
   /** Thousands of men the conscription law allows in total. */
@@ -415,7 +479,7 @@ export function economyView(w: Holdings & Pick<World, 'economies'>, country: str
 
   const taxes = e.taxRate * nominalGDP * (e.rationing ? 1 - BLACK_MARKET_TAX_LOSS * (1 + m.rationingCost) : 1) * (1 + m.taxRevenue);
   const government = GOVERNMENT_SHARE * nominalGDP;
-  const upkeep = (UNIT_TYPES.reduce((a, k) => a + t.divisions[k] * UPKEEP[k], 0) + PLANE_KINDS.reduce((a, k) => a + t.wings[k] * FORCE_UPKEEP[k], 0) + SHIP_KINDS.reduce((a, k) => a + t.ships[k] * FORCE_UPKEEP[k], 0)) * (atWar ? WAR_UPKEEP : 1) * p;
+  const upkeep = (UNIT_TYPES.reduce((a, k) => a + t.divisions[k] * UPKEEP[k], 0) + PLANE_KINDS.reduce((a, k) => a + t.wings[k] * FORCE_UPKEEP[k], 0) + SHIP_KINDS.reduce((a, k) => a + t.ships[k] * FORCE_UPKEEP[k], 0)) * (atWar ? WAR_UPKEEP : 1) * payLevel(country) * p;
   const military = FACTORY_COST * milUsed * p;
   const construction = FACTORY_COST * building * p;
   const interest = (e.debt * e.debtRate) / 100 / 12;
@@ -430,11 +494,16 @@ export function economyView(w: Holdings & Pick<World, 'economies'>, country: str
   if (t.homeLost > 0) rateReasons.push({ text: 'the war is going badly: home provinces lost', points: 8 * t.homeLost });
   if (m.realRate) rateReasons.push({ text: 'a pledge of sound money', points: m.realRate });
   const realRate = Math.max(0.5, rateReasons.reduce((a, r) => a + r.points, 0));
-  const marketRate = realRate + Math.max(0, e.expected);
-  const confidence = clamp(1 - Math.max(0, debtRatio - 1.5) / 1.5, 0, 1) * clamp(1 - Math.max(0, e.inflation - 10) / 20, 0, 1) * clamp(1 - 1.5 * t.homeLost, 0, 1);
+  // Fisher: lenders want the real rate plus the inflation they expect. In a war with rationing the
+  // state fixes the rate instead (financial repression): savers have nowhere else to put their money.
+  const repressed = atWar && e.rationing;
+  const marketRate = repressed ? Math.min(WAR_RATE_CAP, realRate + Math.max(0, e.expected)) : realRate + Math.max(0, e.expected);
+  const trust = clamp(1 - Math.max(0, debtRatio - 1.5) / 1.5, 0, 1) * clamp(1 - Math.max(0, e.inflation - 10) / 20, 0, 1) * clamp(1 - 1.5 * t.homeLost, 0, 1);
+  const confidence = atWar && regime === 'communist' ? Math.max(trust, COMPULSORY_LOANS) : trust;
   // In wartime bonds sell on patriotism as well as on trust.
   const patriotism = atWar ? 0.7 + (0.6 * e.warSupport) / 100 : 1;
-  const bondCapacity = BOND_APPETITE * nominalGDP * confidence * (1 + m.bondAppetite) * patriotism;
+  const forcedSaving = atWar && e.rationing ? FORCED_SAVING * nominalGDP * clamp(1 - Math.max(0, e.inflation - FORCED_SAVING_FROM) / (FORCED_SAVING_GONE_AT - FORCED_SAVING_FROM), 0, 1) : 0;
+  const bondCapacity = BOND_APPETITE * nominalGDP * confidence * (1 + m.bondAppetite) * patriotism + forcedSaving;
 
   const manpowerCap = t.population * 1000 * law.share * (1 + m.manpower);
   const lineRate = {} as Record<LineKind, number>;
@@ -487,7 +556,7 @@ export function economyView(w: Holdings & Pick<World, 'economies'>, country: str
   return {
     atWar, civ: t.civ, mil: t.mil, milUsed, milFree: Math.floor(t.mil + 1e-9) - milUsed, building, consumer, goodsNeed, shortage, outputFactor, factors, buildFactor: outputFactor * (1 + m.buildSpeed), mods: m, realGDP, nominalGDP, steel, oil, blockade,
     budget: { taxes, exports, government, upkeep, military, construction, plan, imports, interest, revenue, spending, balance: revenue - spending },
-    debtRatio, marketRate, realRate, rateReasons, bondCapacity, confidence, patriotism, manpowerCap, lineRate, stabilityTarget, stabilityReasons,
+    debtRatio, marketRate, realRate, rateReasons, bondCapacity, confidence, forcedSaving, patriotism, manpowerCap, lineRate, stabilityTarget, stabilityReasons,
     taxThreshold, warSupportTarget, warSupportReasons, attacked, morale: moraleOf(e.warSupport, atWar),
   };
 }
@@ -499,7 +568,7 @@ const START_TAX: Record<Government, number> = { democracy: 0.22, authoritarian: 
 const emptyEconomy = (): Economy => ({
   government: 'democracy',
   treasury: 0, debt: 0, debtRate: BASE_REAL_RATE + BANK_CREDIT, money: 0, priceLevel: 100, inflation: BANK_CREDIT, expected: BANK_CREDIT, taxRate: 0.22, bondShare: 1, rationing: false, imports: true,
-  conscription: 1, stability: 70, warSupport: 40, mood: 0, weariness: 0, crisisMonths: 0, governmentsFallen: 0, research: emptyResearch(1), plan: emptyPlan(), manpower: 0, blockade: 0,
+  conscription: 1, stability: 70, warSupport: 40, mood: 0, weariness: 0, crisisMonths: 0, governmentsFallen: 0, research: emptyResearch(1), plan: emptyPlan(), manpower: 0, callUp: 0, blockade: 0,
   stock: Object.fromEntries(LINE_KINDS.map((k) => [k, 0])) as Record<LineKind, number>,
   lines: Object.fromEntries(LINE_KINDS.map((k) => [k, { factories: 0, efficiency: LINE_START }])) as Record<LineKind, Economy['lines'][LineKind]>,
   constructionFactories: 0, construction: [], training: [], printedThisMonth: 0, borrowedThisMonth: 0, balanceThisMonth: 0, moneyAtMonthStart: 0,
@@ -634,8 +703,18 @@ export function giveEconomyOrder(d: Pick<World, 'economies' | 'controller' | 'fa
       const level = clamp(Math.round(o.level), 0, CONSCRIPTION.length - 1);
       if (level === e.conscription || !Number.isFinite(o.level) || conscriptionBlocked(e, o.country, level)) break;
       const people = tallies(d).get(o.country)?.population ?? 0;
-      // A wider law calls up more men at once; a narrower one sends home those not yet in a division.
-      e.manpower = Math.max(0, e.manpower + (CONSCRIPTION[level].share - CONSCRIPTION[e.conscription].share) * people * 1000);
+      // A wider law calls up more men over the coming months; a narrower one sends home those not yet in a division.
+      const change = (CONSCRIPTION[level].share - CONSCRIPTION[e.conscription].share) * people * 1000;
+      if (change >= 0) {
+        // Trained reservists report within days; the rest are called up class by class.
+        e.manpower += RESERVISTS * change;
+        e.callUp = (e.callUp ?? 0) + (1 - RESERVISTS) * change;
+      }
+      else {
+        const waiting = e.callUp ?? 0;
+        e.callUp = Math.max(0, waiting + change);
+        e.manpower = Math.max(0, e.manpower + Math.min(0, waiting + change));
+      }
       if (level > e.conscription) e.stability = Math.max(0, e.stability - 2 * (level - e.conscription));
       e.conscription = level;
       break;
@@ -904,8 +983,10 @@ function closeMonth(d: EconomyDraft, name: string, e: Economy, v: EconomyView): 
     e.plan.active = null;
     e.plan.daysDone = 0;
   }
-  // Young men come of age: 2% of the law's total a year.
-  e.manpower += (v.manpowerCap * 0.02) / 12;
+  // Young men come of age: each year's class adds YOUTH of the law's total. And the men called up under a wider law report.
+  const reporting = (e.callUp ?? 0) * CALL_UP_RATE;
+  e.callUp = (e.callUp ?? 0) - reporting;
+  e.manpower += (v.manpowerCap * YOUTH) / 12 + reporting;
 
   const record: MonthRecord = {
     day: d.day + 1, inflation, priceLevel: e.priceLevel, debtRatio: v.debtRatio, treasury: e.treasury, balance: e.balanceThisMonth, stability: e.stability,

@@ -186,7 +186,7 @@ const START_PACTS: [PactKind, string, string][] = [
   ['nonAggression', 'Soviet Union', 'Finland'],
 ];
 
-const MAJORS = new Set(COUNTRIES.filter((c) => c.major).map((c) => c.name));
+export const MAJORS = new Set(COUNTRIES.filter((c) => c.major).map((c) => c.name));
 export const isMajor = (name: string): boolean => MAJORS.has(name);
 const KNOWN = new Set(COUNTRIES.map((c) => c.name));
 const NAMES = COUNTRIES.map((c) => c.name);

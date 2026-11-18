@@ -317,7 +317,7 @@ export function EndReport() {
         {r.losses.length > 0 && (
           <>
             <h3>Losses in battle</h3>
-            <p className="muted">In divisions' worth of men and equipment. Each division stands for roughly 15,000 soldiers.</p>
+            <p className="muted">In divisions' worth of men and equipment. Each division stands for roughly 25,000 soldiers: the division and its share of the troops behind it.</p>
             <ul className="st-losses">
               {r.losses.map((x) => (
                 <li key={x.country}>

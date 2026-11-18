@@ -178,6 +178,17 @@ describe('the story led by the AI (bot playtest, 1936 to the end of 1941)', () =
     expect(atWar(end, 'Germany', 'Soviet Union')).toBe(true);
   });
 
+  it('pays for the war without wrecking the Soviet economy, and keeps the German army near its real size', () => {
+    const soviet = end.economies['Soviet Union'];
+    expect(soviet.governmentsFallen).toBe(0);
+    expect(soviet.government).toBe('communist');
+    expect(soviet.priceLevel).toBeLessThan(200);
+    expect(soviet.inflation).toBeLessThan(30);
+    const german = end.units.filter((u) => u.owner === 'Germany').length;
+    expect(german).toBeGreaterThan(200);
+    expect(german).toBeLessThan(400);
+  });
+
   it('keeps count for the end report', () => {
     expect(end.story.greatWar).toBe(dayOf(end.startDate, '1939-09-01'));
     expect(end.story.ended).toBeNull();

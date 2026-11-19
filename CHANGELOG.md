@@ -37,7 +37,10 @@ each with a short preview of how it would go.
 - **A new lesson**, The attack menu (11 lessons now), and 7 new codex entries.
 - Saves are now version 13; games saved by 1.1, 1.2 and 1.3 still load.
 
-BALANCE_NOTES
+- **Balance** (docs/balance-stage-k3.md, 6 AI-only runs of history): Moscow now falls in 1 of 3
+  runs from 1936 (was 2 of 3); Greece falls again in 2 of 3 (was never), in June and August
+  1941. Germany still surrenders too early, between August 1943 and September 1944, about the
+  same as in 1.3: that needs work on the war economy and the army AI, not the new air and sea rules.
 
 ## 1.3.0: Armies that hold and push (2026-11-18)
 

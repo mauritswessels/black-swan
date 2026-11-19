@@ -369,7 +369,7 @@ const battle: Lesson = {
       show: (v) => selectUnitsAt(v, P.lorraine),
     },
     {
-      text: 'Right-click the Palatinate. The attack menu lists every way to hit it, with a preview of each. Choose Attack by land.',
+      text: 'Right-click the Palatinate. With divisions selected, they attack it at once. (Shift-right-click opens the attack menu instead: every way to hit it, with a preview of each.)',
       province: P.palatinate,
       done: (v) => mine(v).some((u) => u.path[0] === P.palatinate),
       show: (v) => ({ orders: moveAll(selectedUnits(v).filter((u) => u.at === P.lorraine).length ? selectedUnits(v).filter((u) => u.at === P.lorraine) : at(v, P.lorraine), P.palatinate) }),
@@ -386,7 +386,7 @@ const battle: Lesson = {
       show: (v) => ({ days: 1, select: { kind: 'battle', id: v.world.nextBattleId } }),
     },
     {
-      text: 'The bar is the front line: how far your divisions have got into the Palatinate, from the border to the far side. On the map it is the band in your colour growing from the border. The province is yours only when the band reaches the far side.',
+      text: 'The bar is the front line: how far your divisions have got into the Palatinate, from the border to the far side. On the map it is the band in your colour growing from the border. The province is yours only when the band reaches the far side. Divisions sent further than this province push on into the next once the fight here is going well, so one attack can bite into several provinces at once.',
       why: 'Each day the line moves by how the fighting went: forward when you deal more damage than you take, back when you take more. When the defenders break, it jumps forward as they fall back.',
       target: { sel: '.sb-front' },
     },
@@ -406,7 +406,7 @@ const battle: Lesson = {
       text: 'Every report says why the battle went the way it did, the biggest reason first. Read them when an attack fails: they tell you what to bring next time.',
     },
     {
-      text: 'Now attack Württemberg from two sides at once. Select your counters in Alsace and in the Palatinate (Shift-click), then right-click Württemberg and choose Attack by land.',
+      text: 'Now attack Württemberg from two sides at once. Select your counters in Alsace and in the Palatinate (Shift-click), then right-click Württemberg.',
       why: 'Each extra direction lets 4 more of your divisions into the fight, and the defenders cannot face every way at once.',
       province: P.wurttemberg,
       done: (v) => new Set(mine(v).filter((u) => u.path[0] === P.wurttemberg).map((u) => u.at)).size >= 2,
@@ -869,7 +869,7 @@ const attack: Lesson = {
       text: 'It is 11 June 1940, and Italy has declared war on France. Three Italian divisions hold Piedmont, over the Alps from Provence. You will take it with everything you have: land, air and sea together.',
     },
     {
-      text: 'Right-click Piedmont (on a trackpad, click with two fingers).',
+      text: 'Right-click Piedmont (on a trackpad, click with two fingers). If you have divisions selected, hold Shift: a plain right-click would send them to attack at once.',
       province: P.piedmont,
       done: (v) => v.menu === P.piedmont,
       show: () => ({ menu: P.piedmont }),

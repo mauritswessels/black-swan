@@ -129,6 +129,27 @@ describe('army orders', () => {
     expect(only(w).order).toEqual({ kind: 'hold', foe: 'Poland', at: id('Poznań') });
   });
 
+  it('a push sends divisions one province beyond the one they attack, so they can push on (deep attacks)', () => {
+    let w = start();
+    w = applyOrders(w, [{ type: 'formArmy', country: 'Germany', units: germans(w).slice(0, 60) }]);
+    w = order(w, only(w), { kind: 'push', target: id('Warsaw'), foe: 'Poland', pace: 'allOut' });
+    w = days(w, 30);
+    w = applyOrders(w, [{ type: 'declareWar', by: 'Germany', on: 'Poland' }]);
+    let deep = false;
+    let pushed = false;
+    for (let d = 0; d < 60 && !pushed; d++) {
+      w = advance(w);
+      const army = new Set(only(w).units);
+      for (const u of w.units) {
+        if (!army.has(u.id)) continue;
+        if (u.path.length >= 2 && w.units.some((e) => e.owner === 'Poland' && e.at === u.path[0])) deep = true;
+        if (u.via !== undefined) pushed = true;
+      }
+    }
+    expect(deep).toBe(true);
+    expect(pushed).toBe(true);
+  });
+
   it('a push attacks the target itself once it is on the front, and before that the provinces on the way from the army', () => {
     expect(pushAxis([1, 2, 3], 2, 7)).toEqual([2]);
     expect(pushAxis([1, 2, 3], 2, 7, true)[0]).toBe(2);

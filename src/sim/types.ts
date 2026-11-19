@@ -269,6 +269,12 @@ export interface Unit {
   drop?: { to: number; daysLeft: number };
   /** Paratroopers who came down into a fight (with `landing`): they attack at 70%, cannot be called back, and are lost if the attack fails. */
   dropped?: boolean;
+  /**
+   * A deep attack (combat.ts): the division has pushed on through province `via`, where its side's
+   * front line is past halfway, and now attacks or marches from there toward path[0]. It still
+   * counts as standing in `at` (the province it set out from) until `via` is taken.
+   */
+  via?: number;
 }
 
 /**
@@ -666,8 +672,8 @@ export interface Diplomacy {
 
 /** What a player or an AI can tell its units to do. */
 export type Order =
-  /** March to a province. With `friendly`, only through your own and allied land (armies moving behind their front). */
-  | { type: 'move'; unit: number; to: number; friendly?: boolean }
+  /** March to a province. With `friendly`, only through your own and allied land (armies moving behind their front). With `through`, by way of that province first. */
+  | { type: 'move'; unit: number; to: number; friendly?: boolean; through?: number }
   | { type: 'halt'; unit: number }
   // Navy and air (Stage G).
   /** Send a division by sea to a coastal province: a transport to friendly land, a landing on an enemy shore. */

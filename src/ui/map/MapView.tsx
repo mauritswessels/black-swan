@@ -134,9 +134,11 @@ export function frontBands(w: World, visible: (province: number, owner: string) 
       line = 100 * u.progress;
     }
     if (line < 1 || !visible(to, u.owner)) continue;
-    const key = `${u.at}>${to}`;
+    // A division that pushed on (a deep attack) comes in from the province it pushed through.
+    const from = u.via ?? u.at;
+    const key = `${from}>${to}`;
     const had = bands.get(key);
-    if (!had || had.line < line) bands.set(key, { key, from: u.at, to, owner: had?.owner ?? u.owner, line, battle: !!b });
+    if (!had || had.line < line) bands.set(key, { key, from, to, owner: had?.owner ?? u.owner, line, battle: !!b });
   }
   return [...bands.values()];
 }
@@ -401,10 +403,14 @@ export function MapView() {
     const h = hit(e.target as Element);
     const p = h.stack ? Number(h.stack.split('|')[0]) : h.wing ?? h.province;
     if (g.menu) g.closeMenu();
-    // A province that is not yours or an ally's: the attack menu, whatever is selected.
+    // A province that is not yours or an ally's. With divisions or an army selected and the enemy
+    // at war with you, they attack it straight away (and push on through the provinces on the way).
+    // Otherwise, or with Shift held, the attack menu opens.
     if (p != null && me && !world.capitulated.includes(me)) {
       const holder = world.controller[p];
       if (holder !== me && !friendsOfMe?.has(holder)) {
+        const sel = g.selection;
+        if (!e.shiftKey && atWar(world, me, holder) && (sel?.kind === 'units' || sel?.kind === 'army')) return sel.kind === 'army' ? g.armyTo(p) : g.marchTo(p);
         const [x, y] = local(e);
         return g.openMenu(p, x, y);
       }

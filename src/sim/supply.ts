@@ -16,8 +16,9 @@
  *   supply = min(1, capacity / divisions there) otherwise
  */
 import { PROVINCES } from './map';
+import { PUSH_ON_LINE } from './combat';
 import { COAST, type SeaPicture } from './sea';
-import type { Province, Terrain, World } from './types';
+import type { Battle, Province, Terrain, World } from './types';
 
 /** Roads and railways by terrain, on the design document's scale of 0 to 5. */
 const TERRAIN_INFRASTRUCTURE: Record<Terrain, number> = { plains: 3, forest: 2, hills: 2, marsh: 1, mountains: 1, desert: 1 };
@@ -85,13 +86,23 @@ export function linkedProvinces(controller: string[], country: string, friends?:
 }
 
 /** The supply level, 0 to 1, of every unit in the world, in the same order as world.units. */
-export function supplyLevels(w: Pick<World, 'units' | 'controller'>, friends?: Map<string, Set<string>>, sea?: SeaPicture): number[] {
+export function supplyLevels(w: Pick<World, 'units' | 'controller'> & { battles?: Battle[] }, friends?: Map<string, Set<string>>, sea?: SeaPicture): number[] {
   const count = new Array<number>(PROVINCES.length).fill(0);
   for (const u of w.units) count[u.at]++;
   const links = new Map<string, boolean[]>();
+  // Supply follows a deep attack (combat.ts) through a province whose front line its side has pushed past halfway.
+  const pushed = (w.battles ?? []).filter((b) => b.line >= PUSH_ON_LINE);
   return w.units.map((u) => {
     let linked = links.get(u.owner);
-    if (!linked) links.set(u.owner, (linked = linkedProvinces(w.controller, u.owner, friends?.get(u.owner), sea)));
+    if (!linked) {
+      const mine = pushed.filter((b) => b.attackers.includes(u.owner));
+      let controller = w.controller;
+      if (mine.length) {
+        controller = [...w.controller];
+        for (const b of mine) controller[b.province] = u.owner;
+      }
+      links.set(u.owner, (linked = linkedProvinces(controller, u.owner, friends?.get(u.owner), sea)));
+    }
     return linked[u.at] ? Math.min(1, supplyCapacity(u.at) / count[u.at]) : 0;
   });
 }

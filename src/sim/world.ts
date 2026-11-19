@@ -13,7 +13,7 @@
  * any surrenders, and once a week a record of the front for the war replay (replay.ts). Divisions may only
  * enter their own land, the land of an ally, or the land of a country they are at war with.
  */
-import { DIG_IN_MAX_DAYS, fightBattles, type Draft } from './combat';
+import { DIG_IN_MAX_DAYS, fightBattles, PUSH_ON_HOLD, type Draft } from './combat';
 import { COUNTRIES } from './countries';
 import { carryOutAim } from './agenda';
 import { allianceMap, cloneDiplomacy, giveDiplomacyOrder, isDiplomacyOrder, onGovernmentFell, runDiplomacy, startDiplomacy, surrenders, type DipDraft } from './diplomacy';
@@ -201,12 +201,20 @@ function giveOrders(d: StepDraft, orders: Order[]): void {
       u.path = [];
       u.progress = 0;
       u.landing = undefined;
+      u.via = undefined; // a division that had pushed on goes back to the line it set out from
     } else {
       friends ??= allianceMap(d.diplomacy);
       const mine = friends.get(u.owner);
       const safe = order.friendly ? (p: number) => d.controller[p] === u.owner || !!mine?.has(d.controller[p]) : () => true;
-      const route = findRoute(u.at, order.to, u.type, (p) => canEnter(d, u.owner, p, mine) && safe(p));
+      const ok = (p: number) => canEnter(d, u.owner, p, mine) && safe(p);
+      // A division that has pushed on (a deep attack) carries on from where it got to, if it can.
+      const onward = u.via !== undefined && u.via !== order.to ? findRoute(u.via, order.to, u.type, ok) : null;
+      // `through`: by way of that province (an army pushing on past the province it attacks, armies.ts).
+      const by = order.through !== undefined && !onward ? findRoute(u.at, order.through, u.type, ok) : null;
+      const rest = by ? findRoute(order.through!, order.to, u.type, ok) : null;
+      const route = onward ?? (by && rest ? [...by, ...rest] : findRoute(u.at, order.to, u.type, ok));
       if (!route) continue; // no way by land, or it would cross a country it is neither allied to nor at war with: ignored
+      if (!onward) u.via = undefined;
       // Keep the progress already made if the new route starts the same way.
       if (route[0] !== u.path[0]) u.progress = 0;
       u.path = route;
@@ -312,9 +320,36 @@ export function step(world: World, orders: Order[] = []): World {
     else occupied.set(u.at, new Set([u.owner]));
   }
   const blocked = (u: Unit, p: number): boolean => [...(occupied.get(p) ?? [])].some((o) => atWar(d, u.owner, o));
+  const arrive = (u: Unit, p: number, allies: Set<string> | undefined): void => {
+    u.at = p;
+    const holder = d.controller[p];
+    if (atWar(d, u.owner, holder)) {
+      // Captured. Land that belongs to an ally still in the fight is handed back to it (liberated).
+      const owner = dd.owner[p];
+      d.controller[p] = owner !== u.owner && allies?.has(owner) && !dd.capitulated.includes(owner) && atWar(d, owner, holder) ? owner : u.owner;
+    }
+    const owners = occupied.get(p);
+    if (owners) owners.add(u.owner);
+    else occupied.set(p, new Set([u.owner]));
+  };
   for (const u of d.units) {
     let dayLeft = 1; // a unit may cross more than one small province in a day
     const allies = friends.get(u.owner);
+    // A deep attack (combat.ts): the province the division pushed on through.
+    if (u.via !== undefined) {
+      const b = u.via;
+      const ours = d.controller[b] === u.owner || !!allies?.has(d.controller[b]);
+      if (ours || (atWar(d, u.owner, d.controller[b]) && !blocked(u, b))) {
+        // Taken, or its defenders have gone: the division is standing in it.
+        u.via = undefined;
+        arrive(u, b, allies);
+      } else if (!atWar(d, u.owner, d.controller[b]) || !d.battles.some((x) => x.province === b && x.line >= PUSH_ON_HOLD && x.attackers.some((c) => c === u.owner || !!allies?.has(c)))) {
+        // The fight behind it was lost (or peace was made): back to the line it set out from.
+        u.via = undefined;
+        u.path = [];
+        u.progress = 0;
+      }
+    }
     while (u.path.length && dayLeft > 0) {
       const next = u.path[0];
       if (!canEnter(d, u.owner, next, allies)) {
@@ -324,7 +359,7 @@ export function step(world: World, orders: Order[] = []): World {
         break;
       }
       // A landing crosses in a day: the weeks of preparation are already behind it. Mud and snow slow the march (seasons.ts).
-      const need = u.landing ? 1 : daysToEnter(u.at, next, u.type) / GROUND_MARCH[ground[next]];
+      const need = u.landing ? 1 : daysToEnter(u.via ?? u.at, next, u.type) / GROUND_MARCH[ground[next]];
       if (blocked(u, next)) {
         // It fights for the province instead: how far in it stands is the battle's front line (combat.ts).
         break;
@@ -332,17 +367,9 @@ export function step(world: World, orders: Order[] = []): World {
       const remaining = (1 - u.progress) * need;
       if (remaining <= dayLeft) {
         dayLeft -= remaining;
-        u.at = u.path.shift()!;
         u.progress = 0;
-        const holder = d.controller[u.at];
-        if (atWar(d, u.owner, holder)) {
-          // Captured. Land that belongs to an ally still in the fight is handed back to it (liberated).
-          const owner = dd.owner[u.at];
-          d.controller[u.at] = owner !== u.owner && allies?.has(owner) && !dd.capitulated.includes(owner) && atWar(d, owner, holder) ? owner : u.owner;
-        }
-        const owners = occupied.get(u.at);
-        if (owners) owners.add(u.owner);
-        else occupied.set(u.at, new Set([u.owner]));
+        u.via = undefined;
+        arrive(u, u.path.shift()!, allies);
       } else {
         u.progress += dayLeft / need;
         dayLeft = 0;

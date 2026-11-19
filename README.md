@@ -68,12 +68,15 @@ minutes in all, and you can take them in any order. Everything below is what the
    ultimatum, someone offers peace), the clock stops and the question opens in the sidebar.
    You have seven days; after that the answer shown as the default is given for you.
 9. Click one of your counters, for example `FRA 4`, to select those divisions. Shift-click
-   adds another counter. Right-click a province of your own to send them there (two-finger
-   click on a trackpad), or press **G** and click any province. The sidebar shows the
-   **outlook** of an attack.
+   adds another counter. Right-click a province to send them there (two-finger click on a
+   trackpad): on enemy land that is an attack, at once. Or press **G** and click any province.
+   The sidebar shows the **outlook** of an attack.
    Click the crossed swords to follow a battle: the **front line** bar (and the band on the
    map) shows how far your divisions have got. The province changes hands when it reaches
-   the far side.
+   the far side. Send divisions further than the next province and they do not wait for it
+   to fall: once the fight there is going well, the ones not needed push on into the next
+   province (tanks first) while the rest finish the fight behind them, so one attack bites
+   into several provinces at once. If the fight behind them is lost, they come back.
 10. **Armies.** Moving every division by hand gets slow in a big war. Hold Shift and drag a
     box around divisions, then press **A**: they become an army with a flag on the map and a
     number key (1 to 9). Drag the flag onto an enemy province to **push** toward it, onto a
@@ -87,8 +90,8 @@ minutes in all, and you can take them in any order. Everything below is what the
     country that loses 60% of its own land's victory points surrenders (40% once its capital
     has fallen, or the capital and 10% more if that is higher); you then choose to
     occupy it, annex it or set up a friendly government.
-12. **The attack menu.** Right-click a province that is not yours (or click **Ways to attack**
-    in its sidebar) and every way to hit it appears, each with a short preview of how it would
+12. **The attack menu.** Right-click a province that is not yours with nothing selected, or
+    Shift-right-click it (or click **Ways to attack** in its sidebar), and every way to hit it appears, each with a short preview of how it would
     go: **attack by land**, **push with an army**, **land from the sea**, **drop
     paratroopers**, **support from the air** (bombers aimed at that one battle), **win the
     sky** (fighters), **bomb the factories**, **scout** (a plane shows what is there), **shell
@@ -234,7 +237,8 @@ every installed copy then needs one manual reinstall.
 | A | Form an army from the selected divisions (with none selected: your armies) |
 | 1 to 9 | Select an army; press again to look at it on the map |
 | Drag a flag | Give an army a new front (enemy province: push; border: hold; your land: reserve) |
-| Right-click | On a province that is not yours: the attack menu. On your own land: send the selected divisions or army there |
+| Right-click | Send the selected divisions or army there, attacking on the way. With nothing selected, on a province that is not yours: the attack menu |
+| Shift + right-click | The attack menu, even with divisions selected |
 | G | Move or attack: then click the destination or type its name |
 | H | Halt the selected divisions |
 | Tab | Step through your stacks of divisions (while the map has the focus) |
@@ -324,7 +328,8 @@ src/ui/           React screens, widgets, sound and the War Room theme
 src-tauri/        the Mac app wrapper (Tauri): save files, the menu, updates, the icon
   tauri.release.conf.json  what the release build adds (signed update files)
 .github/workflows/ checks.yml (every pull request) and release.yml (publishes new versions)
-scripts/          build-map.mjs turns modern map data into 1936 provinces;
+scripts/          build-map.mjs turns modern map data into 1936 provinces (map-cut.mjs
+                  splits the big ones, map-rivers.mjs finds the river borders);
                   build-sea.mjs draws the sea zones and works out the coasts;
                   update.mjs is `npm run update`; set-version.mjs is `npm run set-version`;
                   release-notes.mjs takes a version's notes from CHANGELOG.md
@@ -338,8 +343,11 @@ The rule that keeps this clean: nothing in `src/sim/` may import from the user i
 
 The map is built from [Natural Earth](https://www.naturalearthdata.com) data, which is in the
 public domain. That data shows today's regions, so `scripts/build-map.mjs` hands each region to
-the country that held it in 1936 and merges regions into provinces. Borders that ran through
-the middle of a modern region are therefore approximate:
+the country that held it in 1936 and merges regions into provinces. Since version 1.5 the
+biggest provinces near the main fronts are split again, into 280 provinces in all: along
+modern regions where there are several, otherwise with a gently wiggling line across the
+province's long side. Borders that ran through the middle of a modern region, and those cuts,
+are therefore approximate:
 
 - The Free City of Danzig is shown as part of Poland.
 - The Polish-Soviet and Polish-German borders follow modern regional lines, so they are a few
@@ -357,8 +365,8 @@ the middle of a modern region are therefore approximate:
 
 Version 1.0 completes the plan, 1.1 fixes the war economy, 1.2 makes the front move inside
 each province, 1.3 adds armies with Hold and Push orders, 1.4 the right-click attack menu
-for land, sea and air, and 1.4.1 makes Poland hold out about as long as it really did (see
-CHANGELOG.md). Next: a finer map with more provinces (K4). Ideas for later versions: playing against
+for land, sea and air, 1.4.1 makes Poland hold out about as long as it really did, and 1.5
+brings the finer map of 280 provinces and deep attacks (see CHANGELOG.md). Ideas for later versions: playing against
 friends over the internet (the engine is already deterministic, with a fingerprint check for
 it), and the Pacific and the Americas.
 

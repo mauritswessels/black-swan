@@ -134,9 +134,11 @@ export function frontBands(w: World, visible: (province: number, owner: string) 
       line = 100 * u.progress;
     }
     if (line < 1 || !visible(to, u.owner)) continue;
-    const key = `${u.at}>${to}`;
+    // A division that pushed on (a deep attack) comes in from the province it pushed through.
+    const from = u.via ?? u.at;
+    const key = `${from}>${to}`;
     const had = bands.get(key);
-    if (!had || had.line < line) bands.set(key, { key, from: u.at, to, owner: had?.owner ?? u.owner, line, battle: !!b });
+    if (!had || had.line < line) bands.set(key, { key, from, to, owner: had?.owner ?? u.owner, line, battle: !!b });
   }
   return [...bands.values()];
 }
@@ -401,10 +403,14 @@ export function MapView() {
     const h = hit(e.target as Element);
     const p = h.stack ? Number(h.stack.split('|')[0]) : h.wing ?? h.province;
     if (g.menu) g.closeMenu();
-    // A province that is not yours or an ally's: the attack menu, whatever is selected.
+    // A province that is not yours or an ally's. With divisions or an army selected and the enemy
+    // at war with you, they attack it straight away (and push on through the provinces on the way).
+    // Otherwise, or with Shift held, the attack menu opens.
     if (p != null && me && !world.capitulated.includes(me)) {
       const holder = world.controller[p];
       if (holder !== me && !friendsOfMe?.has(holder)) {
+        const sel = g.selection;
+        if (!e.shiftKey && atWar(world, me, holder) && (sel?.kind === 'units' || sel?.kind === 'army')) return sel.kind === 'army' ? g.armyTo(p) : g.marchTo(p);
         const [x, y] = local(e);
         return g.openMenu(p, x, y);
       }
@@ -518,9 +524,15 @@ export function MapView() {
   const arrows: { key: string; from: number; to: number; own: boolean; attack: boolean; progress: number }[] = [];
   const fighting = new Set(world.battles.map((b) => b.province));
   for (const s of stacks) {
-    const next = new Map<number, number>();
-    for (const u of s.units) if (u.path.length) next.set(u.path[0], Math.max(next.get(u.path[0]) ?? 0, u.progress));
-    for (const [to, progress] of next) arrows.push({ key: `${s.province}|${s.owner}|${to}`, from: s.province, to, own: s.owner === me, attack: fighting.has(to) && world.units.some((u) => u.at === to && atWar(world, u.owner, s.owner)), progress });
+    // A division that pushed on (a deep attack) goes on from the province it pushed through.
+    const next = new Map<string, { from: number; to: number; progress: number }>();
+    for (const u of s.units) {
+      if (!u.path.length) continue;
+      const from = u.via ?? s.province;
+      const k = `${from}>${u.path[0]}`;
+      next.set(k, { from, to: u.path[0], progress: Math.max(next.get(k)?.progress ?? 0, u.progress) });
+    }
+    for (const { from, to, progress } of next.values()) arrows.push({ key: `${s.province}|${s.owner}|${from}|${to}`, from, to, own: s.owner === me, attack: fighting.has(to) && world.units.some((u) => u.at === to && atWar(world, u.owner, s.owner)), progress });
   }
   // The full routes of the selected divisions.
   const routes: string[] = [];
@@ -529,10 +541,11 @@ export function MapView() {
     const done = new Set<string>();
     for (const u of world.units) {
       if (!selected.has(u.id) || !u.path.length) continue;
-      const key = `${u.at}>${u.path.join('>')}`;
+      const start = u.via === undefined ? [u.at] : [u.at, u.via];
+      const key = `${start.join('>')}>${u.path.join('>')}`;
       if (done.has(key)) continue;
       done.add(key);
-      routes.push([u.at, ...u.path].map((p) => POINTS[p].join(',')).join(' '));
+      routes.push([...start, ...u.path].map((p) => POINTS[p].join(',')).join(' '));
       ends.add(u.path[u.path.length - 1]);
     }
   }

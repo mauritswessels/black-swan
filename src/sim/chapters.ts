@@ -94,7 +94,7 @@ export const CHAPTERS: Chapter[] = [
       France: [alive('France', 'Paris'), germanyBeaten, prices('France', 20)],
       Germany: [alive('Germany', 'Berlin'), { text: 'No enemy soldier stands on German soil', test: (w) => standing(w, 'Germany') && homeFree(w, 'Germany') }, stable('Germany', 40)],
       Italy: [alive('Italy', 'Rome'), { text: 'No enemy soldier stands on Italian soil', test: (w) => standing(w, 'Italy') && homeFree(w, 'Italy') }, stable('Italy', 40)],
-      'Soviet Union': [alive('Soviet Union', 'Moscow'), { text: 'Leningrad and Stalingrad are yours', test: (w) => holds(w, 'Soviet Union', P('Novgorod')) && holds(w, 'Soviet Union', P('Stalingrad')) }, germanyBeaten],
+      'Soviet Union': [alive('Soviet Union', 'Moscow'), { text: 'Leningrad and Stalingrad are yours', test: (w) => holds(w, 'Soviet Union', P('Leningrad')) && holds(w, 'Soviet Union', P('Stalingrad')) }, germanyBeaten],
       Poland: [alive('Poland', 'Warsaw'), germanyBeaten, { text: 'Poland has all its land of 1936', hard: true, test: (w) => standing(w, 'Poland') && PROVINCES.every((p) => p.owner !== 'Poland' || (w.owner[p.id] === 'Poland' && w.controller[p.id] === 'Poland')) }],
     },
   },

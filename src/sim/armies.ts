@@ -196,12 +196,27 @@ export function armyCentre(w: Pick<World, 'units'>, a: Army): number | null {
 }
 
 /** Steps between every province and `target`, across the whole map. */
+const STEPS = new Map<number, number[]>();
 function stepsTo(target: number): number[] {
+  const known = STEPS.get(target);
+  if (known) return known;
   const steps = new Array<number>(PROVINCES.length).fill(Infinity);
   steps[target] = 0;
   const queue = [target];
   for (let i = 0; i < queue.length; i++) for (const n of PROVINCES[queue[i]].neighbours) if (steps[n] === Infinity) (steps[n] = steps[queue[i]] + 1, queue.push(n));
+  STEPS.set(target, steps);
   return steps;
+}
+
+/**
+ * The next province after `p` on the way to `target`, when it is held by the enemy: where a
+ * division attacking `p` pushes on to (a deep attack). Null when `p` is next to nothing nearer.
+ */
+function onTheWay(w: World, p: number, target: number, country: string): number | null {
+  const steps = stepsTo(target);
+  const enemies = enemiesOf(w, country);
+  const next = PROVINCES[p].neighbours.filter((n) => steps[n] < steps[p] && enemies.includes(w.controller[n])).sort((a, b) => steps[a] - steps[b] || a - b)[0];
+  return next ?? null;
 }
 
 /**
@@ -268,7 +283,12 @@ export function armyOrders(w: World, country: string, opts: ArmyOrderOptions = {
       // On the day of the order every division is taken back, except those already attacking.
       const view = fresh ? { ...w, units: w.units.map((u) => (mine.has(u.id) && u.path.length && !attacking(u) ? { ...u, path: [], progress: 0 } : u)) } : w;
       if (fresh) for (const u of units) if (u.path.length && !attacking(u)) orders.push({ type: 'halt', unit: u.id });
-      orders.push(...aiOrders(view, country, { army: { units: mine, foe: o.foe, targets: axis }, boldness: PACE_BOLDNESS[o.pace], sea: opts.sea, air: opts.air }));
+      // Deep attacks (combat.ts): a division attacking a province on the way to the target is told
+      // to go one province further, so it can push on once the fight there is going well.
+      for (const x of aiOrders(view, country, { army: { units: mine, foe: o.foe, targets: axis }, boldness: PACE_BOLDNESS[o.pace], sea: opts.sea, air: opts.air })) {
+        const beyond = x.type === 'move' && x.to !== o.target && hostile(x.to) > 0 ? onTheWay(w, x.to, o.target, country) : null;
+        orders.push(beyond !== null && x.type === 'move' ? { ...x, to: beyond, through: x.to } : x);
+      }
       continue;
     }
 

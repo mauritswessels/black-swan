@@ -101,6 +101,22 @@ export const PUSH_PER_DAY = 10;
 export const BREAKTHROUGH_JUMP = 0.6;
 export const BREAKTHROUGH_JUMP_PURSUED = 0.85;
 
+/**
+ * Deep attacks (pushOn). A fight is going well enough to push on from when the line is a little
+ * way in (PUSH_ON_START) and moved at least PUSH_ON_PUSH today (the attackers dealt about 1.7
+ * times the damage they took), or once it is past halfway and still moving forward. Only
+ * divisions this well organised push on.
+ */
+export const PUSH_ON_START = 5;
+export const PUSH_ON_PUSH = 2.5;
+export const PUSH_ON_LINE = 50;
+export const PUSH_ON_ORG = 40;
+/** A division that pushed on falls back to where it set out from once the line behind it is pushed back while still short of this. */
+export const PUSH_ON_HOLD = 10;
+export const goingWell = (b: Pick<Battle, 'line' | 'push'>): boolean => b.line < 100 && (b.line >= PUSH_ON_LINE ? b.push > 0 : b.line >= PUSH_ON_START && b.push >= PUSH_ON_PUSH);
+/** Is the fight behind a division that pushed on still holding? */
+export const stillHolding = (b: Pick<Battle, 'line' | 'push'>): boolean => b.push >= 0 || b.line >= PUSH_ON_HOLD;
+
 /** Against an army that is reeling, the line can move this far in a day. */
 export const REELING_PUSH_MAX = 15;
 
@@ -126,7 +142,7 @@ export const digInFactor = (u: Pick<Unit, 'dugIn'>): number => 1 + DIG_IN_PER_DA
 export function attackPower(u: Unit, target: number, edge = 1): number {
   const terrain = PROVINCES[target].terrain;
   const rough = u.type === 'armour' && ARMOUR_ROUGH.includes(terrain) ? ARMOUR_ROUGH_FACTOR : 1;
-  const river = riverBetween(u.at, target) ? RIVER_ATTACK : 1;
+  const river = riverBetween(u.via ?? u.at, target) ? RIVER_ATTACK : 1;
   return STATS[u.type].attack * (u.strength / 100) * terrainAttack(target) * rough * river * supplyFactor(u.supply) * edge;
 }
 
@@ -197,7 +213,7 @@ const CAPITAL_OF = new Map(PROVINCES.filter((p) => p.capital).map((p) => [p.owne
 
 /** Who actually fights today, and how hard each side hits before luck. `fire` is the fire support each side gets (forces.ts). */
 function lineUp(attackers: Unit[], defenders: Unit[], province: number, edges?: Edges, air = 1, fire = { attack: 0, defence: 0 }) {
-  const directions = new Set(attackers.map((u) => u.at)).size;
+  const directions = new Set(attackers.map((u) => u.via ?? u.at)).size;
   const front = line(attackers, ATTACK_WIDTH + ATTACK_WIDTH_PER_EXTRA_DIRECTION * (directions - 1));
   const holding = line(defenders, DEFENCE_WIDTH);
   const guns = front.filter((u) => u.type === 'artillery').length;
@@ -210,7 +226,7 @@ function lineUp(attackers: Unit[], defenders: Unit[], province: number, edges?: 
   const attackerEdge = mean(front.map((u) => edges?.attack(u) ?? 1));
   const defenderEdge = mean(holding.map((u) => edges?.defence(u, province) ?? 1));
   // Share of the attack that comes across a river.
-  const riverShare = attackSum > 0 ? front.reduce((a, u, i) => a + (riverBetween(u.at, province) ? attackEach[i] : 0), 0) / attackSum : 0;
+  const riverShare = attackSum > 0 ? front.reduce((a, u, i) => a + (riverBetween(u.via ?? u.at, province) ? attackEach[i] : 0), 0) / attackSum : 0;
   return { directions, front, holding, digInKept, attackEach, attackSum, defenceSum, attackerEdge, defenderEdge, riverShare };
 }
 
@@ -261,7 +277,7 @@ export interface Outlook {
 export function outlook(attackers: Unit[], defenders: Unit[], province: number, edges?: Edges, air = 1, ground: Ground = 'dry', line = 0, fire = { attack: 0, defence: 0 }): Outlook | null {
   if (!attackers.length || !defenders.length) return null;
   const { directions, front, holding, digInKept, attackSum, defenceSum, attackerEdge, defenderEdge, riverShare } = lineUp(attackers, defenders, province, edges, air, fire);
-  const river = front.map((u) => riverBetween(u.at, province)).find((r) => r) ?? null;
+  const river = front.map((u) => riverBetween(u.via ?? u.at, province)).find((r) => r) ?? null;
   const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
   // A division gives up when its organisation is gone (attackers a little earlier).
   const days = (units: Unit[], damage: number, floor: number) => (damage > 0 ? Math.max(0, avg(units.map((u) => u.organisation)) - floor) / ((damage / units.length) * ORG_PER_DAMAGE) : Infinity);
@@ -434,7 +450,7 @@ export function fightBattles(d: Draft, rng: Rng): Set<number> {
     t.air += sky;
     t.landing += front.filter((u) => u.landing).length / front.length;
     t.river = (t.river ?? 0) + riverShare;
-    if (riverShare > 0) battle.river ??= front.map((u) => riverBetween(u.at, province)).find((r) => r) ?? undefined;
+    if (riverShare > 0) battle.river ??= front.map((u) => riverBetween(u.via ?? u.at, province)).find((r) => r) ?? undefined;
     t.badGround = (t.badGround ?? 0) + (ground === 'mud' || ground === 'snow' ? 1 : 0);
     t.attackerFire = (t.attackerFire ?? 0) + (fire && attackSum > 0 ? fire.attack / attackSum : 0);
     t.defenderFire = (t.defenderFire ?? 0) + (fire && defenceSum > 0 ? fire.defence / defenceSum : 0);
@@ -479,6 +495,7 @@ export function fightBattles(d: Draft, rng: Rng): Set<number> {
       }
     }
     for (const u of attackers) if (!removed.has(u.id) && u.path[0] === province) u.progress = battle.line / 100;
+    if (goingWell(battle)) pushOn(battle, attackers.filter((u) => !removed.has(u.id) && u.path[0] === province), defenders.filter((u) => !removed.has(u.id) && u.at === province), digInKept, d.edges);
 
     const defendersLeft = defenders.some((u) => !removed.has(u.id) && u.at === province);
     const attackersLeft = attackers.some((u) => !removed.has(u.id) && u.path[0] === province);
@@ -488,6 +505,29 @@ export function fightBattles(d: Draft, rng: Rng): Set<number> {
 
   if (removed.size) d.units = d.units.filter((u) => !removed.has(u.id));
   return busy;
+}
+
+/**
+ * Deep attacks. Once the fight for a province is going well (goingWell), divisions ordered
+ * further on push into the next province, while the rest finish the fight
+ * behind them. Tanks go first. Enough stay behind to keep hitting at least as hard as the
+ * defenders still there, so the battle they leave is not lost.
+ */
+function pushOn(b: Battle, attackers: Unit[], defenders: Unit[], digInKept: number, edges?: Edges): void {
+  const keen = attackers
+    .filter((u) => u.path.length >= 2 && u.organisation >= PUSH_ON_ORG && !u.landing && !u.dropped)
+    .sort((a, c) => Number(c.type === 'armour') - Number(a.type === 'armour') || c.organisation - a.organisation || a.id - c.id);
+  if (!keen.length) return;
+  const power = (u: Unit) => attackPower(u, b.province, edges?.attack(u));
+  const defence = defenders.reduce((a, u) => a + defencePower(u, digInKept, edges?.defence(u, b.province)), 0);
+  let left = attackers.reduce((a, u) => a + power(u), 0);
+  for (const u of keen) {
+    if (left - power(u) < defence) continue;
+    left -= power(u);
+    u.via = b.province;
+    u.path = u.path.slice(1);
+    u.progress = 0;
+  }
 }
 
 /** Add names to a list, keeping the order of those already there. */

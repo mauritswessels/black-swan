@@ -8,6 +8,15 @@ import type { Province, Terrain, UnitType } from './types';
 import { asin, cos, PI, sin } from './dmath';
 
 export const PROVINCES = data.provinces as unknown as Province[];
+
+/**
+ * The finer map (version 1.5) cut the biggest of the first 183 provinces into parts. Each cut
+ * province kept its id and name for the part around its main place; the other parts were added
+ * at the end. `partsOf` gives a province and every part cut from it, so a list of places
+ * written for the old map ("mainland France", "the land Poland won in 1920") still covers it all.
+ */
+export const SPLIT_FROM: [number, number][] = data.splitFrom as [number, number][];
+export const partsOf = (id: number): number[] => [id, ...SPLIT_FROM.filter(([, from]) => from === id).map(([part]) => part)];
 export const KNOWN_GAPS: string[] = data.knownGaps;
 
 /** Kilometres a division covers in a day on a good road across open country. */

@@ -4,7 +4,7 @@
  * years of AI peace, to check research, national plans and the home front; and three runs of
  * the whole story with every country led by the AI, to check that it follows real history (three from 1936 and three from September 1939).
  *
- *   npm run balance            200 wars, 24 finance runs, a peace run and six history runs, armies run by a bot, writes docs/balance-stage-k3.md
+ *   npm run balance            200 wars, 24 finance runs, a peace run and six history runs, armies run by a bot, writes docs/balance-stage-k4.md
  *   npm run balance -- 40      a quicker run with fewer wars
  *
  * Every war uses the real 1936 map and starting armies, with both sides led by the simple AI
@@ -12,7 +12,7 @@
  */
 import fs from 'node:fs';
 import { dayOf, quiet } from '../src/sim/agenda';
-import { PROVINCES } from '../src/sim/map';
+import { partsOf, PROVINCES } from '../src/sim/map';
 import { scores } from '../src/sim/report';
 import { newGame } from '../src/sim/scenario';
 import { COUNTRIES } from '../src/sim/countries';
@@ -143,6 +143,8 @@ const MOSCOW = PROVINCES.find((p) => p.name === 'Moscow')!.id;
 const frontRows: string[] = [];
 /** Stage K3: aimed wings, shelling fleets and paratroopers in each run. */
 const strikeRows: string[] = [];
+/** Stage K4: the finer map's speed, and deep attacks, in each run. */
+const mapRows: string[] = [];
 const played = (start: World, days: number, seed?: string): World => {
   let w = start;
   const news: { day: number; text: string }[] = [];
@@ -152,8 +154,13 @@ const played = (start: World, days: number, seed?: string): World => {
   let lastReport = -1;
   const front = { battles: 0, days: 0, won: 0, rivers: new Set<number>(), riverWon: 0, mud: 0 };
   const k3 = { aimed: 0, shelling: 0, paras: new Map<string, number>(), firstDrop: '' };
+  const k4 = { ms: 0, deep: new Set<number>(), most: 0 };
   for (let d = 0; d < days; d++) {
+    const t = performance.now();
     w = advance(w);
+    k4.ms += performance.now() - t;
+    for (const u of w.units) if (u.via !== undefined) k4.deep.add(u.id);
+    k4.most = Math.max(k4.most, w.battles.length);
     for (const x of w.wings) if (x.target !== undefined && x.mission === 'ground') k3.aimed++;
     for (const f of w.fleets) if (f.target !== undefined) k3.shelling++;
     for (const u of w.units) if (u.type === 'airborne') k3.paras.set(u.owner, (k3.paras.get(u.owner) ?? 0) + 1);
@@ -185,6 +192,10 @@ const played = (start: World, days: number, seed?: string): World => {
     const byWho = [...new Set(drops.map((e) => e.countries[0]))].map((c) => `${c} ${drops.filter((e) => e.countries[0] === c).length}`).join(', ') || 'none';
     const most = [...k3.paras].map(([c, n]) => `${c} ${Math.round(n / days)}`).join(', ') || 'none';
     strikeRows.push(`| ${seed} | ${(k3.aimed / days).toFixed(1)} | ${(k3.shelling / days).toFixed(1)} | ${most} | ${drops.length} (${into} into a battle) | ${byWho} | ${drops[0] ? dateLabel({ startDate: w.startDate, day: drops[0].day }) : 'none'} |`);
+  }
+  if (seed) {
+    const poland = news.find((x) => /^Poland surrenders/.test(x.text));
+    mapRows.push(`| ${seed} | ${(k4.ms / days).toFixed(1)} | ${poland ? dateLabel({ startDate: w.startDate, day: poland.day }) : 'did not fall'} | ${k4.deep.size} | ${k4.most} |`);
   }
   if (seed) frontRows.push(`| ${seed} | ${front.battles} | ${(front.days / Math.max(1, front.battles)).toFixed(1)} | ${Math.round((100 * front.won) / Math.max(1, front.battles))}% | ${front.rivers.size} | ${front.riverWon} | ${front.mud} |`);
   return w;
@@ -254,7 +265,8 @@ const armyRows = ARMY_SEEDS.map((seed) => {
   let w = newGame({ mode: 'story', start: '1939', player: 'Germany', seed });
   const id = (n: string) => PROVINCES.find((p) => p.name === n || p.city === n)!.id;
   const germans = w.units.filter((u) => u.owner === 'Germany');
-  const near = (names: string[]) => germans.filter((u) => names.includes(PROVINCES[u.at].name)).map((u) => u.id);
+  // The provinces named, and the parts the finer map of 1.5 split off them.
+  const near = (names: string[]) => { const ps = new Set(names.flatMap((n) => partsOf(id(n)))); return germans.filter((u) => ps.has(u.at)).map((u) => u.id); };
   const north = near(['East Prussia', 'Pomerania', 'Mecklenburg']);
   const south = near(['Silesia', 'Moravia', 'Slovakia', 'Bohemia', 'Saxony']);
   const west = germans.map((u) => u.id).filter((x) => !north.includes(x) && !south.includes(x));
@@ -278,6 +290,7 @@ const armyRows = ARMY_SEEDS.map((seed) => {
   let turned = false;
   let held = false;
   let pincerDays = 0;
+  const deep = new Set<number>();
   const t = Date.now();
   const days = dayOf('1939-09-01', '1941-06-01');
   for (let d = 0; d < days; d++) {
@@ -285,6 +298,7 @@ const armyRows = ARMY_SEEDS.map((seed) => {
     w = advance(w, aiEconomyOrders(w, 'Germany'));
     if (!poland && w.capitulated.includes('Poland')) poland = dateLabel(w);
     if (!france && w.capitulated.includes('France')) france = dateLabel(w);
+    for (const u of w.units) if (u.via !== undefined && u.owner === 'Germany') deep.add(u.id);
     if (armiesOf(w, 'Germany').filter((a) => a.order.kind === 'push').length >= 2 && !poland) pincerDays++;
     // Poland has fallen: everyone west, to hold the French border through the winter.
     if (poland && !held) {
@@ -304,7 +318,7 @@ const armyRows = ARMY_SEEDS.map((seed) => {
   }
   const ms = (Date.now() - t) / days;
   const lost = PROVINCES.filter((p) => p.owner === 'Germany' && w.controller[p.id] !== 'Germany').length;
-  return `| ${seed} | ${poland || 'did not fall'} | ${france || 'did not fall'} | ${w.units.filter((u) => u.owner === 'Germany').length} | ${lost} | ${w.reports.filter((r) => r.attackers.includes('Germany')).length} | ${armiesOf(w, 'Germany').map((a) => `${a.name}: ${a.units.length}`).join(', ')} | ${ms.toFixed(1)} |`;
+  return `| ${seed} | ${poland || 'did not fall'} | ${france || 'did not fall'} | ${w.units.filter((u) => u.owner === 'Germany').length} | ${lost} | ${w.reports.filter((r) => r.attackers.includes('Germany')).length} | ${armiesOf(w, 'Germany').map((a) => `${a.name}: ${a.units.length}`).join(', ')} | ${deep.size} | ${ms.toFixed(1)} |`;
 });
 console.log(armyRows.join('\n'));
 console.log(storyRows.join('\n'));
@@ -318,8 +332,9 @@ console.log(endRows.join('\n'));
 console.log(fallRows.join('\n'));
 console.log(economyRows.join('\n'));
 console.log(strikeRows.join('\n'));
+console.log(mapRows.join('\n'));
 
-const report = `# Balance report, Stage K3: ${all.length} AI against AI wars, ${financeRows.length} finance playtests, four years of peace, six runs of history, three free-for-alls and three games played with armies
+const report = `# Balance report, Stage K4: ${all.length} AI against AI wars, ${financeRows.length} finance playtests, four years of peace, six runs of history, three free-for-alls and three games played with armies
 
 Made by \`npm run balance\`. Do not edit the tables by hand; run the command again instead.
 
@@ -403,8 +418,8 @@ AI leads every other country. The bot does not attack Belgium or the Netherlands
 that needs a cause for war, which this bot does not seek. The run ends on 1 June 1941. Real history: Poland fell on
 6 October 1939, France on 22 June 1940.
 
-| Run | Poland falls | France falls | German divisions on 1 June 1941 | German provinces lost | German attacks | Armies at the end | Milliseconds a day |
-| --- | --- | --- | --- | --- | --- | --- | --- |
+| Run | Poland falls | France falls | German divisions on 1 June 1941 | German provinces lost | German attacks | Armies at the end | Divisions that pushed on (deep attacks) | Milliseconds a day |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
 ${armyRows.join('\n')}
 
 ## Land, sea and air together
@@ -417,6 +432,20 @@ on an average day, and the drops made (empty provinces taken, and drops into a b
 | Run | Bomber wings aimed at a battle (average day) | Fleets shelling (average day) | Paratrooper divisions (average day) | Drops | Drops by | First drop |
 | --- | --- | --- | --- | --- | --- | --- |
 ${strikeRows.join('\n')}
+
+## The finer map and deep attacks
+
+Stage K4 splits the biggest provinces near the main fronts, from 183 provinces to ${PROVINCES.length}, and
+adds deep attacks: divisions sent further than the next province push on once the fight there
+is going well, while the rest finish it. The AI attacks one province at a time, so in these
+runs only armies on a Push order (the army bot above) push on. For each run: how long the
+simulation takes for one game day on this computer (the fastest game speed allows 60 ms),
+when Poland surrendered (really: Warsaw on 28 September 1939, the last troops on 6 October),
+how many divisions pushed on, and the most battles fought on one day.
+
+| Run | Milliseconds a game day | Poland surrenders | Divisions that pushed on | Most battles on one day |
+| --- | --- | --- | --- | --- |
+${mapRows.join('\n')}
 
 ## The war economy
 
@@ -490,7 +519,7 @@ Over the nine years of each run:
 ${seaRows.join('\n')}
 `;
 fs.mkdirSync('docs', { recursive: true });
-const file = 'docs/balance-stage-k3.md';
+const file = 'docs/balance-stage-k4.md';
 // Keep the hand-written notes below the tables when the numbers are refreshed.
 const marker = '\n## What the results say';
 const old = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';

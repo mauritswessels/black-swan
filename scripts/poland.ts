@@ -1,7 +1,7 @@
 /**
  * How long Poland lasts in the September 1939 start (version 1.4.1).
  *
- *   npx vite-node scripts/poland.ts      writes docs/balance-1.4.1-poland.md
+ *   npx vite-node scripts/poland.ts [file] [title]   writes docs/balance-1.4.1-poland.md, or the file given
  *
  * Three ways of leading Poland, six seeds each, everyone else led by the AI:
  *   - the AI leads Poland too;
@@ -47,7 +47,7 @@ function run(way: Way, seed: string): string {
     // The news of a day is dated the day before the morning the world now shows.
     const today = dateLabel({ startDate: w.startDate, day: w.day - 1 });
     if (w.capitulated.includes('Poland')) {
-      warsaw ||= 'held to the end';
+      warsaw ||= 'the day it surrendered';
       break;
     }
     army = w.units.filter((u) => u.owner === 'Poland').length;
@@ -64,7 +64,7 @@ for (const way of ['ai', 'idle', 'good'] as Way[]) for (const seed of SEEDS) {
   rows.push(run(way, seed));
   console.log(rows[rows.length - 1]);
 }
-const report = `# How long Poland lasts, version 1.4.1
+const report = `# How long Poland lasts, ${process.argv[3] ?? 'version 1.4.1'}
 
 The September 1939 start, everyone but Poland led by the AI. Made by \`npx vite-node scripts/poland.ts\`.
 Real history: Germany attacked on 1 September 1939 and the Soviet Union on 17 September. Warsaw
@@ -74,7 +74,7 @@ gave in on 28 September; the last Polish troops stopped fighting on 6 October (d
 | --- | --- | --- | --- | --- | --- |
 ${rows.join('\n')}
 `;
-const file = 'docs/balance-1.4.1-poland.md';
+const file = process.argv[2] ?? 'docs/balance-1.4.1-poland.md';
 const marker = '\n## What the results say';
 const old = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';
 fs.writeFileSync(file, report + (old.includes(marker) ? old.slice(old.indexOf(marker)) : ''));

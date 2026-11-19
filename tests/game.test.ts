@@ -90,8 +90,9 @@ describe('what you can see', () => {
 describe('the outlook for a battle', () => {
   it('matches the worked example in MODEL.md: 8 infantry against 8 on plains', async () => {
     const { outlook } = await import('../src/sim/combat');
-    const plains = PROVINCES.find((p) => p.terrain === 'plains')!;
-    const from = plains.neighbours[0];
+    const { riverBetween } = await import('../src/sim/rivers');
+    const plains = PROVINCES.find((p) => p.terrain === 'plains' && p.neighbours.some((n) => !riverBetween(n, p.id)))!;
+    const from = plains.neighbours.find((n) => !riverBetween(n, plains.id))!;
     const unit = (id: number, at: number, path: number[]) => ({ id, owner: path.length ? 'A' : 'B', type: 'infantry' as const, at, strength: 100, organisation: 100, path, progress: 0, dugIn: 0, supply: 1 });
     const o = outlook(Array.from({ length: 8 }, (_, i) => unit(i, from, [plains.id])), Array.from({ length: 8 }, (_, i) => unit(10 + i, plains.id, [])), plains.id)!;
     expect(o.attack).toBe(80);

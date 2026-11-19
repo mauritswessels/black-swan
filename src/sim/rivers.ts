@@ -1,7 +1,7 @@
 /**
  * The great rivers, and the Suez Canal, as the borders between provinces that they run along.
  *
- * Provinces are big, so a river is put on the border it follows most closely. Attacking across
+ * A river is put on the borders it follows, or that an attack has to cross it to get over. Attacking across
  * one is hard: the attackers have to cross under fire on boats and bridges, so
  *
  *   - each division attacking across a river hits at RIVER_ATTACK (85%) of its power, and
@@ -12,33 +12,21 @@
  * So the front stalls at a river until the crossing is forced, as it did on the Meuse in
  * 1940, the Dnieper in 1943 and the Rhine in 1945.
  */
+import data from '../content/map/europe1936.json';
 import { PROVINCES } from './map';
 
 export const RIVER_ATTACK = 0.85;
 export const RIVER_PUSH = 0.5;
 export const BRIDGEHEAD = 20;
 
-/** Each river and the province borders it runs along, by province name. */
-export const RIVERS: { name: string; borders: [string, string][] }[] = [
-  { name: 'Rhine', borders: [['Lorraine', 'Württemberg'], ['Palatinate', 'Württemberg'], ['Palatinate', 'Hesse'], ['Bern', 'Württemberg'], ['Graubünden', 'Württemberg'], ['Holland', 'Brabant']] },
-  { name: 'Meuse', borders: [['Wallonia', 'Lorraine'], ['Rhineland', 'Brabant']] },
-  { name: 'Elbe', borders: [['Schleswig-Holstein', 'Hanover'], ['Magdeburg', 'Brandenburg']] },
-  { name: 'Vistula', borders: [['East Prussia', 'Poznań'], ['Warsaw', 'Lublin'], ['Kraków', 'Lublin']] },
-  { name: 'Narew', borders: [['Warsaw', 'Białystok'], ['East Prussia', 'Warsaw']] },
-  { name: 'Warta', borders: [['Silesia', 'Warsaw']] },
-  { name: 'Bzura', borders: [['Poznań', 'Warsaw']] },
-  { name: 'Bug', borders: [['Lublin', 'Volhynia']] },
-  { name: 'Dniester', borders: [['Bessarabia', 'Vinnitsa'], ['Bessarabia', 'Odessa']] },
-  { name: 'Prut', borders: [['Bessarabia', 'Bukovina']] },
-  { name: 'Danube', borders: [['Wallachia', 'Varna'], ['Wallachia', 'Sofia'], ['Banat', 'Sofia'], ['Banat', 'Serbia'], ['Banat', 'South Serbia'], ['Wallachia', 'Dobruja'], ['Slovakia', 'Budapest'], ['Slovakia', 'Transdanubia']] },
-  { name: 'Dnieper', borders: [['Kiev', 'Poltava'], ['Odessa', 'Zaporozhye'], ['Odessa', 'Dnepropetrovsk'], ['Minsk', 'Moscow']] },
-  { name: 'Don', borders: [['Kursk', 'Voronezh'], ['Donbass', 'Stalingrad'], ['Stalingrad', 'Kuban']] },
-  { name: 'Svir', borders: [['Karelia', 'Novgorod']] },
-  { name: 'Po', borders: [['Lombardy', 'Emilia'], ['Piedmont', 'Emilia']] },
-  { name: 'Loire', borders: [['Orléanais', 'Poitou']] },
-  { name: 'Ebro', borders: [['Aragon', 'Catalonia']] },
-  { name: 'Suez Canal', borders: [['Sinai', 'Cairo']] },
-];
+/**
+ * Each river and the province borders it runs along, by province name. Worked out by
+ * scripts/build-map.mjs from where the rivers really run (Natural Earth): a border counts when a
+ * third of it follows the river, or when the river lies across the way from one province's centre
+ * to the other's, close to their border. Since version 1.5 (the finer map) this includes the Oder,
+ * the Seine, the Neman, the Western Dvina and the Volga at Stalingrad.
+ */
+export const RIVERS: { name: string; borders: [string, string][] }[] = data.rivers as { name: string; borders: [string, string][] }[];
 
 const idOf = (name: string): number => {
   const p = PROVINCES.find((q) => q.name === name);

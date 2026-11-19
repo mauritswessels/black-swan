@@ -16,7 +16,7 @@
  *
  * In Story mode only, and only for a country the AI leads: a player plans their own landings.
  */
-import { PROVINCES } from './map';
+import { partsOf, PROVINCES } from './map';
 import type { World } from './types';
 import { SHOCK } from './story';
 import { atWar } from './war';
@@ -47,7 +47,8 @@ export interface Operation {
 
 const P = (name: string): number => PROVINCES.find((q) => q.name === name)!.id;
 const landOf = (...countries: string[]): number[] => PROVINCES.filter((p) => countries.includes(p.owner)).map((p) => p.id);
-const named = (...names: string[]): number[] => names.map(P);
+/** These provinces and every part cut from them for the finer map. */
+const named = (...names: string[]): number[] => names.map(P).flatMap(partsOf);
 /** Mainland France: not Corsica, North Africa or the Levant. */
 const FRANCE = named('Île-de-France', 'Lorraine', 'Provence', 'Burgundy', 'Gascony', 'Guyenne', 'Roussillon', 'Languedoc', 'Poitou', 'Brittany', 'Normandy', 'Limousin', 'Orléanais');
 /** Italy itself, without Libya: holding Libya is not a landing in Italy. */
@@ -136,5 +137,9 @@ export function laterLandings(w: World, country: string): Set<number> {
   const out = new Set<number>();
   if (w.mode !== 'story' || country === w.player || w.story.lesson) return out;
   for (const o of OPERATIONS) if (o.by === country && o.kind === 'landing' && w.day < dayOf(w.startDate, o.date)) for (const p of [...o.targets, ...o.area]) out.add(p);
+  // Nor on Germany's own coast before Normandy: the real Allies never tried it, and a lucky landing
+  // that walked into an empty Berlin in 1941 ended the war in a week.
+  const overlord = OPERATIONS.find((o) => o.id === 'op-overlord')!;
+  if (country === overlord.by && w.day < dayOf(w.startDate, overlord.date)) for (const p of PROVINCES) if (p.owner === 'Germany') out.add(p.id);
   return out;
 }

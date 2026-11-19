@@ -113,7 +113,7 @@ export function Help() {
     ['A', 'Form an army from the selected divisions (with none selected: your armies)'],
     ['1 to 9', 'Select an army; press again to look at it on the map'],
     ['Drag a flag', 'Give an army a new front: an enemy province to push, a border to hold, your own land to wait in reserve'],
-    ['Right-click', 'On a province that is not yours: the attack menu, every way to hit it by land, sea and air, with a preview of each. On your own land: send the selected divisions or army there. On a trackpad: two-finger click'],
+    ['Right-click', 'With divisions or an army selected: send them there, attacking the enemy on the way. With nothing selected, or holding Shift, on a province that is not yours: the attack menu, every way to hit it by land, sea and air, with a preview of each. On a trackpad: two-finger click'],
     ['G', 'Move or attack: then click the destination, or type its name'],
     ['H', 'Halt the selected divisions'],
     ['Tab', 'Step through your stacks of divisions (Shift+Tab goes back), while the map has the focus'],

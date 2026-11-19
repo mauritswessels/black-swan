@@ -3,9 +3,9 @@ import { COUNTRIES } from '../src/sim/countries';
 import { distanceKm, findRoute, PROVINCES, provinceByName, routeDays } from '../src/sim/map';
 
 describe('the 1936 map', () => {
-  it('has between 150 and 200 provinces with unique names', () => {
-    expect(PROVINCES.length).toBeGreaterThanOrEqual(150);
-    expect(PROVINCES.length).toBeLessThanOrEqual(200);
+  it('has about 280 provinces with unique names (183 before the finer map of version 1.5)', () => {
+    expect(PROVINCES.length).toBeGreaterThanOrEqual(260);
+    expect(PROVINCES.length).toBeLessThanOrEqual(300);
     expect(new Set(PROVINCES.map((p) => p.name)).size).toBe(PROVINCES.length);
     PROVINCES.forEach((p, i) => expect(p.id).toBe(i));
   });
@@ -39,9 +39,29 @@ describe('the 1936 map', () => {
   });
 
   it('keeps East Prussia cut off from the rest of Germany by Poland', () => {
-    const eastPrussia = provinceByName('East Prussia');
-    expect(eastPrussia.neighbours.some((n) => PROVINCES[n].owner === 'Germany')).toBe(false);
-    expect(eastPrussia.neighbours.some((n) => PROVINCES[n].owner === 'Poland')).toBe(true);
+    // East Prussia is two provinces now: Königsberg's, and Masuria.
+    const eastPrussia = [provinceByName('East Prussia').id, provinceByName('Masuria').id];
+    expect(provinceByName('Königsberg').id).toBe(eastPrussia[0]);
+    const around = eastPrussia.flatMap((p) => PROVINCES[p].neighbours).filter((n) => !eastPrussia.includes(n));
+    expect(around.some((n) => PROVINCES[n].owner === 'Germany')).toBe(false);
+    expect(around.some((n) => PROVINCES[n].owner === 'Poland')).toBe(true);
+  });
+
+  it('cuts the big provinces into parts that together cover the old province, each named after a place in it', async () => {
+    const data = (await import('../src/content/map/europe1936.json')).default as unknown as { splitFrom: [number, number][] };
+    expect(data.splitFrom.length).toBe(PROVINCES.length - 183);
+    for (const [part, from] of data.splitFrom) {
+      expect(part).toBeGreaterThanOrEqual(183);
+      expect(from).toBeLessThan(183);
+      expect(PROVINCES[part].owner).toBe(PROVINCES[from].owner);
+      // A part touches the rest of the old province (or another part of it).
+      const family = [from, ...data.splitFrom.filter(([, f]) => f === from).map(([p]) => p)];
+      expect(PROVINCES[part].neighbours.some((n) => family.includes(n)), PROVINCES[part].name).toBe(true);
+    }
+    expect(provinceByName('Smolensk').owner).toBe('Soviet Union');
+    expect(provinceByName('Alsace').owner).toBe('France');
+    expect(provinceByName('Leningrad').city).toBe('Leningrad');
+    expect(provinceByName('Kharkov').neighbours).toContain(provinceByName('Dnepropetrovsk').id);
   });
 
   it('joins the mainland into one piece, with islands apart', () => {

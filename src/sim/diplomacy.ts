@@ -21,7 +21,7 @@
  */
 import { COUNTRIES } from './countries';
 import { DECLARATION_COST } from './economy';
-import { PROVINCES } from './map';
+import { partsOf, PROVINCES } from './map';
 import type { Decision, Demand, DipEvent, Diplomacy, Economy, Government, Mode, Order, Pact, PactKind, PeaceTerms, StoryState, Ultimatum, Unit, UnitType, World } from './types';
 import { warKey } from './war';
 
@@ -141,12 +141,12 @@ export const CLAIMS: Record<string, Record<string, Claim>> = {
   Germany: {
     Austria: { demand: { kind: 'annex' }, what: 'union with Austria, which the peace treaties of 1919 forbade' },
     Czechoslovakia: { demand: { kind: 'cede', provinces: [], arms: true }, what: 'the German-speaking border districts (the Sudetenland), with their forts and arms works' },
-    Poland: { demand: { kind: 'cede', provinces: [P('Poznań')] }, what: 'Danzig and the land lost to Poland in 1919' },
+    Poland: { demand: { kind: 'cede', provinces: partsOf(P('Poznań')) }, what: 'Danzig and the land lost to Poland in 1919' },
     France: { what: 'Alsace-Lorraine, lost in 1919' },
   },
   Italy: {
     Albania: { demand: { kind: 'annex' }, what: 'Albania, already tied to Italy by loans and treaties' },
-    France: { demand: { kind: 'cede', provinces: [P('Corsica'), P('Tunisia')] }, what: 'Corsica and Tunisia' },
+    France: { demand: { kind: 'cede', provinces: [P('Corsica'), ...partsOf(P('Tunisia'))] }, what: 'Corsica and Tunisia' },
     Yugoslavia: { what: 'the Dalmatian coast' },
     Greece: { what: 'the Ionian islands and Epirus' },
   },
@@ -156,7 +156,7 @@ export const CLAIMS: Record<string, Record<string, Claim>> = {
     Lithuania: { demand: { kind: 'annex' }, what: 'the Baltic coast, lost by Russia in 1918' },
     Finland: { demand: { kind: 'cede', provinces: [P('Savonia')] }, what: 'the land around Lake Ladoga, to push the border away from Leningrad' },
     Romania: { demand: { kind: 'cede', provinces: [P('Bessarabia')] }, what: 'Bessarabia, taken by Romania in 1918' },
-    Poland: { demand: { kind: 'cede', provinces: [P('Volhynia'), P('Polesie'), P('Nowogródek'), P('Stanisławów'), P('Białystok')] }, what: 'the eastern provinces Poland won in the war of 1920' },
+    Poland: { demand: { kind: 'cede', provinces: ['Volhynia', 'Polesie', 'Nowogródek', 'Stanisławów', 'Białystok'].flatMap((n) => partsOf(P(n))) }, what: 'the eastern provinces Poland won in the war of 1920' },
   },
   Hungary: {
     Czechoslovakia: { demand: { kind: 'cede', provinces: [P('Ruthenia')] }, what: 'Ruthenia and the Hungarian-speaking south of Slovakia' },

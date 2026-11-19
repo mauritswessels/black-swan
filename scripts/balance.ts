@@ -12,7 +12,7 @@
  */
 import fs from 'node:fs';
 import { dayOf, quiet } from '../src/sim/agenda';
-import { PROVINCES } from '../src/sim/map';
+import { partsOf, PROVINCES } from '../src/sim/map';
 import { scores } from '../src/sim/report';
 import { newGame } from '../src/sim/scenario';
 import { COUNTRIES } from '../src/sim/countries';
@@ -265,7 +265,8 @@ const armyRows = ARMY_SEEDS.map((seed) => {
   let w = newGame({ mode: 'story', start: '1939', player: 'Germany', seed });
   const id = (n: string) => PROVINCES.find((p) => p.name === n || p.city === n)!.id;
   const germans = w.units.filter((u) => u.owner === 'Germany');
-  const near = (names: string[]) => germans.filter((u) => names.includes(PROVINCES[u.at].name)).map((u) => u.id);
+  // The provinces named, and the parts the finer map of 1.5 split off them.
+  const near = (names: string[]) => { const ps = new Set(names.flatMap((n) => partsOf(id(n)))); return germans.filter((u) => ps.has(u.at)).map((u) => u.id); };
   const north = near(['East Prussia', 'Pomerania', 'Mecklenburg']);
   const south = near(['Silesia', 'Moravia', 'Slovakia', 'Bohemia', 'Saxony']);
   const west = germans.map((u) => u.id).filter((x) => !north.includes(x) && !south.includes(x));

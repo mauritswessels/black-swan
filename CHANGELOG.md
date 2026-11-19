@@ -3,6 +3,45 @@
 Versions from 1.0.0 on are numbered. Each one starts with a heading like `## 1.0.1: What it brings`;
 that section becomes the notes on the GitHub release and on the update card in the app.
 
+## 1.5.0: A finer map and deep attacks (2026-11-19)
+
+The map has 280 provinces instead of 183, and an attack no longer has to stop at every
+province border.
+
+- **A finer map.** The biggest provinces near the main fronts are split: the Soviet Union
+  (from Leningrad to the Caucasus), Poland, Germany, the Low Countries, France, Italy, North
+  Africa, the Balkans, the Near East, Scandinavia, Spain and Turkey. 97 new provinces in all,
+  each with a real place name (Alsace, Masuria, Champagne, Cassino, Ploiești, Kharkov, Rostov
+  and so on). The cities and their victory points stay as they were, so a country gives up for
+  the same reasons as before. Leningrad is now a province of its own.
+- **Rivers worked out from real river courses.** The great rivers (the Rhine, the Meuse, the
+  Seine, the Loire, the Elbe, the Oder, the Vistula and its tributaries round Warsaw, the Bug,
+  the Neman, the Dvina, the Dniester, the Danube, the Dnieper, the Don, the Volga and more) now
+  follow the map data instead of a hand-made list.
+- **Right-click attacks at once.** With divisions or an army selected, right-clicking an enemy
+  province sends them in straight away. With nothing selected, or holding Shift, the attack
+  menu opens as before.
+- **Deep attacks.** Divisions sent further than the next province do not wait for it to fall.
+  Once the fight there is going well, the ones not needed push on into the next province, tanks
+  first, while the rest finish the fight behind them. Enough always stay behind to keep hitting
+  at least as hard as the defenders left there. So one attack bites into several provinces at
+  once, with a front band in each, and a province is still yours only when its band reaches the
+  far side. Supply follows them through the province they pushed through. If the fight behind
+  them is lost, they come back to where they set out. An army on a Push order does this by
+  itself, one province beyond the one it attacks. The arrows on the map show the way they went.
+- **The phoney war.** In Story mode an AI France and Britain now wait behind their border from
+  September 1939 until Germany attacks in the West, as the real ones did, and an AI Germany
+  keeps only a screen in the West while it beats Poland. On the finer map France could
+  otherwise reach Berlin in October 1939. The British AI also makes no landing on Germany's own
+  coast before Normandy.
+- **A new codex entry**, Deep attack, and the lessons say how right-click works now.
+- Saves are now version 14; games saved by 1.1 to 1.4 still load (each new province is held
+  by whoever held the province it was cut from).
+- **Balance** (docs/balance-stage-k4.md and docs/balance-stage-k4-poland.md): led by the AI,
+  Poland falls on 29 September to 12 October 1939 and France in July to September 1940;
+  Moscow no longer falls (it did once in three runs), and Barbarossa goes deeper. Still
+  open: Greece holds out in Athens, and Germany falls in late 1943 or early 1944, too early.
+
 ## 1.4.1: Poland holds out (2026-11-19)
 
 In the September 1939 start Poland gave up on 20 or 21 September, the day Warsaw fell, with its

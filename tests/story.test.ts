@@ -246,6 +246,24 @@ describe('the September 1939 start', () => {
     }
   });
 
+  it('the phoney war: an AI France and Britain wait behind their border until Germany attacks in the West', () => {
+    let w = newGame({ mode: 'story', start: '1939', player: null, seed: 'phoney' });
+    const end = dayOf(w.startDate, '1940-01-15');
+    while (w.day < end) w = advance(w);
+    expect(w.capitulated).toContain('Poland');
+    expect(effectsOn(w, 'France').map((x) => x.id)).toContain('phoney');
+    expect(effectsOn(w, 'Germany').map((x) => x.id)).toContain('phoney');
+    // Nobody has crossed the Franco-German border either way.
+    const germanLand = w.owner.map((o, i) => [o, i] as const).filter(([o]) => o === 'Germany').map(([, i]) => i);
+    expect(germanLand.filter((p) => w.controller[p] !== 'Germany')).toEqual([]);
+    expect(w.owner.filter((o, i) => o === 'France' && w.controller[i] !== 'France')).toEqual([]);
+    // A German attack across the border ends it at once.
+    const lorraine = provinceByName('Lorraine').id;
+    const unit = w.units.find((u) => u.owner === 'Germany' && provinceByName('Palatinate').neighbours.includes(lorraine) && u.at === provinceByName('Palatinate').id) ?? w.units.find((u) => u.owner === 'Germany')!;
+    const struck = advance({ ...w, units: w.units.map((u) => (u.id === unit.id ? { ...u, at: provinceByName('Palatinate').id, path: [lorraine] } : u)) });
+    expect(effectsOn(struck, 'France').map((x) => x.id)).not.toContain('phoney');
+  }, 120000);
+
   it('Poland holds out about four weeks, as it did: Warsaw fell on 28 September 1939', () => {
     let w = uk;
     let day = 0;

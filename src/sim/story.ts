@@ -49,6 +49,8 @@ export const RHINELAND_DELAY = 300;
 export const PURGE = { from: '1937-06-11', to: '1942-06-30', attack: 0.85, defence: 0.9 };
 /** France in the weeks after Germany attacks through the Low Countries. */
 export const SHOCK = { days: 120, power: 0.65 };
+/** The countries of the western front in 1939-40: a German attack on any of them ends the phoney war. */
+const WEST = ['France', 'United Kingdom', 'Belgium', 'Netherlands', 'Luxembourg'];
 /** Greece and Yugoslavia when Germany attacks them in April 1941. */
 export const BALKAN_SHOCK = { days: 60, power: 0.6 };
 export const LEND_LEASE = { britain: '1941-03-11', soviet: '1941-10-01' };
@@ -551,7 +553,12 @@ export function runStory(d: DipDraft, monthEnd: boolean, seed: number): void {
   }
   // September 1939 to May 1940, the "phoney war": an AI France and Britain sit behind the Maginot
   // line and wait, as the real ones did, and an AI Germany waits for its planned attack in the West.
-  if (!s.fired.includes('sickle-cut') && alive(d, 'Germany')) {
+  // It ends early if German divisions attack in the West some other way (a player Germany, say).
+  if (!s.fired.includes('sickle-cut') && !s.fired.includes('west-struck') && d.units.some((u) => u.owner === 'Germany' && u.path.length > 0 && WEST.includes(d.controller[u.path[0]]))) {
+    s.fired = [...s.fired, 'west-struck'];
+    s.effects = s.effects.filter((x) => x.id !== 'phoney');
+  }
+  if (!s.fired.includes('sickle-cut') && !s.fired.includes('west-struck') && alive(d, 'Germany')) {
     const west = AGENDA.find((a) => a.id === 'west-belgium');
     const until = west ? aimDay(d, west) + 30 : dayOf(d.startDate, '1940-06-10');
     for (const name of ['France', 'United Kingdom', 'Germany']) {

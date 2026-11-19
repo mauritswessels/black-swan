@@ -344,7 +344,7 @@ const SPLITS = [
 const NEW_PLACES = [
   ['Lankaran', 48.76, 39.72], ['Cassino', 14.05, 41.63], ['Western Sicily', 13.37, 37.74], ['Southern Tunisia', 9.72, 32.67], ['Ploiești', 25.2, 45.28],
   ['Łuck', 25.32, 50.75], ['Oppeln', 17.9, 50.67], ['Mozyr', 29.28, 52.28], ['Kostroma', 45.0, 58.0], ['Champagne', 4.4, 49.3], ['Picardy', 2.8, 49.9],
-  ['Møre', 8.27, 62.39], ['Tikhvin', 33.6, 59.5], ['Upper Don', 40.6, 50.5], ['Mezen', 45.3, 64.5], ['Kem', 32.5, 64.9], ['Kola Peninsula', 37.7, 67.3], ['Maikop', 40.7, 44.3],
+  ['Møre', 8.27, 62.39], ['Upper Don', 40.6, 50.5], ['Mezen', 45.3, 64.5], ['Kem', 32.5, 64.9], ['Kola Peninsula', 37.7, 67.3], ['Maikop', 40.7, 44.3],
   ['Karabakh', 46.86, 39.69], ['Kirovograd', 32.12, 48.13], ['Cherkassy', 32.2, 49.4], ['Voroshilovgrad', 38.9, 49.06], ['Równe', 26.4, 51.09],
   ['Masuria', 20.3, 53.8], ['Neumark', 15.2, 52.4], ['Liegnitz', 16.1, 51.15], ['Franconia', 10.9, 49.6], ['Baden', 8.7, 48.1], ['Oldenburg', 8.2, 53.0],
   ['Lyonnais', 5.07, 46.1], ['Upper Normandy', 0.98, 49.3], ['Gâtinais', 3.4, 48.1], ['Upper Brittany', -1.2, 48.3], ['Vivarais', 4.3, 44.8],
@@ -441,8 +441,9 @@ const fout = ffeats.map((f, i) => {
     if (!name) { name = `?${i}`; console.log(`NO NAME: part of ${out[parentOf[i]].name} around ${centre}`); }
     used.add(name);
   }
-  return { id: i, name, owner: ownerOf(i), terrain: TERRAIN_FIX[name] ?? terrainAt(centre), centre, areaKm2: Math.round(geoArea(f) * 6371 ** 2), neighbours: [...fnb[i]].sort((a, b) => a - b), victoryPoints: 1, city: null, capital: false };
+  return { id: i, name, owner: ownerOf(i), terrain: TERRAIN_FIX[name] ?? terrainAt(centre), centre, areaKm2: Math.round(geoArea(f) * 6371 ** 2), neighbours: [...fnb[i]].sort((a, b) => a - b), victoryPoints: i < out.length ? 1 : 0, city: null, capital: false };
 });
+// A new part counts no victory points of its own (only for any city in it), so each country's total stays as it was.
 for (const [country, [city, lon, lat]] of Object.entries(CAPITALS)) {
   const i = ffind(lon, lat, country);
   const was = out.findIndex((p) => p.capital && p.owner === country);

@@ -81,9 +81,9 @@ describe('battles', () => {
   });
 
   it('armour hits hardest on open ground and artillery wears down dug-in defenders', () => {
-    const tank = div('France', 'Lorraine', 'armour');
-    const foot = div('France', 'Lorraine');
-    expect(attackPower(tank, id('Palatinate'))).toBe(STATS.armour.attack);
+    const tank = div('France', 'Alsace', 'armour');
+    const foot = div('France', 'Alsace');
+    expect(attackPower(tank, id('Lorraine'))).toBe(STATS.armour.attack);
     // Across the Rhine it hits at 85%.
     expect(attackPower(tank, id('Württemberg'))).toBeCloseTo(STATS.armour.attack * 0.85);
     const mountain = PROVINCES.find((p) => p.terrain === 'mountains')!.id;
@@ -190,19 +190,21 @@ describe('Poland in 1939 (version 1.4.1)', () => {
   it('Warsaw is a fortress city: attackers hit at 70% there, as they would going up into hills', () => {
     expect(fortressAt(id('Warsaw'))?.city).toBe('Warsaw');
     expect(fortressAt(id('Kraków'))).toBeNull();
-    // Upper Silesia borders both Warsaw and Kraków with no river; all three are plains.
-    const g = div('Germany', 'Upper Silesia');
+    // Łódź borders both Warsaw and Kraków with no river; all three are plains.
+    const g = div('Germany', 'Łódź');
     expect(PROVINCES[id('Warsaw')].terrain).toBe('plains');
     expect(attackPower(g, id('Warsaw'))).toBeCloseTo(attackPower(g, id('Kraków')) * FORTRESS_ATTACK, 9);
-    const o = outlook([div('Germany', 'Upper Silesia')], [div('Poland', 'Warsaw')], id('Warsaw'))!;
+    const o = outlook([div('Germany', 'Łódź')], [div('Poland', 'Warsaw')], id('Warsaw'))!;
     expect(o.fortress).toBe(true);
     expect(o.terrain).toBeCloseTo(FORTRESS_ATTACK, 9);
   });
 
-  it('the Narew, the Warta and the Bzura guard Warsaw from the north, south-west and west', () => {
-    expect(riverBetween(id('East Prussia'), id('Warsaw'))).toBe('Narew');
-    expect(riverBetween(id('Silesia'), id('Warsaw'))).toBe('Warta');
-    expect(riverBetween(id('Poznań'), id('Warsaw'))).toBe('Bzura');
+  it('the Narew and the Vistula guard Warsaw from the north and west, and the Warta covers Łódź', () => {
+    // On the finer map (1.5) Warsaw touches German land only in Masuria, across the Narew.
+    expect(PROVINCES[id('Warsaw')].neighbours.filter((n) => PROVINCES[n].owner === 'Germany').map((n) => PROVINCES[n].name)).toEqual(['Masuria']);
+    expect(riverBetween(id('Masuria'), id('Warsaw'))).toBe('Narew');
+    expect(riverBetween(id('Poznań'), id('Warsaw'))).toBe('Vistula');
+    expect(riverBetween(id('Upper Silesia'), id('Łódź'))).toBe('Warta');
   });
 
   it('with its capital gone a country gives up at 40%, or at the capital and 10% more, never above 60%', () => {

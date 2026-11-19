@@ -894,7 +894,7 @@
    "borders": [
     [
      "Karelia",
-     "Tikhvin"
+     "Leningrad"
     ]
    ]
   },
@@ -4672,7 +4672,7 @@
   },
   {
    "id": 183,
-   "name": "Tikhvin",
+   "name": "Leningrad",
    "owner": "Soviet Union",
    "terrain": "forest",
    "centre": [
@@ -4688,7 +4688,7 @@
     240,
     241
    ],
-   "victoryPoints": 16,
+   "victoryPoints": 15,
    "city": "Leningrad",
    "capital": false
   },
@@ -4711,7 +4711,7 @@
     240,
     256
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -4734,7 +4734,7 @@
     239,
     256
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -4754,7 +4754,7 @@
     185,
     256
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -4775,7 +4775,7 @@
     190,
     256
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -4797,7 +4797,7 @@
     122,
     202
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -4818,7 +4818,7 @@
     70,
     192
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -4839,7 +4839,7 @@
     191,
     256
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -4861,7 +4861,7 @@
     190,
     193
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -4881,7 +4881,7 @@
     86,
     189
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -4902,7 +4902,7 @@
     194,
     258
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -4926,7 +4926,7 @@
     258,
     260
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -4946,7 +4946,7 @@
     260,
     265
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -4967,7 +4967,7 @@
     197,
     261
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -4990,7 +4990,7 @@
     255,
     256
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5007,7 +5007,7 @@
    "neighbours": [
     65
    ],
-   "victoryPoints": 9,
+   "victoryPoints": 8,
    "city": "Baku",
    "capital": false
   },
@@ -5028,7 +5028,7 @@
     100,
     205
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5048,7 +5048,7 @@
     132,
     201
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5070,7 +5070,7 @@
     200,
     202
    ],
-   "victoryPoints": 6,
+   "victoryPoints": 5,
    "city": "Lwów",
    "capital": false
   },
@@ -5092,7 +5092,7 @@
     188,
     201
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5113,7 +5113,7 @@
     179,
     266
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5134,7 +5134,7 @@
     10,
     99
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5155,7 +5155,7 @@
     133,
     199
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5174,7 +5174,7 @@
     207,
     271
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5193,7 +5193,7 @@
     163,
     206
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5214,7 +5214,7 @@
     164,
     212
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5236,7 +5236,7 @@
     167,
     268
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5258,7 +5258,7 @@
     215,
     216
    ],
-   "victoryPoints": 7,
+   "victoryPoints": 6,
    "city": "Lyon",
    "capital": false
   },
@@ -5278,7 +5278,7 @@
     35,
     212
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5300,7 +5300,7 @@
     208,
     211
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5319,7 +5319,7 @@
     32,
     33
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5339,7 +5339,7 @@
     210,
     215
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5361,7 +5361,7 @@
     214,
     216
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5383,7 +5383,7 @@
     210,
     215
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5406,7 +5406,7 @@
     168,
     218
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5426,7 +5426,7 @@
     58,
     217
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5445,7 +5445,7 @@
     58,
     59
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5463,7 +5463,7 @@
     59,
     60
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5480,7 +5480,7 @@
    "neighbours": [
     53
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5498,7 +5498,7 @@
     51,
     274
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5517,7 +5517,7 @@
     224,
     272
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5538,7 +5538,7 @@
     223,
     272
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5558,7 +5558,7 @@
     20,
     226
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5577,7 +5577,7 @@
     20,
     225
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5598,7 +5598,7 @@
     137,
     138
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5618,7 +5618,7 @@
     128,
     135
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5636,7 +5636,7 @@
     154,
     156
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5655,7 +5655,7 @@
     155,
     159
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5676,7 +5676,7 @@
     232,
     233
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5697,7 +5697,7 @@
     231,
     233
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5719,7 +5719,7 @@
     231,
     232
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5740,7 +5740,7 @@
     135,
     235
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5762,7 +5762,7 @@
     137,
     234
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5781,7 +5781,7 @@
     111,
     176
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5799,7 +5799,7 @@
     176,
     177
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5818,7 +5818,7 @@
     179,
     180
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5839,7 +5839,7 @@
     185,
     240
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5860,7 +5860,7 @@
     184,
     239
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5881,7 +5881,7 @@
     183,
     277
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5899,7 +5899,7 @@
     148,
     243
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5920,7 +5920,7 @@
     242,
     244
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5941,7 +5941,7 @@
     147,
     243
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5962,7 +5962,7 @@
     162,
     246
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -5983,7 +5983,7 @@
     245,
     248
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6004,7 +6004,7 @@
     109,
     248
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6026,7 +6026,7 @@
     246,
     247
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6044,7 +6044,7 @@
     115,
     251
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6065,7 +6065,7 @@
     117,
     251
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6085,7 +6085,7 @@
     249,
     250
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6104,7 +6104,7 @@
     116,
     117
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6124,7 +6124,7 @@
     111,
     113
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6143,7 +6143,7 @@
     113,
     114
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6163,7 +6163,7 @@
     256,
     257
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6189,7 +6189,7 @@
     255,
     257
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6211,7 +6211,7 @@
     256,
     261
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6234,7 +6234,7 @@
     194,
     261
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6252,7 +6252,7 @@
     84,
     88
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6273,7 +6273,7 @@
     195,
     265
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6297,7 +6297,7 @@
     257,
     258
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6314,7 +6314,7 @@
    "neighbours": [
     87
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6336,7 +6336,7 @@
     150,
     151
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6353,7 +6353,7 @@
    "neighbours": [
     78
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6375,7 +6375,7 @@
     195,
     260
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6396,7 +6396,7 @@
     100,
     203
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6419,7 +6419,7 @@
     130,
     275
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6441,7 +6441,7 @@
     168,
     209
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6462,7 +6462,7 @@
     165,
     270
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6482,7 +6482,7 @@
     165,
     269
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6503,7 +6503,7 @@
     166,
     206
    ],
-   "victoryPoints": 6,
+   "victoryPoints": 5,
    "city": "Rotterdam",
    "capital": false
   },
@@ -6522,7 +6522,7 @@
     223,
     224
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6540,7 +6540,7 @@
     50,
     51
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6558,7 +6558,7 @@
     174,
     222
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6580,7 +6580,7 @@
     138,
     267
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6599,7 +6599,7 @@
     22,
     113
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6619,7 +6619,7 @@
     152,
     241
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6639,7 +6639,7 @@
     149,
     279
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   },
@@ -6660,7 +6660,7 @@
     149,
     278
    ],
-   "victoryPoints": 1,
+   "victoryPoints": 0,
    "city": null,
    "capital": false
   }

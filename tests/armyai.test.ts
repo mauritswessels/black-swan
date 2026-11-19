@@ -109,7 +109,7 @@ describe('fighting to the end', () => {
   it('the Soviet Union does not give up when Moscow falls to a fascist Germany', () => {
     const w = storyOn('1941-11-01', ['Germany|Soviet Union']);
     const d = { ...w, controller: [...w.controller], units: [], capitulated: [...w.capitulated] } as unknown as DipDraft;
-    const taken = ['Moscow', 'Kiev', 'Novgorod', 'Minsk'];
+    const taken = ['Moscow', 'Kiev', 'Leningrad', 'Minsk'];
     for (const n of taken) d.controller[id(n)] = 'Germany';
     const share = taken.reduce((a, n) => a + provinceByName(n).victoryPoints, 0) / PROVINCES.filter((p) => p.owner === 'Soviet Union').reduce((a, p) => a + p.victoryPoints, 0);
     expect(share).toBeGreaterThan(0.4);

@@ -20,6 +20,7 @@ import { cannotResearch, TECHS } from '../sim/research';
 import { cannotStartPlan, plansFor } from '../sim/plans';
 import type { Order, Unit, UnitType, World } from '../sim/types';
 import { newWorld, step as stepWorld } from '../sim/world';
+import { provinceByName } from '../sim/map';
 import { attackMenu, type OptionKind } from '../sim/strike';
 
 /** What the sidebar shows, in the shape the screen uses (see src/ui/store.ts). */
@@ -105,7 +106,7 @@ export const ME = 'France';
 /** Provinces the lessons use, by id (see src/content/map). */
 export const P = {
   paris: 23, lorraine: 24, provence: 25, burgundy: 26, languedoc: 30, normandy: 33, corsica: 15,
-  palatinate: 3, wurttemberg: 8, rhineland: 7, hesse: 12, eastPrussia: 0, pomerania: 9, silesia: 5, brandenburg: 10,
+  palatinate: 3, wurttemberg: 8, alsace: provinceByName('Alsace').id, rhineland: 7, hesse: 12, eastPrussia: 0, pomerania: 9, silesia: 5, brandenburg: 10,
   brussels: 163, wallonia: 164, piedmont: 54, lombardy: 55, emilia: 58,
 } as const;
 
@@ -344,7 +345,7 @@ const battle: Lesson = {
   build: () => {
     let w = base('battle', '1939-09-07');
     // The French build-up on the Saar, and a few German divisions holding the West Wall. The rest of the German army is fighting in Poland.
-    w = army(w, ME, [[P.lorraine, 'infantry', 7], [P.lorraine, 'artillery', 3], [P.lorraine, 'armour', 1], [P.burgundy, 'infantry', 4], [P.paris, 'infantry', 4], [P.provence, 'infantry', 3]]);
+    w = army(w, ME, [[P.lorraine, 'infantry', 7], [P.lorraine, 'artillery', 3], [P.lorraine, 'armour', 1], [P.alsace, 'infantry', 4], [P.burgundy, 'infantry', 2], [P.paris, 'infantry', 4], [P.provence, 'infantry', 3]]);
     w = army(w, 'Germany', [[P.palatinate, 'infantry', 2], [P.wurttemberg, 'infantry', 2], [P.rhineland, 'infantry', 2], [P.eastPrussia, 'infantry', 8], [P.pomerania, 'infantry', 8], [P.pomerania, 'armour', 3], [P.silesia, 'infantry', 8], [P.silesia, 'armour', 3]]);
     w = wingsAt(w, 'Germany', P.silesia);
     return war(w, ME, 'Germany', 'France declares war on Germany after the invasion of Poland');
@@ -405,12 +406,12 @@ const battle: Lesson = {
       text: 'Every report says why the battle went the way it did, the biggest reason first. Read them when an attack fails: they tell you what to bring next time.',
     },
     {
-      text: 'Now attack Württemberg from two sides at once. Select your counters in Lorraine and in the Palatinate (Shift-click), then right-click Württemberg and choose Attack by land.',
+      text: 'Now attack Württemberg from two sides at once. Select your counters in Alsace and in the Palatinate (Shift-click), then right-click Württemberg and choose Attack by land.',
       why: 'Each extra direction lets 4 more of your divisions into the fight, and the defenders cannot face every way at once.',
       province: P.wurttemberg,
       done: (v) => new Set(mine(v).filter((u) => u.path[0] === P.wurttemberg).map((u) => u.at)).size >= 2,
       show: (v) => {
-        const from = mine(v).filter((u) => u.at === P.lorraine || u.at === P.palatinate);
+        const from = mine(v).filter((u) => u.at === P.alsace || u.at === P.palatinate);
         return { select: { kind: 'units', ids: from.map((u) => u.id) }, orders: moveAll(from, P.wurttemberg) };
       },
     },

@@ -230,7 +230,7 @@ export const AGENDA: Aim[] = [
   },
   {
     id: 'vienna-2', country: 'Hungary', date: '1940-08-30', regime: 'authoritarian', news: 'The Second Vienna Award: Germany and Italy give Hungary northern Transylvania',
-    act: { do: 'award', from: 'Romania', provinces: [P('Crișana')] },
+    act: { do: 'award', from: 'Romania', provinces: [P('Crișana'), P('Transylvania')] },
     needs: (w) => first(!gone(w, 'France') && 'France is not beaten', fighting(w, 'Germany', 'Soviet Union') && 'Germany is busy in the east'),
     history: 'On 30 August 1940 Germany and Italy ordered Romania to give northern Transylvania to Hungary.',
   },

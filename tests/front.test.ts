@@ -87,23 +87,29 @@ describe('rivers', () => {
   it('lie on borders between neighbouring provinces', () => {
     expect(RIVERS.length).toBeGreaterThanOrEqual(15);
     for (const r of RIVER_BORDERS) expect(PROVINCES[r.a].neighbours, `${r.river}: ${PROVINCES[r.a].name} and ${PROVINCES[r.b].name}`).toContain(r.b);
-    expect(riverBetween(id('Lorraine'), id('Württemberg'))).toBe('Rhine');
-    expect(riverBetween(id('Württemberg'), id('Lorraine'))).toBe('Rhine');
-    expect(riverBetween(id('Lorraine'), id('Palatinate'))).toBeNull();
+    expect(riverBetween(id('Alsace'), id('Württemberg'))).toBe('Rhine');
+    expect(riverBetween(id('Württemberg'), id('Alsace'))).toBe('Rhine');
+    expect(riverBetween(id('Alsace'), id('Lorraine'))).toBeNull();
     expect(riverBetween(id('Kiev'), id('Poltava'))).toBe('Dnieper');
     expect(riverBetween(id('Luxembourg'), id('Palatinate'))).toBeNull();
+    // New with the finer map (1.5): the Oder, the Volga at Stalingrad, and the Seine.
+    expect(riverBetween(id('Brandenburg'), id('Neumark'))).toBe('Oder');
+    expect(riverBetween(id('Stalingrad'), id('Kalmykia'))).toBe('Volga');
+    expect(riverBetween(id('Île-de-France'), id('Gâtinais'))).toBe('Seine');
   });
 
   it('slow an attack: the same attack across the Rhine gets less far in the same time', () => {
-    // From Lorraine: into Württemberg across the Rhine, or into the Palatinate over land. Both are open country.
-    const across = world([...many(12, 'France', 'Lorraine'), ...many(6, 'Germany', 'Württemberg')]);
-    const open = world([...many(12, 'France', 'Lorraine'), ...many(6, 'Germany', 'Palatinate')]);
+    // From Alsace: into Württemberg across the Rhine, or into Lorraine over land (held by Germany here). Both are open country.
+    const across = world([...many(12, 'France', 'Alsace'), ...many(6, 'Germany', 'Württemberg')]);
+    const open = world([...many(12, 'France', 'Alsace'), ...many(6, 'Germany', 'Lorraine')]);
+    open.controller = [...open.controller];
+    open.controller[id('Lorraine')] = 'Germany';
     const lineAfter = (w0: World, target: string, days: number) => {
       let w = step(w0, attack(w0, 'France', target));
       for (let d = 1; d < days; d++) w = step(w);
       return w.battles[0]?.line ?? 100;
     };
-    expect(lineAfter(across, 'Württemberg', 4)).toBeLessThan(lineAfter(open, 'Palatinate', 4));
+    expect(lineAfter(across, 'Württemberg', 4)).toBeLessThan(lineAfter(open, 'Lorraine', 4));
     const w = step(across, attack(across, 'France', 'Württemberg'));
     expect(w.battles[0].river).toBe('Rhine');
   });

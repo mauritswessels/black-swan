@@ -85,7 +85,7 @@ minutes in all, and you can take them in any order. Everything below is what the
 11. To end a war, open the enemy's sidebar and offer peace: back to the old borders, or each
     keeps what it holds. It shows the war score and whether they are likely to accept. A
     country that loses 60% of its own land's victory points surrenders (40% once its capital
-    has fallen); you then choose to
+    has fallen, or the capital and 10% more if that is higher); you then choose to
     occupy it, annex it or set up a friendly government.
 12. **The attack menu.** Right-click a province that is not yours (or click **Ways to attack**
     in its sidebar) and every way to hit it appears, each with a short preview of how it would
@@ -130,8 +130,8 @@ makes every other country arm faster.
 Tips for the war: an attack needs about 2 to 1. Attack from several provinces at once, bring
 artillery against dug-in defenders, and do not stack more divisions in a province than it can
 feed (see the Supply map mode). Allies may march through each other's land and use each
-other's depots. Avoid attacking across the great rivers drawn in blue unless you must, and
-plan around the seasons: mud in the east from mid-October to late November and from
+other's depots. Avoid attacking across the great rivers drawn in blue unless you must, expect
+a long siege at a fortress city such as Warsaw, and plan around the seasons: mud in the east from mid-October to late November and from
 mid-March to the end of April, snow from December to February, heat in the desert in
 summer. When the map rings a pocket in red, those divisions are cut off: break out fast.
 
@@ -267,6 +267,7 @@ src/sim/          the game engine: pure TypeScript, no UI, fully testable
   world.ts        newWorld() and step(world, orders): one day at a time
   combat.ts       battles: daily rounds, the front line, retreat, surrender and battle reports
   rivers.ts       the great rivers and the borders they run along
+  fortresses.ts   fortress cities (Warsaw), where attackers hit at 70%
   seasons.ts      snow, mud and desert heat, worked out from the date
   pockets.ts      divisions cut off from supply, grouped into pockets
   replay.ts       the front written down once a week, for the war replay
@@ -355,8 +356,9 @@ the middle of a modern region are therefore approximate:
 ## Plan
 
 Version 1.0 completes the plan, 1.1 fixes the war economy, 1.2 makes the front move inside
-each province and 1.3 adds armies with Hold and Push orders (see CHANGELOG.md). Next: a
-right-click attack menu for land, sea and air (K3). Ideas for later versions: playing against
+each province, 1.3 adds armies with Hold and Push orders, 1.4 the right-click attack menu
+for land, sea and air, and 1.4.1 makes Poland hold out about as long as it really did (see
+CHANGELOG.md). Next: a finer map with more provinces (K4). Ideas for later versions: playing against
 friends over the internet (the engine is already deterministic, with a fingerprint check for
 it), and the Pacific and the Americas.
 

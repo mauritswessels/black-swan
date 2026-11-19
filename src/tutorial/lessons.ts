@@ -424,7 +424,7 @@ const battle: Lesson = {
     },
     {
       text: 'The strongest move of all is encirclement: cut an enemy army off from its depots. The map rings a pocket of trapped divisions with a count. Surrounded divisions that lose a battle surrender completely instead of retreating.',
-      why: 'A country gives up when its enemies hold 60% of its victory points, or 40% once its capital has fallen.',
+      why: 'A country gives up when its enemies hold 60% of its victory points, or 40% once its capital has fallen (the capital and 10% more, if that is higher).',
     },
     {
       text: 'Click the word GERMANY on the map. Its sidebar shows the war score and lets you offer peace.',

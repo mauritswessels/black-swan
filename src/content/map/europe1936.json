@@ -603,10 +603,36 @@
     [
      "Poznań",
      "Pomerelia"
+    ]
+   ]
+  },
+  {
+   "name": "Narew",
+   "borders": [
+    [
+     "Warsaw",
+     "Masuria"
+    ]
+   ]
+  },
+  {
+   "name": "Warta",
+   "borders": [
+    [
+     "Pomerania",
+     "Neumark"
     ],
     [
-     "Slovakia",
-     "Moravia"
+     "Upper Silesia",
+     "Łódź"
+    ],
+    [
+     "Poznań",
+     "Łódź"
+    ],
+    [
+     "Łódź",
+     "Oppeln"
     ]
    ]
   },

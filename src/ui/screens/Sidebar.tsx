@@ -7,12 +7,13 @@ import { COUNTRIES, countryByName } from '../../sim/countries';
 import { visibleProvinces } from '../../sim/intel';
 import { daysToEnter, PROVINCES, routeDays } from '../../sim/map';
 import { economyView, OIL, STEEL, tallies } from '../../sim/economy';
-import { allianceMap, governmentOf, SURRENDER_SHARE } from '../../sim/diplomacy';
+import { allianceMap, governmentOf, noCapitalShare, SURRENDER_SHARE } from '../../sim/diplomacy';
 import { dropRange, fireSupport } from '../../sim/forces';
 import { strikeStatus } from '../../sim/strike';
 import { DEPOTS, infrastructure, linkedProvinces, supplyCapacity } from '../../sim/supply';
 import type { Battle, BattleReport, Unit, World } from '../../sim/types';
 import { BRIDGEHEAD } from '../../sim/rivers';
+import { FORTRESS_ATTACK, fortressAt } from '../../sim/fortresses';
 import { GROUND_WORDS, groundOn } from '../../sim/seasons';
 import { countryColour } from '../map/colours';
 import { atWar, enemiesOf } from '../../sim/war';
@@ -134,7 +135,7 @@ function OutlookBox({ o, mine }: { o: Outlook; mine: 'attacker' | 'defender' | n
   const verdict = o.favours === 'even' ? 'Too close to call' : o.favours === 'attacker' ? 'The attackers should break through' : 'The defenders should hold';
   const good = mine && o.favours !== 'even' ? o.favours === mine : null;
   const factors: string[] = [];
-  if (o.terrain < 1) factors.push(`Terrain: attackers hit ${pct((1 - o.terrain) * 100)} less hard`);
+  if (o.terrain < 1) factors.push(`Terrain${o.fortress ? ' and forts' : ''}: attackers hit ${pct((1 - o.terrain) * 100)} less hard`);
   if (o.dugIn > 1.005) factors.push(`Defenders dug in: +${pct((o.dugIn - 1) * 100)} defence`);
   if (o.attackerSupply < 0.995) factors.push(`Attackers short of supply: ${pct((1 - o.attackerSupply) * 100)} weaker`);
   if (o.defenderSupply < 0.995) factors.push(`Defenders short of supply: ${pct((1 - o.defenderSupply) * 100)} weaker`);
@@ -313,6 +314,7 @@ function Province({ w, id }: { w: World; id: number }) {
         {linked === false && <Row label="Supply" value="Cut off from your depots" />}
       </div>
       <p className="sb-note">{TERRAIN_NOTE[p.terrain]}</p>
+      {fortressAt(id) && <p className="sb-note">{fortressAt(id)!.city} is a fortress city: attackers hit {Math.round((1 - FORTRESS_ATTACK) * 100)}% less hard here, whoever holds it. {fortressAt(id)!.history}</p>}
       {holder !== owner && civ + mil > 0 && <p className="sb-fine">Occupied: its factories work at 30% for {holder}, and half its steel and oil is taken.</p>}
       {canBuild && (
         <>
@@ -461,7 +463,10 @@ function CountryView({ w, name }: { w: World; name: string }) {
             {name === me && economy && <Row label="Output a month" value={`${Math.round(economy.nominalGDP)}m`} />}
             <Row label="Home victory points lost" value={`${vpLost} of ${vpHome}`} bar={vpHome ? (vpLost / vpHome) * 100 : 0} warn />
           </div>
-          <p className="sb-fine">A country surrenders when its enemies hold {SURRENDER_SHARE * 100}% of the victory points of its own land ({Math.ceil(vpHome * SURRENDER_SHARE)} for {name}).</p>
+          <p className="sb-fine">
+            A country surrenders when its enemies hold {SURRENDER_SHARE * 100}% of the victory points of its own land ({Math.ceil(vpHome * SURRENDER_SHARE)} for {name})
+            {capital ? `, or ${Math.round(noCapitalShare(name, vpHome) * 100)}% once ${capital.city} has fallen` : ''}.
+          </p>
           {me && name !== me && !w.capitulated.includes(me) && <CountryDiplomacy w={w} me={me} name={name} />}
         </>
       )}

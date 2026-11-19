@@ -1,8 +1,8 @@
 /**
  * The great rivers as province borders (Stage K4), used by build-map.mjs.
  *
- * The courses come from Natural Earth's rivers (public domain); the Narew, which it leaves out, is
- * drawn by hand. A border between two provinces counts as a river border when
+ * The courses come from Natural Earth's rivers (public domain); the Narew and the Bzura, which it
+ * leaves out, are drawn by hand. A border between two provinces counts as a river border when
  *
  *   - at least a third of it runs within 25 km of the river (the river is the border), or
  *   - the straight line between the two provinces' centres crosses the river within 20 km of
@@ -26,6 +26,8 @@ const RIVERS = [
   { name: 'Oder', ne: ['Oder'], box: [13, 50.9, 19, 54] },
   { name: 'Vistula', ne: ['Vistula'] },
   { name: 'Narew', line: [[23.4, 53.1], [22.8, 53.15], [22.07, 53.18], [21.57, 53.08], [21.08, 52.7], [20.7, 52.43]] },
+  { name: 'Warta', ne: ['Warta'] },
+  { name: 'Bzura', line: [[19.45, 51.8], [19.6, 52.0], [19.9, 52.2], [20.2, 52.38]] },
   { name: 'Bug', ne: ['Bug', 'Mukhavyets'] },
   { name: 'Neman', ne: ['Nemunas'] },
   { name: 'Western Dvina', ne: ['Zapadnaya Dvina'] },
@@ -45,8 +47,8 @@ const NEAR_KM = 25;
 const ALONG_SHARE = 1 / 3;
 const CROSS_NEAR_KM = 20;
 /** Corrections by hand: borders the rules get wrong, by province name. */
-const DROP = [['Upper Silesia', 'Moravia'], ['Lorraine', 'Burgundy']]; // the Vistula's and the Seine's springs
-const EXTRA = [['Dnieper', 'Kiev', 'Chernigov']]; // the Dnieper and the Desna north of Kiev
+const DROP = [['Upper Silesia', 'Moravia'], ['Slovakia', 'Moravia'], ['Lorraine', 'Burgundy']]; // the Vistula's and the Seine's springs
+const EXTRA = [['Dnieper', 'Kiev', 'Chernigov'], ['Narew', 'Masuria', 'Warsaw']]; // the Dnieper and the Desna north of Kiev; the Narew line north of Warsaw
 
 export async function riverBorders(topo, provinces) {
   if (!fs.existsSync(SRC)) {

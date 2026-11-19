@@ -246,6 +246,16 @@ describe('the September 1939 start', () => {
     }
   });
 
+  it('Poland holds out about four weeks, as it did: Warsaw fell on 28 September 1939', () => {
+    let w = uk;
+    let day = 0;
+    for (; day < 60 && !w.capitulated.includes('Poland'); day++) w = advance(w);
+    expect(w.capitulated).toContain('Poland');
+    // Before version 1.4.1 it gave up on 20 to 22 September, the day Warsaw fell.
+    expect(day).toBeGreaterThanOrEqual(25);
+    expect(day).toBeLessThanOrEqual(42);
+  });
+
   it('a player Germany gives the order itself, or calls the war off', () => {
     const w = advance(germany);
     expect(w.wars).toEqual([]);

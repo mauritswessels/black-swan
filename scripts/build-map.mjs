@@ -481,4 +481,3 @@ console.log(owners.map((o) => `${o} ${fout.filter((p) => p.owner === o).length}`
 for (const r of rivers) console.log(`${r.name}: ${r.borders.map(([a, b]) => `${fout[a].name}-${fout[b].name}`).join(', ')}`);
 console.log('isolated:', fout.filter((p) => !p.neighbours.length).map((p) => p.name).join(', '));
 console.log('new:', fout.slice(out.length).map((p) => `${p.name} (from ${out[parentOf[p.id]].name}, ${Math.round(p.areaKm2 / 1000)}k)`).join(', '));
-if (process.env.SHOW) for (const n of process.env.SHOW.split(',')) { const i = out.findIndex((p) => p.name === n); console.log(n, ':', provinces[i].members.map((m) => kept[m].properties.name).join(' | ')); const kids = fout.filter((p) => parentOf[p.id] === i).map((p) => `${p.name}@${p.centre}`); console.log('   parts:', kids.join('  ')); }

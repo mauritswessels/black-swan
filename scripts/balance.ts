@@ -4,7 +4,7 @@
  * years of AI peace, to check research, national plans and the home front; and three runs of
  * the whole story with every country led by the AI, to check that it follows real history (three from 1936 and three from September 1939).
  *
- *   npm run balance            200 wars, 24 finance runs, a peace run and six history runs, armies run by a bot, writes docs/balance-stage-k2.md
+ *   npm run balance            200 wars, 24 finance runs, a peace run and six history runs, armies run by a bot, writes docs/balance-stage-k3.md
  *   npm run balance -- 40      a quicker run with fewer wars
  *
  * Every war uses the real 1936 map and starting armies, with both sides led by the simple AI
@@ -68,7 +68,7 @@ for (const c of COUNTRIES.filter((k) => k.major)) {
   const e = peace.economies[c.name];
   const v = economyView(peace, c.name);
   const start = c.startArmy[0] + c.startArmy[1] + c.startArmy[2];
-  peaceRows.push(`| ${c.name} | ${start} to ${peace.units.filter((u) => u.owner === c.name).length} | ${c.industry.civ} + ${c.industry.mil} to ${Math.floor(v.civ + 1e-9)} + ${Math.floor(v.mil + 1e-9)} | ${e.research.done.length} of 24 | ${e.plan.done.length} | ${e.plan.done.filter((id) => planById(id)?.country).map((id) => planById(id)!.name).join(', ') || 'none'} | ${Math.round(e.stability)} | ${Math.round(e.warSupport)} | ${Math.round(v.debtRatio * 100)}% |`);
+  peaceRows.push(`| ${c.name} | ${start} to ${peace.units.filter((u) => u.owner === c.name).length} | ${c.industry.civ} + ${c.industry.mil} to ${Math.floor(v.civ + 1e-9)} + ${Math.floor(v.mil + 1e-9)} | ${e.research.done.length} of 25 | ${e.plan.done.length} | ${e.plan.done.filter((id) => planById(id)?.country).map((id) => planById(id)!.name).join(', ') || 'none'} | ${Math.round(e.stability)} | ${Math.round(e.warSupport)} | ${Math.round(v.debtRatio * 100)}% |`);
   console.log(peaceRows[peaceRows.length - 1]);
 }
 
@@ -141,6 +141,8 @@ const economyRow = (w: World, seed: string, date: string): string[] =>
 const MOSCOW = PROVINCES.find((p) => p.name === 'Moscow')!.id;
 /** The moving front (Stage K1): every battle each run fought, how long it took, and the river crossings. */
 const frontRows: string[] = [];
+/** Stage K3: aimed wings, shelling fleets and paratroopers in each run. */
+const strikeRows: string[] = [];
 const played = (start: World, days: number, seed?: string): World => {
   let w = start;
   const news: { day: number; text: string }[] = [];
@@ -149,8 +151,12 @@ const played = (start: World, days: number, seed?: string): World => {
   const soviet = PROVINCES.filter((p) => p.owner === 'Soviet Union');
   let lastReport = -1;
   const front = { battles: 0, days: 0, won: 0, rivers: new Set<number>(), riverWon: 0, mud: 0 };
+  const k3 = { aimed: 0, shelling: 0, paras: new Map<string, number>(), firstDrop: '' };
   for (let d = 0; d < days; d++) {
     w = advance(w);
+    for (const x of w.wings) if (x.target !== undefined && x.mission === 'ground') k3.aimed++;
+    for (const f of w.fleets) if (f.target !== undefined) k3.shelling++;
+    for (const u of w.units) if (u.type === 'airborne') k3.paras.set(u.owner, (k3.paras.get(u.owner) ?? 0) + 1);
     for (const b of w.battles) if (b.river) front.rivers.add(b.id);
     for (const r of w.reports) {
       if (r.id <= lastReport) continue;
@@ -173,6 +179,13 @@ const played = (start: World, days: number, seed?: string): World => {
     }
   }
   allNews.set(w, news);
+  if (seed) {
+    const drops = w.forceLog.filter((e) => / drops \d+ divisions? of paratroopers/.test(e.text));
+    const into = drops.filter((e) => /into the battle/.test(e.text)).length;
+    const byWho = [...new Set(drops.map((e) => e.countries[0]))].map((c) => `${c} ${drops.filter((e) => e.countries[0] === c).length}`).join(', ') || 'none';
+    const most = [...k3.paras].map(([c, n]) => `${c} ${Math.round(n / days)}`).join(', ') || 'none';
+    strikeRows.push(`| ${seed} | ${(k3.aimed / days).toFixed(1)} | ${(k3.shelling / days).toFixed(1)} | ${most} | ${drops.length} (${into} into a battle) | ${byWho} | ${drops[0] ? dateLabel({ startDate: w.startDate, day: drops[0].day }) : 'none'} |`);
+  }
   if (seed) frontRows.push(`| ${seed} | ${front.battles} | ${(front.days / Math.max(1, front.battles)).toFixed(1)} | ${Math.round((100 * front.won) / Math.max(1, front.battles))}% | ${front.rivers.size} | ${front.riverWon} | ${front.mud} |`);
   return w;
 };
@@ -304,8 +317,9 @@ console.log(eastRows.join('\n'));
 console.log(endRows.join('\n'));
 console.log(fallRows.join('\n'));
 console.log(economyRows.join('\n'));
+console.log(strikeRows.join('\n'));
 
-const report = `# Balance report, Stage K2: ${all.length} AI against AI wars, ${financeRows.length} finance playtests, four years of peace, six runs of history, three free-for-alls and three games played with armies
+const report = `# Balance report, Stage K3: ${all.length} AI against AI wars, ${financeRows.length} finance playtests, four years of peace, six runs of history, three free-for-alls and three games played with armies
 
 Made by \`npm run balance\`. Do not edit the tables by hand; run the command again instead.
 
@@ -393,6 +407,17 @@ that needs a cause for war, which this bot does not seek. The run ends on 1 June
 | --- | --- | --- | --- | --- | --- | --- | --- |
 ${armyRows.join('\n')}
 
+## Land, sea and air together
+
+Stage K3 lets the player (and the AI) aim air wings at one province, shell a coast from the
+sea, and drop paratroopers. For each run: how many AI bomber wings were aimed at a battle on an
+average day, how many fleets were shelling a coast, the paratrooper divisions each country had
+on an average day, and the drops made (empty provinces taken, and drops into a battle).
+
+| Run | Bomber wings aimed at a battle (average day) | Fleets shelling (average day) | Paratrooper divisions (average day) | Drops | Drops by | First drop |
+| --- | --- | --- | --- | --- | --- | --- |
+${strikeRows.join('\n')}
+
 ## The war economy
 
 Stage J's question: can each country pay for the war it fights, as the real ones did? The same
@@ -465,7 +490,7 @@ Over the nine years of each run:
 ${seaRows.join('\n')}
 `;
 fs.mkdirSync('docs', { recursive: true });
-const file = 'docs/balance-stage-k2.md';
+const file = 'docs/balance-stage-k3.md';
 // Keep the hand-written notes below the tables when the numbers are refreshed.
 const marker = '\n## What the results say';
 const old = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';

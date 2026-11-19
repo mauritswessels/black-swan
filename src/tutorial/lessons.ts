@@ -1,5 +1,5 @@
 /**
- * Learn to play: ten short lessons, each a prepared situation on the real map.
+ * Learn to play: eleven short lessons, each a prepared situation on the real map.
  *
  * A lesson is a world (built here, from the real 1936 world) and a list of steps. Each step
  * tells the player one thing, may point at a button or a province, and is done when a check on
@@ -20,6 +20,7 @@ import { cannotResearch, TECHS } from '../sim/research';
 import { cannotStartPlan, plansFor } from '../sim/plans';
 import type { Order, Unit, UnitType, World } from '../sim/types';
 import { newWorld, step as stepWorld } from '../sim/world';
+import { attackMenu, type OptionKind } from '../sim/strike';
 
 /** What the sidebar shows, in the shape the screen uses (see src/ui/store.ts). */
 export interface Sel {
@@ -43,6 +44,8 @@ export interface LessonView {
   bySea: boolean;
   /** How often the map has been dragged or zoomed so far. */
   moves: number;
+  /** The province the attack menu is open over, if it is open. */
+  menu: number | null;
 }
 
 /** What "Show me" does: the same things the player would do with the mouse and the keys. */
@@ -58,6 +61,8 @@ export interface Action {
   days?: number;
   /** Move the map to this province. */
   look?: number;
+  /** Open the attack menu over this province (null closes it). */
+  menu?: number | null;
 }
 
 /** Something on the screen to point at: a CSS selector, and optionally text the element must contain. */
@@ -101,7 +106,7 @@ export const ME = 'France';
 export const P = {
   paris: 23, lorraine: 24, provence: 25, burgundy: 26, languedoc: 30, normandy: 33, corsica: 15,
   palatinate: 3, wurttemberg: 8, rhineland: 7, hesse: 12, eastPrussia: 0, pomerania: 9, silesia: 5, brandenburg: 10,
-  brussels: 163, wallonia: 164, piedmont: 54,
+  brussels: 163, wallonia: 164, piedmont: 54, lombardy: 55, emilia: 58,
 } as const;
 
 // ---------------------------------------------------------------- building the lesson worlds
@@ -119,6 +124,11 @@ function army(w: World, country: string, layout: [number, UnitType, number][]): 
   for (const [at, type, n] of layout)
     for (let i = 0; i < n; i++) units.push({ id: next++, owner: country, type, at, strength: 100, organisation: 100, path: [], progress: 0, dugIn: 0, supply: 1 } satisfies Unit);
   return { ...w, units, nextUnitId: next };
+}
+
+/** Base all of a country's air wings at one province: the Luftwaffe was over Poland in September 1939. */
+function wingsAt(w: World, country: string, province: number): World {
+  return { ...w, wings: w.wings.map((x) => (x.owner === country ? { ...x, base: province, target: undefined } : x)) };
 }
 
 /** A war in a lesson world: `by` declares it today, and nobody else joins. `news` replaces the headline. */
@@ -336,6 +346,7 @@ const battle: Lesson = {
     // The French build-up on the Saar, and a few German divisions holding the West Wall. The rest of the German army is fighting in Poland.
     w = army(w, ME, [[P.lorraine, 'infantry', 7], [P.lorraine, 'artillery', 3], [P.lorraine, 'armour', 1], [P.burgundy, 'infantry', 4], [P.paris, 'infantry', 4], [P.provence, 'infantry', 3]]);
     w = army(w, 'Germany', [[P.palatinate, 'infantry', 2], [P.wurttemberg, 'infantry', 2], [P.rhineland, 'infantry', 2], [P.eastPrussia, 'infantry', 8], [P.pomerania, 'infantry', 8], [P.pomerania, 'armour', 3], [P.silesia, 'infantry', 8], [P.silesia, 'armour', 3]]);
+    w = wingsAt(w, 'Germany', P.silesia);
     return war(w, ME, 'Germany', 'France declares war on Germany after the invasion of Poland');
   },
   next: 'Next, let armies take whole fronts off your hands.',
@@ -357,7 +368,7 @@ const battle: Lesson = {
       show: (v) => selectUnitsAt(v, P.lorraine),
     },
     {
-      text: 'Right-click the Palatinate to attack it.',
+      text: 'Right-click the Palatinate. The attack menu lists every way to hit it, with a preview of each. Choose Attack by land.',
       province: P.palatinate,
       done: (v) => mine(v).some((u) => u.path[0] === P.palatinate),
       show: (v) => ({ orders: moveAll(selectedUnits(v).filter((u) => u.at === P.lorraine).length ? selectedUnits(v).filter((u) => u.at === P.lorraine) : at(v, P.lorraine), P.palatinate) }),
@@ -394,7 +405,7 @@ const battle: Lesson = {
       text: 'Every report says why the battle went the way it did, the biggest reason first. Read them when an attack fails: they tell you what to bring next time.',
     },
     {
-      text: 'Now attack Württemberg from two sides at once. Select your counters in Lorraine and in the Palatinate (Shift-click), then right-click Württemberg.',
+      text: 'Now attack Württemberg from two sides at once. Select your counters in Lorraine and in the Palatinate (Shift-click), then right-click Württemberg and choose Attack by land.',
       why: 'Each extra direction lets 4 more of your divisions into the fight, and the defenders cannot face every way at once.',
       province: P.wurttemberg,
       done: (v) => new Set(mine(v).filter((u) => u.path[0] === P.wurttemberg).map((u) => u.at)).size >= 2,
@@ -442,6 +453,7 @@ const armies: Lesson = {
     let w = base('armies', '1939-09-07');
     w = army(w, ME, [[P.lorraine, 'infantry', 6], [P.lorraine, 'artillery', 2], [P.burgundy, 'infantry', 5], [P.burgundy, 'armour', 1], [P.paris, 'infantry', 4], [P.provence, 'infantry', 3]]);
     w = army(w, 'Germany', [[P.palatinate, 'infantry', 2], [P.wurttemberg, 'infantry', 2], [P.rhineland, 'infantry', 3], [P.eastPrussia, 'infantry', 8], [P.pomerania, 'infantry', 8], [P.silesia, 'infantry', 8]]);
+    w = wingsAt(w, 'Germany', P.silesia);
     return war(w, ME, 'Germany', 'France declares war on Germany after the invasion of Poland');
   },
   next: 'Next, learn where new divisions come from: factories and production.',
@@ -756,7 +768,7 @@ const forces: Lesson = {
     w = army(w, 'Italy', [[P.piedmont, 'infantry', 6], [55, 'infantry', 4], [59, 'infantry', 3], [52, 'infantry', 1]]);
     return war(w, 'Italy', ME, 'Italy declares war on France');
   },
-  next: 'You know the basics. Start a Story game from 1936 as France or Britain: the first years are peaceful, so there is time to learn.',
+  next: 'Next, put land, sea and air together with the attack menu.',
   steps: [
     {
       text: 'It is 11 June 1940. Yesterday Italy declared war on France. Press `F`, or the Forces button, for the navy and the air force.',
@@ -824,7 +836,101 @@ const forces: Lesson = {
   ],
 };
 
-export const LESSONS: Lesson[] = [mapTable, time, moving, battle, armies, production, money, homeFront, diplomacy, forces];
+/** The option of the attack menu over a province, as the player sees it (with the selected divisions first). */
+const menuOption = (v: LessonView, province: number, kind: OptionKind) => {
+  const ctx = v.selection?.kind === 'units' ? { units: v.selection.ids } : v.selection?.kind === 'army' ? { army: Number(v.selection.id) } : {};
+  return attackMenu(v.world, ME, province, ctx).options.find((o) => o.kind === kind && !o.why);
+};
+/** "Show me" for choosing an option: open the menu if it is not open, and choose. */
+const choose = (province: number, kind: OptionKind) => (v: LessonView): Action => {
+  const o = menuOption(v, province, kind);
+  return o ? { orders: o.orders, menu: null } : { menu: province };
+};
+const aimedAt = (v: LessonView, province: number, mission?: string) => v.world.wings.some((x) => x.owner === ME && x.target === province && (!mission || x.mission === mission));
+
+const attack: Lesson = {
+  id: 'attack',
+  title: 'The attack menu',
+  summary: 'Right-click an enemy province: land, sea and air together, scouting and paratroopers.',
+  minutes: 6,
+  build: () => {
+    let w = base('attack', '1940-06-11');
+    w = army(w, ME, [[P.provence, 'infantry', 6], [P.provence, 'artillery', 2], [P.burgundy, 'infantry', 4], [P.languedoc, 'airborne', 2], [P.languedoc, 'infantry', 1], [P.paris, 'infantry', 4], [P.lorraine, 'infantry', 4]]);
+    w = army(w, 'Italy', [[P.piedmont, 'infantry', 3], [P.lombardy, 'infantry', 4], [59, 'infantry', 3], [52, 'infantry', 1]]);
+    // France has trained paratroopers for the lesson (Airborne forces researched).
+    const e = w.economies[ME];
+    w = { ...w, economies: { ...w.economies, [ME]: { ...e, research: { ...e.research, done: [...e.research.done.filter((t) => t !== 'para'), 'inf1', 'para'].filter((t, i, all) => all.indexOf(t) === i) } } } };
+    return war(w, 'Italy', ME, 'Italy declares war on France');
+  },
+  next: 'You have seen every way to attack. Try a joint landing next: divisions on a coast, a fleet to clear the sea, and bombers over the beach.',
+  steps: [
+    {
+      text: 'It is 11 June 1940, and Italy has declared war on France. Three Italian divisions hold Piedmont, over the Alps from Provence. You will take it with everything you have: land, air and sea together.',
+    },
+    {
+      text: 'Right-click Piedmont (on a trackpad, click with two fingers).',
+      province: P.piedmont,
+      done: (v) => v.menu === P.piedmont,
+      show: () => ({ menu: P.piedmont }),
+    },
+    {
+      text: 'The attack menu lists every way to hit Piedmont. Point at an option to see how it would go: how many days, and what it would cost each side. Options you cannot use are greyed, with the reason.',
+      why: 'The preview is worked out by the same rules as the battle itself, from what you can see. It leaves out luck and any reinforcements.',
+      target: { sel: '.mt-menu' },
+    },
+    {
+      text: 'You only see enemy divisions next to your own. Close the menu (`Escape`), right-click Lombardy, behind Piedmont, and choose Scout.',
+      why: 'A scout plane flies over the province every day and shows what is there and next to it. Enemy fighters shoot some scouts down.',
+      province: P.lombardy,
+      done: (v) => aimedAt(v, P.lombardy, 'scout'),
+      show: choose(P.lombardy, 'scout'),
+    },
+    {
+      text: 'Now right-click Piedmont again and choose Joint attack, the first option.',
+      why: 'A joint attack times everything: the bombers and fighters are aimed at Piedmont, the fleet sails off its coast to shell it, and the divisions go in once the wings are ready and the ships are in place.',
+      province: P.piedmont,
+      done: (v) => (v.world.strikes ?? []).some((x) => x.owner === ME && x.province === P.piedmont) || mine(v).some((u) => u.path[0] === P.piedmont),
+      show: choose(P.piedmont, 'joint'),
+    },
+    {
+      text: 'The dashed lines on the map show where your wings and ships are aimed, and the badge over Piedmont says a joint attack is waiting. Start the clock and wait for the attack to go in.',
+      province: P.piedmont,
+      done: (v) => v.world.battles.some((b) => b.province === P.piedmont && b.attackers.includes(ME)),
+      show: () => ({ run: true, speed: 3 }),
+      days: 20,
+    },
+    {
+      text: 'Click the crossed swords over Piedmont to open the battle.',
+      province: P.piedmont,
+      done: (v) => v.selection?.kind === 'battle',
+      show: (v) => ({ select: { kind: 'battle', id: v.world.battles.find((b) => b.province === P.piedmont)?.id ?? 0 } }),
+    },
+    {
+      text: 'The outlook now counts fire support: bombers aimed at the battle and warships shelling the coast add damage every day, and defenders under fire cannot dig in. That is "softening up".',
+      target: { sel: '.sb-outlook' },
+    },
+    {
+      text: 'Your two paratrooper divisions wait in Languedoc. Right-click Piedmont and choose Drop paratroopers: they land behind the Italians and join your attack from a new direction.',
+      why: 'Paratroopers jump 3 days after the order and fight at 70% strength. Dropped onto an empty enemy province they take it at once. Cut off once down, they are captured if they break before help arrives.',
+      province: P.piedmont,
+      done: (v) => mine(v).some((u) => u.type === 'airborne' && (u.drop?.to === P.piedmont || u.at === P.piedmont || u.dropped)),
+      show: choose(P.piedmont, 'drop'),
+    },
+    {
+      text: 'Start the clock and take Piedmont.',
+      province: P.piedmont,
+      done: (v) => v.world.controller[P.piedmont] === ME,
+      show: () => ({ run: true, speed: 3 }),
+      days: 90,
+    },
+    {
+      text: 'Piedmont is yours. Aimed wings stay on their target until you change it: open an air base (on the Air and sea map) to spread them out again. The same menu bombs factories, wins the sky over a battle, and lands divisions from the sea.',
+      why: 'Paratroopers need the Airborne forces research (Infantry), then a production line. Germany, Britain, Italy and the Soviet Union all trained them in the 1930s.',
+    },
+  ],
+};
+
+export const LESSONS: Lesson[] = [mapTable, time, moving, battle, armies, production, money, homeFront, diplomacy, forces, attack];
 
 export const lessonById = (id: string): Lesson | undefined => LESSONS.find((l) => l.id === id);
 

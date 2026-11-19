@@ -40,7 +40,7 @@ Saves → Show in Finder). Copy them to another Mac to carry a game over.
 
 ## How to play
 
-**Start with Learn to play** (key **L** on the title screen). The ten lessons take about 41
+**Start with Learn to play** (key **L** on the title screen). The eleven lessons take about 47
 minutes in all, and you can take them in any order. Everything below is what they teach.
 
 1. Choose **Story** or **Free-for-all**, then a start (1 January 1936, or 1 September 1939)
@@ -68,8 +68,9 @@ minutes in all, and you can take them in any order. Everything below is what the
    ultimatum, someone offers peace), the clock stops and the question opens in the sidebar.
    You have seven days; after that the answer shown as the default is given for you.
 9. Click one of your counters, for example `FRA 4`, to select those divisions. Shift-click
-   adds another counter. Right-click a province to send them there (two-finger click on a
-   trackpad). If enemy divisions are in it, they attack. The sidebar shows the **outlook**.
+   adds another counter. Right-click a province of your own to send them there (two-finger
+   click on a trackpad), or press **G** and click any province. The sidebar shows the
+   **outlook** of an attack.
    Click the crossed swords to follow a battle: the **front line** bar (and the band on the
    map) shows how far your divisions have got. The province changes hands when it reaches
    the far side.
@@ -86,18 +87,27 @@ minutes in all, and you can take them in any order. Everything below is what the
     country that loses 60% of its own land's victory points surrenders (40% once its capital
     has fallen); you then choose to
     occupy it, annex it or set up a friendly government.
+12. **The attack menu.** Right-click a province that is not yours (or click **Ways to attack**
+    in its sidebar) and every way to hit it appears, each with a short preview of how it would
+    go: **attack by land**, **push with an army**, **land from the sea**, **drop
+    paratroopers**, **support from the air** (bombers aimed at that one battle), **win the
+    sky** (fighters), **bomb the factories**, **scout** (a plane shows what is there), **shell
+    the coast** and **guard the sea** (warships), or a **joint attack** that times all of it:
+    the divisions go in once the wings are ready and the fleets are in place. Options you
+    cannot use are greyed, with the reason. Paratroopers need the Airborne forces research.
+    Dashed lines on the map show where your wings and ships are aimed.
 
-12. Press **F** for the Navy and air force, and switch the map to **Air and sea** (bottom
+13. Press **F** for the Navy and air force, and switch the map to **Air and sea** (bottom
     left). You do not steer ships or aircraft: give each fleet a sea zone and a mission
     (patrol, escort convoys, raid convoys, stay in port), and each air wing a base and a
     mission (air superiority, ground support, strategic bombing, naval strike). Click a fleet
     or an air base on the map to open it; right-click a sea zone or a province to send it
     there.
-13. To cross the sea, select divisions standing on a coast, press **B** (Go by sea) and click
+14. To cross the sea, select divisions standing on a coast, press **B** (Go by sea) and click
     another coast. A friendly shore takes a few days. An enemy shore is a landing: it takes
     two weeks to prepare, you must control the sea zone off the beach, and the troops fight at
     60% as they come ashore.
-14. Aircraft and ships are built on production lines like everything else (Production, **P**).
+15. Aircraft and ships are built on production lines like everything else (Production, **P**).
     Your lines for them start empty, so move some factories there before a war.
 
 Tips for the sea and the air: whoever has twice the other side's naval strength in a zone
@@ -105,7 +115,9 @@ controls it. Control lets you land troops there and cuts the enemy's trade throu
 If you live by imports, as Britain does, keep a fleet on Escort along your trade route or
 submarines will starve your factories and shops; the news line warns you. Fighters reach 400
 km and bombers 800 km from their base, so move your wings forward as the front moves. The side
-with 1.5 times the other's air strength over a battle hits 15% harder.
+with 1.5 times the other's air strength over a battle hits 15% harder. Bombers aimed at one
+battle add about 3 damage a day each and stop the defenders digging in; warships shelling a
+coast add up to 20.
 
 Tips for diplomacy: in Story mode you need a cause for war (a claim, a case you have built, a
 refused ultimatum, or a promise to keep). A democracy can only build a case against a country
@@ -222,7 +234,7 @@ every installed copy then needs one manual reinstall.
 | A | Form an army from the selected divisions (with none selected: your armies) |
 | 1 to 9 | Select an army; press again to look at it on the map |
 | Drag a flag | Give an army a new front (enemy province: push; border: hold; your land: reserve) |
-| Right-click | Send the selected divisions there (attack if the enemy is there), or point the selected army there |
+| Right-click | On a province that is not yours: the attack menu. On your own land: send the selected divisions or army there |
 | G | Move or attack: then click the destination or type its name |
 | H | Halt the selected divisions |
 | Tab | Step through your stacks of divisions (while the map has the focus) |
@@ -245,7 +257,7 @@ every installed copy then needs one manual reinstall.
 | M | Sound on or off |
 | ⌘ , | Settings (Mac app; or the Settings button on the title screen and the rail) |
 | ? | All shortcuts |
-| Esc | Close a panel or the sidebar |
+| Esc | Close the attack menu, a panel or the sidebar |
 | N / F / C | Title screen: Story, Free-for-all, Continue |
 
 ## How the code is organised
@@ -276,11 +288,12 @@ src/sim/          the game engine: pure TypeScript, no UI, fully testable
   sea.ts          the 17 sea zones, coasts, trade routes and who controls each zone
   navy.ts         fleets and missions, naval battles, convoys and blockade, troops by sea
   air.ts          air wings and missions, control of the sky, bombing
-  forces.ts       ties the navy and the air force into the day
+  forces.ts       ties the navy and the air force into the day: fire support, paratroopers
+  strike.ts       the attack menu (every way to hit a province, with previews) and joint attacks
   aiForces.ts     how AI countries use their fleets, wings and transports
   economy.ts      factories, production lines, manpower, the budget, debt and inflation,
                   and the home front: stability and war support
-  research.ts     the 24 technologies, research teams and how fast they work
+  research.ts     the 25 technologies, research teams and how fast they work
   plans.ts        the 25 national plans
   mods.ts         adds up what research and finished plans change
   aiEconomy.ts    a simple finance minister for AI countries (it also picks research and plans)

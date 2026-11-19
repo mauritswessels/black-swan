@@ -3,6 +3,45 @@
 Versions from 1.0.0 on are numbered. Each one starts with a heading like `## 1.0.1: What it brings`;
 that section becomes the notes on the GitHub release and on the update card in the app.
 
+## 1.4.0: Land, sea and air together (2026-11-19)
+
+Right-click a province that is not yours and the new attack menu shows every way to hit it,
+each with a short preview of how it would go.
+
+- **The attack menu.** Attack by land, push with an army, land from the sea, drop
+  paratroopers, support from the air, win the sky, bomb the factories, scout, shell the coast,
+  guard the sea, or a **joint attack** that does all of it at once. Each option says who would
+  do it and how it would probably go: how many days, the losses on each side, the sky. Options
+  you cannot use stay in the menu, greyed, with the reason. Arrow keys and Enter work in it,
+  Escape closes it, and a province's sidebar has a Ways to attack button too. On your own land
+  right-click still sends the selected divisions or army there.
+- **Aimed air wings.** Bombers and fighters can be aimed at one province: there they count 1.5
+  times, and nowhere else. Bombers aimed at a battle add about 3 damage a day each (less with
+  enemy fighters about). Dashed lines on the map show where your wings are aimed; an air base's
+  sidebar lists the aims and spreads the wings out again.
+- **Scout planes.** A wing on the new Scouting mission shows every division in its target
+  province and the ones next to it.
+- **Ships shell the coast.** A fleet on patrol can shell a coastal province: 3 damage a day
+  per capital ship and 0.5 per escort, up to 20 a side. Defenders under bombs or shells cannot
+  dig in.
+- **Paratroopers.** A new division type, after the new Airborne forces research (Infantry).
+  They jump up to 400 km, three days after the order: onto an empty enemy province, which they
+  take at once, or into a battle, joining the attack from behind at 70% strength. Cut off once
+  down, they are captured if they break.
+- **Joint attacks.** The divisions go in once the wings can fly and the fleets are in place, at
+  most 10 days later; for a landing, they get ready at once and wait until the sea off the beach
+  is yours. A badge on the map marks each one that is waiting.
+- **The AI** aims its ground-support bombers at its main attack, shells the coast its divisions
+  are attacking, and Germany, the Soviet Union, Italy and Britain train a few paratroopers and
+  drop them behind the front.
+- **A new lesson**, The attack menu (11 lessons now), and 7 new codex entries.
+- Saves are now version 13; games saved by 1.1, 1.2 and 1.3 still load.
+
+- **Balance** (docs/balance-stage-k3.md, 6 AI-only runs of history): Moscow now falls in 1 of 3
+  runs from 1936 (was 2 of 3); Greece falls again in 2 of 3 (was never), in June and August
+  1941. Germany still surrenders too early, between August 1943 and September 1944, about the
+  same as in 1.3: that needs work on the war economy and the army AI, not the new air and sea rules.
+
 ## 1.3.0: Armies that hold and push (2026-11-18)
 
 Until now every division was moved by hand. Now you can group divisions into armies and give

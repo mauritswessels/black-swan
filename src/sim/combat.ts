@@ -27,6 +27,10 @@
  * Rivers (rivers.ts) and the season (seasons.ts) weaken attacks too: a division attacking across
  * a great river hits at 75%, and one attacking into mud at 80%.
  *
+ * Fire support (forces.ts): bombers aimed at the battle and ships shelling the coast add their
+ * damage to their side's total each day, before luck. It counts in the front line's push like
+ * any other damage.
+ *
  * The front line. Every battle has a line from 0 (the attackers are still at the border) to
  * 100 (they have reached the far side). Each day it moves by
  *
@@ -55,6 +59,8 @@ export const STATS: Record<UnitType, { attack: number; defence: number }> = {
   infantry: { attack: 10, defence: 15 },
   armour: { attack: 22, defence: 10 },
   artillery: { attack: 16, defence: 8 },
+  /** Paratroopers: picked volunteers with light weapons, a little better than infantry in attack, a little worse in defence. */
+  airborne: { attack: 13, defence: 13 },
 };
 
 /** How much of their hitting power attackers keep when attacking INTO each terrain. */
@@ -145,6 +151,10 @@ export interface Draft {
   air?: (attackers: string[], defenders: string[], province: number) => number;
   /** Today's ground in each province, by id (seasons.ts). Missing means dry everywhere. */
   ground?: Ground[];
+  /** Fire support from aimed bombers and shelling ships (forces.ts). Missing means none. */
+  fire?: (province: number, attackers: string[], defenders: string[]) => { attack: number; defence: number; fleets: number[] };
+  /** Fleets whose guns joined a battle today (filled in by fightBattles). */
+  shelled?: Set<number>;
 }
 
 const emptyTally = (): BattleTally => ({ days: 0, attackerCount: 0, defenderCount: 0, terrain: 0, attackerSupply: 0, defenderSupply: 0, dugIn: 0, directions: 0, armourShare: 0, artilleryShare: 0, attackerEdge: 0, defenderEdge: 0, air: 0, landing: 0 });
@@ -181,8 +191,8 @@ export function retreatTarget(d: Pick<Draft, 'controller' | 'friends'>, u: Unit,
 
 const CAPITAL_OF = new Map(PROVINCES.filter((p) => p.capital).map((p) => [p.owner, p.id]));
 
-/** Who actually fights today, and how hard each side hits before luck. */
-function lineUp(attackers: Unit[], defenders: Unit[], province: number, edges?: Edges, air = 1) {
+/** Who actually fights today, and how hard each side hits before luck. `fire` is the fire support each side gets (forces.ts). */
+function lineUp(attackers: Unit[], defenders: Unit[], province: number, edges?: Edges, air = 1, fire = { attack: 0, defence: 0 }) {
   const directions = new Set(attackers.map((u) => u.at)).size;
   const front = line(attackers, ATTACK_WIDTH + ATTACK_WIDTH_PER_EXTRA_DIRECTION * (directions - 1));
   const holding = line(defenders, DEFENCE_WIDTH);
@@ -191,8 +201,8 @@ function lineUp(attackers: Unit[], defenders: Unit[], province: number, edges?: 
   const mean = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 1);
   // `air` is the attackers' multiplier (1.15, 1 or 0.85); the defenders get the opposite.
   const attackEach = front.map((u) => attackPower(u, province, edges?.attack(u)) * air);
-  const attackSum = attackEach.reduce((a, b) => a + b, 0);
-  const defenceSum = holding.reduce((a, u) => a + defencePower(u, digInKept, edges?.defence(u, province)), 0) * (2 - air);
+  const attackSum = attackEach.reduce((a, b) => a + b, 0) + fire.attack;
+  const defenceSum = holding.reduce((a, u) => a + defencePower(u, digInKept, edges?.defence(u, province)), 0) * (2 - air) + fire.defence;
   const attackerEdge = mean(front.map((u) => edges?.attack(u) ?? 1));
   const defenderEdge = mean(holding.map((u) => edges?.defence(u, province) ?? 1));
   // Share of the attack that comes across a river.
@@ -233,15 +243,18 @@ export interface Outlook {
   push: number;
   /** Today's ground in the province (seasons.ts). */
   ground: Ground;
+  /** Fire support in the damage above: aimed bombers and shelling ships (forces.ts). */
+  attackFire: number;
+  defenceFire: number;
 }
 
 /**
  * The outlook if `attackers` attack `defenders` in `province` today. It uses the same line-up
  * as the real battle, without the luck, and it cannot know about reinforcements.
  */
-export function outlook(attackers: Unit[], defenders: Unit[], province: number, edges?: Edges, air = 1, ground: Ground = 'dry', line = 0): Outlook | null {
+export function outlook(attackers: Unit[], defenders: Unit[], province: number, edges?: Edges, air = 1, ground: Ground = 'dry', line = 0, fire = { attack: 0, defence: 0 }): Outlook | null {
   if (!attackers.length || !defenders.length) return null;
-  const { directions, front, holding, digInKept, attackSum, defenceSum, attackerEdge, defenderEdge, riverShare } = lineUp(attackers, defenders, province, edges, air);
+  const { directions, front, holding, digInKept, attackSum, defenceSum, attackerEdge, defenderEdge, riverShare } = lineUp(attackers, defenders, province, edges, air, fire);
   const river = front.map((u) => riverBetween(u.at, province)).find((r) => r) ?? null;
   const avg = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
   // A division gives up when its organisation is gone (attackers a little earlier).
@@ -271,17 +284,55 @@ export function outlook(attackers: Unit[], defenders: Unit[], province: number, 
     river,
     push: linePush(attackSum, defenceSum, line, ground, riverShare, defenders.some((u) => edges?.reeling?.(u.owner))),
     ground,
+    attackFire: fire.attack,
+    defenceFire: fire.defence,
   };
 }
 
 /** The outlook for a battle being fought now, or for the units already ordered into a province. */
-export function outlookAt(w: Pick<World, 'units' | 'wars'> & { economies?: Record<string, Economy>; story?: World['story']; day?: number; startDate?: string; battles?: Battle[]; armies?: World['armies'] }, province: number, air?: Draft['air']): Outlook | null {
+export function outlookAt(w: Pick<World, 'units' | 'wars'> & { economies?: Record<string, Economy>; story?: World['story']; day?: number; startDate?: string; battles?: Battle[]; armies?: World['armies'] }, province: number, air?: Draft['air'], fire?: Draft['fire']): Outlook | null {
   const here = w.units.filter((u) => u.at === province);
   const attackers = w.units.filter((u) => u.path[0] === province && here.some((e) => atWar(w, u.owner, e.owner)));
   const defenders = here.filter((u) => attackers.some((a) => atWar(w, a.owner, u.owner)));
-  const sky = air && attackers.length && defenders.length ? air(byCount(attackers), byCount(defenders), province) : 1;
+  const sides = attackers.length && defenders.length ? [byCount(attackers), byCount(defenders)] : null;
+  const sky = air && sides ? air(sides[0], sides[1], province) : 1;
+  const support = fire && sides ? fire(province, sides[0], sides[1]) : undefined;
   const line = w.battles?.find((b) => b.province === province)?.line ?? 0;
-  return outlook(attackers, defenders, province, w.economies && combatEdges(w.economies, w.story && { effects: w.story.effects, day: w.day ?? 0, startDate: w.startDate ?? '1936-01-01', armies: w.armies }), sky, groundOn(province, w.startDate ?? '1936-01-01', w.day ?? 0), line);
+  return outlook(attackers, defenders, province, w.economies && combatEdges(w.economies, w.story && { effects: w.story.effects, day: w.day ?? 0, startDate: w.startDate ?? '1936-01-01', armies: w.armies }), sky, groundOn(province, w.startDate ?? '1936-01-01', w.day ?? 0), line, support);
+}
+
+/** What an attack would probably cost and how long it would take, from its outlook: a rough guide for planning. */
+export interface Forecast {
+  /** 'win': the defenders break or are pushed out; 'stall': the attackers run out of organisation first. */
+  ends: 'win' | 'stall';
+  /** Days until it ends, at today's rate. */
+  days: number;
+  /** Strength each side would lose, in division-equivalents (100 points = 1 division). */
+  attackerLoss: number;
+  defenderLoss: number;
+}
+
+/** The longest a forecast looks ahead. */
+export const FORECAST_DAYS = 60;
+
+/**
+ * A forecast from an outlook. The attack wins on the day the defenders run out of
+ * organisation or the front line reaches the far side, whichever comes first, if that is before
+ * the attackers run out themselves. Losses are the daily damage times the strength each point
+ * of damage costs, over those days, plus what beaten defenders leave behind as they fall back.
+ */
+export function forecast(o: Outlook, line = 0): Forecast {
+  const lineDays = o.push > 0 ? (100 - line) / o.push : Infinity;
+  const winIn = Math.min(o.defendersLast, lineDays);
+  const win = winIn <= o.attackersLast;
+  const days = Math.min(FORECAST_DAYS, Math.max(1, Math.ceil(win ? winIn : o.attackersLast)));
+  const perDay = (damage: number) => (damage * STRENGTH_PER_DAMAGE) / 100;
+  return {
+    ends: win && winIn <= FORECAST_DAYS ? 'win' : 'stall',
+    days,
+    attackerLoss: perDay(o.defence) * days,
+    defenderLoss: perDay(o.attack) * days + (win ? o.defendersFighting * ROUT_LOSS * 0.8 : 0),
+  };
 }
 
 /** Fight one day of every battle. Returns the ids of the units that took part today. */
@@ -332,7 +383,9 @@ export function fightBattles(d: Draft, rng: Rng): Set<number> {
     battle.defenders = union2(battle.defenders, byCount(defenders));
 
     const sky = d.air ? d.air(battle.attackers, battle.defenders, province) : 1;
-    const { directions, front, holding, digInKept, attackEach, attackSum, defenceSum, attackerEdge, defenderEdge, riverShare } = lineUp(attackers, defenders, province, d.edges, sky);
+    const fire = d.fire?.(province, battle.attackers, battle.defenders);
+    if (fire) for (const f of fire.fleets) d.shelled?.add(f);
+    const { directions, front, holding, digInKept, attackEach, attackSum, defenceSum, attackerEdge, defenderEdge, riverShare } = lineUp(attackers, defenders, province, d.edges, sky, fire);
     const attackDamage = attackSum * (0.9 + 0.2 * rng.next());
     const defenceDamage = defenceSum * (0.9 + 0.2 * rng.next());
 
@@ -376,6 +429,8 @@ export function fightBattles(d: Draft, rng: Rng): Set<number> {
     t.river = (t.river ?? 0) + riverShare;
     if (riverShare > 0) battle.river ??= front.map((u) => riverBetween(u.at, province)).find((r) => r) ?? undefined;
     t.badGround = (t.badGround ?? 0) + (ground === 'mud' || ground === 'snow' ? 1 : 0);
+    t.attackerFire = (t.attackerFire ?? 0) + (fire && attackSum > 0 ? fire.attack / attackSum : 0);
+    t.defenderFire = (t.defenderFire ?? 0) + (fire && defenceSum > 0 ? fire.defence / defenceSum : 0);
     const share = (type: UnitType) => (attackSum > 0 ? front.reduce((a, u, i) => a + (u.type === type ? attackEach[i] : 0), 0) / attackSum : 0);
     t.armourShare += share('armour');
     t.artilleryShare += share('artillery');
@@ -404,10 +459,14 @@ export function fightBattles(d: Draft, rng: Rng): Set<number> {
         u.dugIn = 0;
       }
     }
-    // Worn-out attackers give up. The rest stand where the line is.
+    // Worn-out attackers give up. The rest stand where the line is. Paratroopers who came down
+    // into the fight have nowhere to go back to: they are taken prisoner.
     for (const u of front) {
       if (u.strength <= 0) removed.add(u.id);
-      else if (u.organisation < ATTACK_BREAK_OFF) {
+      else if (u.organisation < ATTACK_BREAK_OFF && u.dropped) {
+        battle.attackerLosses += u.strength / 100;
+        removed.add(u.id);
+      } else if (u.organisation < ATTACK_BREAK_OFF) {
         u.path = [];
         u.progress = 0;
       }
@@ -479,6 +538,8 @@ export function explain(b: Battle, winner: 'attacker' | 'defender'): Cause[] {
   const landing = (t.landing || 0) / n;
   const river = (t.river || 0) / n;
   const badGround = (t.badGround || 0) / n;
+  const aFire = (t.attackerFire || 0) / n;
+  const dFire = (t.defenderFire || 0) / n;
   const ratio = b.attackerUnits.length / Math.max(1, b.defenderUnits.length);
   const place = PROVINCES[b.province].terrain;
   const versus = `${b.attackerUnits.length} divisions against ${b.defenderUnits.length}`;
@@ -492,10 +553,11 @@ export function explain(b: Battle, winner: 'attacker' | 'defender'): Cause[] {
     add(ln(dugIn), `the defenders were dug in (+${pct(dugIn - 1)} defence)`);
     add(ln(edge), `the defenders had better weapons or fortifications (${pct(edge - 1)} stronger)`);
     add(2 * ln(Math.max(1, 2 - air)), 'the defenders controlled the sky (they hit 15% harder, the attackers 15% less hard)');
-    add(landing * 0.5, 'the attackers were coming ashore from the sea (they hit 40% less hard, less with landing craft)');
+    add(landing * 0.5, 'the attackers were coming ashore from the sea or down from the air (they hit 30 to 40% less hard)');
     add(river * -ln(RIVER_ATTACK) * 1.5, `the attackers had to cross ${b.river ? `the ${b.river}` : 'a river'} under fire (they hit 15% less hard, and the line moved at half pace until a bridgehead was won)`);
     add(badGround * 0.25, 'mud or snow slowed the attack (the line moves at half pace in mud, three quarters in snow)');
     add(-ln(aSupply), `the attackers were short of supply (${pct(1 - aSupply)} weaker)`);
+    add(-ln(1 - Math.min(0.9, dFire)), `bombers and ships supported the defence (${pct(dFire)} of the defenders' fire)`);
     add(ln(2 / Math.max(0.2, ratio)), ratio < 1 ? `the attackers were outnumbered (${versus})` : `too few attackers for an assault (${versus}; plan for about 2 to 1)`);
     add(0.05, 'defending is easier than attacking (infantry defends at 15 but attacks at 10)');
   } else {
@@ -504,6 +566,7 @@ export function explain(b: Battle, winner: 'attacker' | 'defender'): Cause[] {
     add(armour * ln(STATS.armour.attack / STATS.infantry.attack) * (terrain === 1 ? 1.5 : 1), terrain === 1 ? 'armour broke through on open ground' : 'armour led the attack');
     add(artillery * ln(STATS.artillery.attack / STATS.infantry.attack) + (artillery > 0 ? 0.1 : 0), 'artillery broke up the dug-in positions');
     add(2 * ln(Math.max(1, air)), 'the attackers controlled the sky (they hit 15% harder, the defenders 15% less hard)');
+    add(-ln(1 - Math.min(0.9, aFire)), `bombers and ships supported the attack (${pct(aFire)} of the attackers' fire)`);
     add(-ln(dSupply), `the defenders were short of supply (${pct(1 - dSupply)} weaker)`);
     add(-ln(edge), `the attackers had better weapons (${pct(1 / edge - 1)} stronger)`);
     add(b.surrendered, `${b.surrendered} surrounded ${b.surrendered === 1 ? 'division' : 'divisions'} had nowhere to retreat and surrendered`);

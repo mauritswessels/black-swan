@@ -427,3 +427,41 @@ label.sb-goto { display: flex; flex-direction: column; gap: 6px; font-size: 13.5
 .mt-pull line { stroke-width: 3; stroke-dasharray: 8 5; }
 @media (prefers-reduced-motion: reduce) { .mt-pincer.closing rect { animation: none; } }
 .sb > * { flex-shrink: 0; }
+
+/* Stage K3: aimed air wings and fleets, joint attacks, and the attack menu. */
+.mt-aims { pointer-events: none; }
+.mt-aim line { fill: none; }
+.mt-aim .halo { stroke: rgba(5, 7, 12, 0.65) !important; stroke-dasharray: none !important; }
+.mt-aim circle { fill: none; opacity: 0.9; }
+.mt-aim.cas line, .mt-aim.cas circle { stroke: #ff9f5a; }
+.mt-aim.sky line, .mt-aim.sky circle { stroke: #7fd0ff; }
+.mt-aim.bomb line, .mt-aim.bomb circle { stroke: #e06060; }
+.mt-aim.scout line, .mt-aim.scout circle { stroke: #c9e6a0; }
+.mt-aim.shell line, .mt-aim.shell circle { stroke: #ffd36b; }
+.mt-strike rect { fill: rgba(10, 15, 26, 0.92); stroke: #ff9f5a; stroke-width: 1.2; }
+.mt-strike text { font: 600 11px var(--f-cond); letter-spacing: 0.06em; fill: #ffd2b0; text-anchor: middle; }
+.mt-menu { position: absolute; z-index: 5; display: flex; flex-direction: column; max-height: min(560px, calc(100% - 180px)); background: rgba(9, 14, 24, 0.97); border: 1px solid rgba(255, 196, 107, 0.55); border-radius: 4px; box-shadow: 0 10px 32px rgba(0, 0, 0, 0.55); color: #dbe6f7; font-size: 13px; }
+.mt-menu header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; padding: 9px 10px 7px 12px; border-bottom: 1px solid rgba(156, 200, 255, 0.18); }
+.mt-menu header b { display: block; font: 700 16px var(--f-cond); letter-spacing: 0.08em; text-transform: uppercase; color: #fff; }
+.mt-menu header small { display: block; margin-top: 2px; color: #9fb1cc; font-size: 12px; }
+.mt-menu-x { width: 26px; height: 26px; border: 1px solid rgba(156, 200, 255, 0.28); border-radius: 3px; background: transparent; color: #cfe0f7; font-size: 17px; line-height: 1; cursor: pointer; }
+.mt-menu-x:hover, .mt-menu-x:focus-visible { border-color: var(--gold); color: var(--gold); }
+.mt-menu ul { list-style: none; margin: 0; padding: 4px; overflow-y: auto; }
+.mt-menu-none { margin: 8px 12px 2px; color: #9fb1cc; font-size: 12px; }
+.mt-menu-opt { display: flex; gap: 9px; width: 100%; padding: 7px 8px; border: 1px solid transparent; border-radius: 3px; background: transparent; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.mt-menu-opt svg { flex: none; margin-top: 1px; color: var(--gold); }
+.mt-menu-opt.on { background: rgba(255, 196, 107, 0.09); border-color: rgba(255, 196, 107, 0.4); }
+.mt-menu-opt:focus-visible { outline: 2px solid var(--gold); outline-offset: -1px; }
+.mt-menu-opt.off { cursor: default; color: #7d8aa0; }
+.mt-menu-opt.off svg { color: #5d6a80; }
+.mt-menu-opt.off.on { background: rgba(156, 200, 255, 0.05); border-color: rgba(156, 200, 255, 0.18); }
+.mt-menu-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.mt-menu-label { font-weight: 600; color: #fff; }
+.mt-menu-opt.off .mt-menu-label { color: #94a2b8; font-weight: 500; }
+.mt-menu-who { color: #a9b9d2; font-size: 12px; }
+.mt-menu-why { color: #8794aa; font-size: 12px; }
+.mt-menu-more { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; padding-left: 8px; border-left: 2px solid #8fa0bb; font-size: 12px; color: #dbe6f7; }
+.mt-menu-opt.good .mt-menu-more { border-left-color: #5ee6b0; }
+.mt-menu-opt.bad .mt-menu-more { border-left-color: #ff6a3d; }
+.mt-menu-opt.even .mt-menu-more { border-left-color: var(--gold); }
+.mt-menu footer { padding: 6px 12px 8px; border-top: 1px solid rgba(156, 200, 255, 0.14); color: #7d8aa0; font-size: 11px; }

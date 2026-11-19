@@ -1,5 +1,5 @@
 /** The navy and air force in the sidebar: the overview, a sea zone, a fleet, and the air wings at one base. All numbers come from the engine. */
-import { bombTarget, flying, MEN_PER_WING, MISSIONS, RANGE_KM, REBASE_DAYS, WING_MISSION_NAME, WING_MISSION_NOTE, cannotRaiseWing, wingRange } from '../../sim/air';
+import { aimOf, bombTarget, flying, MEN_PER_WING, MISSIONS, RANGE_KM, REBASE_DAYS, WING_MISSION_NAME, WING_MISSION_NOTE, cannotRaiseWing, wingRange } from '../../sim/air';
 import { PROVINCES } from '../../sim/map';
 import { modsOf } from '../../sim/mods';
 import { describeFleet, LANDING_BASE, LANDING_PREP_DAYS, MISSION_NAME, MISSION_NOTE, tradeRoute, TRANSPORT_DAYS } from '../../sim/navy';
@@ -192,6 +192,15 @@ export function FleetView({ w, id }: { w: World; id: number }) {
           </button>
         ))}
       </div>
+      {f.target !== undefined && f.mission === 'patrol' && (
+        <div className="sb-actions">
+          <button className="sb-btn" disabled={!mine} onClick={() => force({ type: 'fleet', fleet: f.id, target: null })}>
+            Shelling the coast of {PROVINCES[f.target].name}
+            <small>Its big guns help any attack there and wear down the defenders. Click to stop.</small>
+          </button>
+        </div>
+      )}
+      {f.target === undefined && mine && f.mission === 'patrol' && <p className="sb-fine">To shell a coast, right-click the province on the map and choose Shell the coast.</p>}
       <h3>Sail to another sea</h3>
       <p className="sb-notice" role="status">
         {ordering ? 'Now click a sea zone on the map.' : notice}
@@ -265,13 +274,32 @@ function WingGroup({ w, wings, kind }: { w: World; wings: Wing[]; kind: PlaneKin
         {plural(wings.length, `${kind} wing`)} · average strength {pct(wings.reduce((a, x) => a + x.strength, 0) / wings.length)}
       </h3>
       <div className="sb-actions" role="group" aria-label={`Mission for the ${kind} wings`}>
-        {MISSIONS[kind].map((m: WingMission) => (
+        {MISSIONS[kind].filter((m) => m !== 'scout' || current.has('scout')).map((m: WingMission) => (
           <button key={m} className={`sb-btn${current.has(m) ? ' on' : ''}`} aria-pressed={current.size === 1 && current.has(m)} onClick={() => wings.forEach((x) => force({ type: 'wing', wing: x.id, mission: m }))}>
             {WING_MISSION_NAME[m]}
             <small>{WING_MISSION_NOTE[m]}</small>
           </button>
         ))}
       </div>
+      {(() => {
+        // Wings aimed at one province, grouped by where.
+        const aimed = new Map<number, Wing[]>();
+        for (const x of wings) {
+          const t = aimOf(x);
+          if (t !== undefined) aimed.set(t, [...(aimed.get(t) ?? []), x]);
+        }
+        if (!aimed.size) return <p className="sb-fine">To send them at one province, right-click it on the map: the attack menu offers support from the air, winning the sky{kind === 'bomber' ? ', bombing its factories' : ''} and scouting.</p>;
+        return (
+          <div className="sb-actions">
+            {[...aimed].map(([t, xs]) => (
+              <button key={t} className="sb-btn" onClick={() => xs.forEach((x) => force({ type: 'wing', wing: x.id, target: null }))}>
+                {plural(xs.length, 'wing')} aimed at {PROVINCES[t].name}: {WING_MISSION_NAME[xs[0].mission].toLowerCase()}
+                <small>Click to spread them out again over everything in reach.</small>
+              </button>
+            ))}
+          </div>
+        );
+      })()}
       {current.has('strategic') && <p className="sb-note">{target >= 0 ? `Tonight's target: the factories of ${PROVINCES[target].name} (${w.controller[target]}).` : 'No enemy factories in range.'}</p>}
     </>
   );

@@ -65,6 +65,8 @@ export interface Mods {
   airRange: number;
   /** Extra fighter strength over your own home provinces (radar and ground control). */
   airDefence: number;
+  /** 1 once the country can train paratroopers (the Airborne forces technology). */
+  airborne: number;
 }
 
 export type ModKey = keyof Mods;
@@ -108,6 +110,7 @@ const EFFECT_TEXT: Record<ModKey, (x: number) => string> = {
   bomberPower: (x) => `Bombers ${pct(x)} stronger`,
   airRange: (x) => `Aircraft range ${pct(x)}`,
   airDefence: (x) => `Fighters ${pct(x)} stronger over your home provinces`,
+  airborne: () => 'Paratroopers can be trained (Production), and dropped behind the enemy line',
 };
 
 export const KEYS = Object.keys(EFFECT_TEXT) as ModKey[];
@@ -138,6 +141,8 @@ export function modsOf(e: Pick<Economy, 'research' | 'plan'> | undefined): Mods 
 
 /** A division attacking from the sea keeps this share of its hitting power. */
 export const AMPHIBIOUS = 0.6;
+/** Paratroopers who drop into a fight keep this share: they come down scattered, with light weapons. */
+export const DROP_ATTACK = 0.7;
 
 /** How much harder a division hits, or holds, than the basic figures in combat.ts (1 = no change). */
 export interface Edges {
@@ -147,7 +152,8 @@ export interface Edges {
   reeling?(country: string): boolean;
 }
 
-const CAP = { infantry: 'Infantry', armour: 'Armour', artillery: 'Artillery' } as const;
+/** Which research a kind of division takes its attack and defence from. Paratroopers are infantry. */
+const CAP = { infantry: 'Infantry', armour: 'Armour', artillery: 'Artillery', airborne: 'Infantry' } as const;
 
 /** Army effects that leave an army reeling: caught by surprise (a broken pact) or in shock (France in May 1940, the Balkans in 1941). */
 export const REELING = ['surprise', 'shock'];
@@ -204,7 +210,7 @@ export function combatEdges(economies: Record<string, Economy>, ctx?: EdgeContex
   };
   return {
     // A division storming a beach fights at 60% (see AMPHIBIOUS), a little better with landing craft.
-    attack: (u) => (1 + of(u.owner)[`attack${CAP[u.type]}`]) * (u.landing ? Math.min(1, AMPHIBIOUS + of(u.owner).amphibious) : 1) * (attackOf.get(u.owner) ?? 1) * cold(u) * led(u, TRAIT_ATTACK),
+    attack: (u) => (1 + of(u.owner)[`attack${CAP[u.type]}`]) * (u.landing ? (u.dropped ? DROP_ATTACK : Math.min(1, AMPHIBIOUS + of(u.owner).amphibious)) : 1) * (attackOf.get(u.owner) ?? 1) * cold(u) * led(u, TRAIT_ATTACK),
     defence: (u, province) => (1 + of(u.owner)[`defence${CAP[u.type]}`]) * (PROVINCES[province].owner === u.owner ? 1 + of(u.owner).homeDefence : 1) * (defenceOf.get(u.owner) ?? 1) * led(u, TRAIT_DEFENCE),
     reeling: (country) => reeling.has(country),
   };

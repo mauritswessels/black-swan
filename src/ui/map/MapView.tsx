@@ -11,7 +11,9 @@ import { allianceMap, allied, hasPact, relation } from '../../sim/diplomacy';
 import { linkedProvinces, supplyCapacity } from '../../sim/supply';
 import type { World } from '../../sim/types';
 import { atWar } from '../../sim/war';
-import { km, wingRange } from '../../sim/air';
+import { aimOf, km, wingRange } from '../../sim/air';
+import { strikeStatus } from '../../sim/strike';
+import { AttackMenuView } from './AttackMenu';
 import { modsOf } from '../../sim/mods';
 import { shipPlan } from '../../sim/navy';
 import { shipCount, ZONE_INDEX, ZONES, type SeaStatus } from '../../sim/sea';
@@ -229,6 +231,8 @@ export function MapView() {
       return [e.clientX - r.left, e.clientY - r.top] as const;
     };
     const onWheel = (e: WheelEvent) => {
+      // The attack menu scrolls by itself.
+      if ((e.target as Element).closest('.mt-menu')) return;
       e.preventDefault();
       useGame.getState().bumpMoves();
       const [cx, cy] = point(e);
@@ -281,6 +285,8 @@ export function MapView() {
   const placeOf = (h: ReturnType<typeof hit>) => (h.stack ? Number(h.stack.split('|')[0]) : h.wing ?? h.province);
   const onPointerDown = (e: React.PointerEvent) => {
     if (e.button !== 0) return;
+    if ((e.target as Element).closest('.mt-menu')) return;
+    if (useGame.getState().menu) useGame.getState().closeMenu();
     const target = e.target as Element;
     const army = hit(target).army;
     const mode = army != null ? 'army' : e.shiftKey && me ? 'box' : 'pan';
@@ -318,6 +324,7 @@ export function MapView() {
     if (z !== hoverZone) setHoverZone(z);
   };
   const onPointerUp = (e: React.PointerEvent) => {
+    if ((e.target as Element).closest('.mt-menu')) return;
     const d = drag.current;
     drag.current = null;
     setBand(null);
@@ -393,6 +400,15 @@ export function MapView() {
     const g = useGame.getState();
     const h = hit(e.target as Element);
     const p = h.stack ? Number(h.stack.split('|')[0]) : h.wing ?? h.province;
+    if (g.menu) g.closeMenu();
+    // A province that is not yours or an ally's: the attack menu, whatever is selected.
+    if (p != null && me && !world.capitulated.includes(me)) {
+      const holder = world.controller[p];
+      if (holder !== me && !friendsOfMe?.has(holder)) {
+        const [x, y] = local(e);
+        return g.openMenu(p, x, y);
+      }
+    }
     if (g.selection?.kind === 'fleet') {
       if (h.zone && p == null) g.sailTo(h.zone);
       return;
@@ -428,8 +444,9 @@ export function MapView() {
 
   const fill = useMemo(() => fills(world, mapMode), [world.controller, world.wars, mapMode, mapMode === 'supply' ? world.units : null, mapMode === 'diplomacy' ? world.diplomacy : null, mapMode === 'airsea' ? world.wings : null]); // eslint-disable-line react-hooks/exhaustive-deps
   const lines = useMemo(() => countryLines(world.controller), [world.controller]);
-  const stacks = useMemo(() => visibleStacks(world, me), [world.units, world.controller, me]); // eslint-disable-line react-hooks/exhaustive-deps
-  const seen = useMemo(() => visibleProvinces(world, me), [world.units, world.controller, me]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Scout planes widen what you see, so the wings count too.
+  const stacks = useMemo(() => visibleStacks(world, me), [world.units, world.controller, world.wings, me]); // eslint-disable-line react-hooks/exhaustive-deps
+  const seen = useMemo(() => visibleProvinces(world, me), [world.units, world.controller, world.wings, me]); // eslint-disable-line react-hooks/exhaustive-deps
   const friendsOfMe = useMemo(() => (me ? allianceMap(world.diplomacy).get(me) : undefined), [world.diplomacy, me]);
   const bands = useMemo(() => frontBands(world, (p, owner) => !me || owner === me || !!friendsOfMe?.has(owner) || seen[p]), [world.units, world.battles, world.controller, seen, me, friendsOfMe]); // eslint-disable-line react-hooks/exhaustive-deps
   // Pockets you can see: your own and your allies', and the enemy's where your divisions see them.
@@ -556,6 +573,30 @@ export function MapView() {
   // Divisions waiting to cross the sea.
   const crossings = new Map<string, { from: number; to: number; landing: boolean }>();
   for (const u of world.units) if (u.sea && (u.owner === me || !me)) crossings.set(`${u.at}>${u.sea.to}`, { from: u.at, to: u.sea.to, landing: u.sea.landing });
+
+  // Where your air wings and fleets are aimed, and the joint attacks you have waiting.
+  const aims: { key: string; x1: number; y1: number; to: number; kind: 'cas' | 'sky' | 'bomb' | 'scout' | 'shell'; n: number }[] = [];
+  const strikes = me ? (world.strikes ?? []).filter((x) => x.owner === me) : [];
+  if (me) {
+    const add = (key: string, x1: number, y1: number, to: number, kind: (typeof aims)[number]['kind']) => {
+      const had = aims.find((a) => a.key === key);
+      if (had) had.n++;
+      else aims.push({ key, x1, y1, to, kind, n: 1 });
+    };
+    for (const x of world.wings) {
+      const t = x.owner === me ? aimOf(x) : undefined;
+      if (t === undefined) continue;
+      const kind = x.mission === 'scout' ? 'scout' : x.mission === 'strategic' ? 'bomb' : x.type === 'fighter' ? 'sky' : 'cas';
+      add(`w${x.base}>${t}>${kind}`, POINTS[x.base][0], POINTS[x.base][1], t, kind);
+    }
+    for (const f of world.fleets) {
+      if (f.owner !== me || f.target === undefined || f.mission !== 'patrol') continue;
+      const [zx, zy] = ZONE_POINTS[ZONE_INDEX[f.zone]];
+      add(`f${f.zone}>${f.target}`, zx, zy, f.target, 'shell');
+    }
+  }
+  const AIM_WORDS = { cas: 'bombers supporting the attack', sky: 'fighters holding the sky', bomb: 'bombers hitting factories', scout: 'scout planes', shell: 'warships shelling the coast' };
+  const menu = useGame((s) => s.menu);
 
   const showNames = k >= 2.6;
   const showCities = k >= 1.5;
@@ -710,6 +751,32 @@ export function MapView() {
             {post !== null && <circle cx={POINTS[post][0]} cy={POINTS[post][1]} r={30 * cs} className="mt-post" />}
           </g>
 
+          <g className="mt-aims" aria-hidden="true">
+            {aims.map((a) => {
+              const [x2, y2] = POINTS[a.to];
+              return (
+                <g key={a.key} className={`mt-aim ${a.kind}`}>
+                  <title>{`${a.n} ${AIM_WORDS[a.kind]} over ${PROVINCES[a.to].name}`}</title>
+                  {/* Lines on the map keep their width on screen (non-scaling stroke), so these are pixels. */}
+                  <line x1={a.x1} y1={a.y1} x2={x2} y2={y2} className="halo" style={{ strokeWidth: 6 }} />
+                  <line x1={a.x1} y1={a.y1} x2={x2} y2={y2} style={{ strokeWidth: 2.6, strokeDasharray: a.kind === 'scout' ? '3 5' : '12 6' }} />
+                  <circle cx={x2} cy={y2} r={16 * cs} className="halo" style={{ strokeWidth: 6 * cs }} />
+                  <circle cx={x2} cy={y2} r={16 * cs} style={{ strokeWidth: 3 * cs }} />
+                </g>
+              );
+            })}
+            {strikes.map((x) => {
+              const [px, py] = POINTS[x.province];
+              return (
+                <g key={x.id} className="mt-strike" transform={`translate(${px},${py - 40 * cs}) scale(${Math.max(cs, inv * 0.8)})`}>
+                  <title>{strikeStatus(world, x)}</title>
+                  <rect x={-50} y={-9} width={100} height={18} rx={9} />
+                  <text y={4}>{x.how === 'sea' ? 'Joint landing' : x.how === 'drop' ? 'Joint drop' : 'Joint attack'}</text>
+                </g>
+              );
+            })}
+          </g>
+
           <g className="mt-counters">
             {stacks.map((s) => {
               const [x, y] = POINTS[s.province];
@@ -848,6 +915,7 @@ export function MapView() {
         );
       })()}
       <HoverLine province={hover} zone={hoverZone} pulling={pull?.army ?? null} />
+      {menu && <AttackMenuView province={menu.province} x={menu.x} y={menu.y} width={size.w} height={size.h} />}
       <div className="mt-zoom">
         <button className="mt-icon" aria-label="Zoom in" onClick={() => (useGame.getState().bumpMoves(), zoomAt(1.4, size.w / 2, size.h / 2))} onPointerDown={(e) => e.stopPropagation()}>
           +
@@ -885,6 +953,7 @@ function HoverLine({ province, zone, pulling }: { province: number | null; zone:
   const holder = world.controller[province];
   const mine = selection?.kind === 'units' && selection.ids.length > 0;
   let hint = '';
+  const foreign = !!me && holder !== me && !picturesOf(world).friends.get(me)?.has(holder);
   const armyId = pulling ?? (selection?.kind === 'army' ? selection.id : null);
   const army = armyId !== null && me ? armiesOf(world, me).find((a) => a.id === armyId) : undefined;
   if (army && me) {
@@ -904,6 +973,7 @@ function HoverLine({ province, zone, pulling }: { province: number | null; zone:
     if (holder !== me && !atWar(world, me, holder)) hint = 'Neutral: your divisions cannot enter';
     else hint = world.units.some((u) => u.at === province && atWar(world, u.owner, me)) ? `${click} to attack` : `${click} to march here`;
   }
+  if (foreign && pulling === null && !aim && !ordering) hint = atWar(world, me!, holder) ? 'Right-click for every way to attack it' : 'Right-click for options (you are not at war)';
   const rivers = [...new Set(p.neighbours.map((n) => riverBetween(province, n)).filter((r): r is string => !!r))];
   const ground = groundOn(province, world.startDate, world.day);
   return (

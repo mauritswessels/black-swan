@@ -10,7 +10,7 @@ export interface Tip {
 }
 
 export const TIPS: Record<string, Tip> = {
-  units: { text: 'Right-click a province to march there, or onto enemy divisions to attack them. Shift-click another counter to add it. Watch organisation: a division at zero must retreat.', lesson: 'moving' },
+  units: { text: 'Right-click your own land to march there. Right-click an enemy province for the attack menu. Shift-click another counter to add it. Watch organisation: a division at zero must retreat.', lesson: 'moving' },
   army: { text: 'Drag the army’s flag to give it a front: onto an enemy province to push, onto a border to hold it, onto your own land behind the front to wait in reserve. Number keys 1 to 9 select your armies.', lesson: 'armies' },
   armies: { text: 'Draw a box around divisions with Shift held, then press A to form an army. An army keeps its line filled by itself, so you can think about the whole war instead of single divisions.', lesson: 'armies' },
   province: { text: 'A province’s victory points are what it is worth in a war. Take enough of an enemy’s and it surrenders, so capitals and big cities matter most.', lesson: 'map' },

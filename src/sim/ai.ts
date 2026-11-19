@@ -173,7 +173,7 @@ export function frontsOf(w: World, country: string, planned: string[] = []): Fro
     const want = Math.max(guard, isMajor(foe) ? Math.round(MAJOR_FRONT_ROOM * room) - helpers : Math.min(room - helpers, Math.ceil(MINOR_FRONT_RATIO * near) + 2 - helpers));
     fronts.push({ foe, planned: isPlanned, provinces: line, targets: [...targets].sort((a, b) => a - b), depth, near, touching, helpers, room, guard, want, share: 0 });
   }
-  share(fronts, w.units.filter((u) => u.owner === country && !u.sea && !u.landing).length);
+  share(fronts, w.units.filter((u) => u.owner === country && !u.sea && !u.landing && !u.drop).length);
   return fronts;
 }
 
@@ -228,7 +228,7 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
   const everyone = w.units.filter((u) => u.owner === country && (!army || army.units.has(u.id)));
   if (!everyone.length) return [];
   // Divisions getting ready to sail, or coming ashore, already have their orders.
-  const mine = everyone.filter((u) => !u.sea && !u.landing);
+  const mine = everyone.filter((u) => !u.sea && !u.landing && !u.drop);
   const edges = combatEdges(w.economies, { effects: w.story.effects, day: w.day, startDate: w.startDate, armies: w.armies });
   const friends = allianceMap(w.diplomacy);
   const allies = friends.get(country);

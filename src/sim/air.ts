@@ -31,6 +31,18 @@
  *
  * Naval strike. Bombers add 6 per wing to their side's fighting strength in every sea zone in
  * range (see sea.ts and navy.ts): enough to make a zone unsafe for a small fleet.
+ *
+ * Aiming at one province (Stage K3, the attack menu). A wing can put everything into one
+ * province in range instead of spreading over all of them:
+ *
+ *   fighters on air superiority  count 1.5 times over that province, and nowhere else;
+ *   bombers on ground support    count 1.5 times there towards control of the sky, nowhere else,
+ *                                and add close air support to a battle there (forces.ts):
+ *                                3 points of damage a day per wing / (1 + enemy fighters there);
+ *   bombers on strategic bombing bomb that province's factories instead of the richest one;
+ *   either kind on scouting      fly over it and report every division in it and in the
+ *                                provinces next to it (intel.ts). Enemy fighters there shoot
+ *                                some of them down: 0.15 x fighters / (1 + fighters) a day.
  */
 import { COUNTRIES } from './countries';
 import { distanceKm, PROVINCES } from './map';
@@ -64,14 +76,23 @@ export const REBASE_DAYS = 3;
  * German air force had about 1.7 million men in uniform for some 4,500 front-line aircraft.
  */
 export const MEN_PER_WING = 20;
+/** How much more an aimed wing counts over its one province. */
+export const AIM_FOCUS = 1.5;
+/** Damage a day that one full-strength bomber wing aimed at a battle adds to its side (before enemy fighters). */
+export const CAS_DAMAGE = 3;
+/** Losses a scouting wing takes from enemy fighters over its target, at most. */
+export const SCOUT_LOSS = 0.15;
 
-export const MISSIONS: Record<PlaneKind, WingMission[]> = { fighter: ['superiority', 'rest'], bomber: ['ground', 'strategic', 'naval', 'rest'] };
-export const WING_MISSION_NAME: Record<WingMission, string> = { superiority: 'Air superiority', ground: 'Ground support', strategic: 'Strategic bombing', naval: 'Naval strike', rest: 'Rest and repair' };
+export const MISSIONS: Record<PlaneKind, WingMission[]> = { fighter: ['superiority', 'scout', 'rest'], bomber: ['ground', 'strategic', 'naval', 'scout', 'rest'] };
+/** Missions that can be aimed at one province. A scout must be. */
+export const AIMABLE: WingMission[] = ['superiority', 'ground', 'strategic', 'scout'];
+export const WING_MISSION_NAME: Record<WingMission, string> = { superiority: 'Air superiority', ground: 'Ground support', strategic: 'Strategic bombing', naval: 'Naval strike', scout: 'Scouting', rest: 'Rest and repair' };
 export const WING_MISSION_NOTE: Record<WingMission, string> = {
   superiority: 'Fights for control of the sky over every province in range, and shoots down enemy aircraft that come within reach.',
   ground: 'Helps your divisions in battles in range. Counts 0.7 of a fighter wing towards control of the sky there.',
   strategic: 'Bombs the factories of the richest enemy province in range.',
   naval: 'Attacks enemy ships in every sea zone in range.',
+  scout: 'Flies over one province and reports every division in it and next to it.',
   rest: 'Does not fly. Repairs faster.',
 };
 
@@ -133,6 +154,9 @@ export function flying(w: Pick<AirView, 'controller' | 'day'>, wing: Wing, frien
   return holder === wing.owner || !!friends?.has(holder);
 }
 
+/** The province a wing is aimed at, if it is aimed and its mission can be. */
+export const aimOf = (wing: Pick<Wing, 'mission' | 'target'>): number | undefined => (wing.target !== undefined && AIMABLE.includes(wing.mission) ? wing.target : undefined);
+
 /** Who has what in the air over every province today. */
 export interface AirPicture {
   /** Each country's air score over each province (fighters, plus 0.7 x ground-support bombers). */
@@ -143,6 +167,8 @@ export interface AirPicture {
   battle(attackers: string[], defenders: string[], province: number): number;
   /** One side's total score over a province: the countries named and their allies. */
   side(countries: string[], province: number): number;
+  /** Bomber wings aimed at each province on ground support, flying today: their owner and close-air-support damage before enemy fighters. */
+  aimed: Map<number, { owner: string; power: number }[]>;
 }
 
 export function airPicture(w: AirView, friends: Map<string, Set<string>>): AirPicture {
@@ -150,6 +176,7 @@ export function airPicture(w: AirView, friends: Map<string, Set<string>>): AirPi
   const fighters = new Map<string, Float32Array>();
   const mods = modCache(w.economies);
   const get = (map: Map<string, Float32Array>, name: string): Float32Array => map.get(name) ?? map.set(name, new Float32Array(N)).get(name)!;
+  const aimed = new Map<number, { owner: string; power: number }[]>();
   if (w.wars.length) {
     for (const wing of w.wings) {
       if (wing.mission !== 'superiority' && wing.mission !== 'ground') continue;
@@ -160,12 +187,23 @@ export function airPicture(w: AirView, friends: Map<string, Set<string>>): AirPi
       const eff = (wing.strength / 100) * (1 + (fighter ? m.fighterPower : m.bomberPower));
       const s = get(score, wing.owner);
       const f = fighter ? get(fighters, wing.owner) : null;
-      for (let p = 0; p < N; p++) {
-        if (km(wing.base, p) > range) continue;
-        const here = fighter ? eff * ((w.owner ? w.owner[p] : PROVINCES[p].owner) === wing.owner ? 1 + m.airDefence : 1) : eff * SUPPORT_WEIGHT;
+      const add = (p: number, focus: number) => {
+        const here = (fighter ? eff * ((w.owner ? w.owner[p] : PROVINCES[p].owner) === wing.owner ? 1 + m.airDefence : 1) : eff * SUPPORT_WEIGHT) * focus;
         s[p] += here;
         if (f) f[p] += here;
+      };
+      const target = aimOf(wing);
+      if (target !== undefined) {
+        // Everything into one province, if it is in range.
+        if (km(wing.base, target) > range) continue;
+        add(target, AIM_FOCUS);
+        if (!fighter) {
+          const list = aimed.get(target) ?? aimed.set(target, []).get(target)!;
+          list.push({ owner: wing.owner, power: CAS_DAMAGE * eff });
+        }
+        continue;
       }
+      for (let p = 0; p < N; p++) if (km(wing.base, p) <= range) add(p, 1);
     }
   }
   const side = (countries: string[], province: number): number => {
@@ -178,6 +216,7 @@ export function airPicture(w: AirView, friends: Map<string, Set<string>>): AirPi
   return {
     score,
     fighters,
+    aimed,
     side,
     battle: (attackers, defenders, province) => {
       if (!score.size) return 1;
@@ -205,9 +244,11 @@ export function navalAir(w: AirView, friends: Map<string, Set<string>>): Map<str
   return out;
 }
 
-/** The province a strategic bomber wing would attack today: the enemy province in range with the most working factories. -1 if there is none. */
+/** The province a strategic bomber wing would attack today: the one it is aimed at, or else the enemy province in range with the most working factories. -1 if there is none. */
 export function bombTarget(w: AirView & Pick<World, 'factories' | 'bombed'>, wing: Wing): number {
   const range = wingRange(wing, modsOf(w.economies[wing.owner]));
+  const aim = aimOf(wing);
+  if (aim !== undefined && atWar(w, wing.owner, w.controller[aim]) && km(wing.base, aim) <= range && w.factories.civ[aim] + w.factories.mil[aim] > 0) return aim;
   let best = -1;
   let most = 0;
   for (let p = 0; p < N; p++) {
@@ -275,6 +316,14 @@ export function runAir(d: ForceDraft, rng: Rng, air: AirPicture, friends: Map<st
           lost += FLAK_LOSS + (0.3 * intercept) / (1 + intercept);
           inFight.add(wing.id);
         }
+      } else if (wing.mission === 'scout') {
+        // Fast and high, but enemy fighters over the target catch some of them.
+        const target = aimOf(wing);
+        if (target !== undefined && km(wing.base, target) <= wingRange(wing, mods(wing.owner))) {
+          let intercept = 0;
+          for (const [name, f] of air.fighters) if (atWar(d, wing.owner, name)) intercept += f[target];
+          if (intercept > 0) lost += (SCOUT_LOSS * intercept) / (1 + intercept);
+        }
       } else if (wing.mission === 'naval') {
         // Ships shoot back.
         const m = mods(wing.owner);
@@ -325,14 +374,30 @@ export function cannotBase(w: Pick<World, 'controller'>, owner: string, province
   return holder === owner || friends?.has(holder) ? null : `${PROVINCES[province].name} is not in your hands or an ally's`;
 }
 
-export function giveWingOrder(d: Pick<ForceDraft, 'wings' | 'controller' | 'day'>, o: WingOrder, friends?: Set<string>): void {
+/** Why a wing cannot be aimed at a province from where it is based, or null if it can. */
+export function cannotAim(w: Pick<World, 'economies'>, wing: Pick<Wing, 'type' | 'owner' | 'base'>, province: number): string | null {
+  if (!PROVINCES[province]) return 'no such province';
+  const range = wingRange(wing, modsOf(w.economies[wing.owner]));
+  const d = km(wing.base, province);
+  return d > range ? `${PROVINCES[province].name} is ${Math.round(d)} km from ${PROVINCES[wing.base].name}, beyond its ${Math.round(range)} km reach` : null;
+}
+
+/** The mission a wing goes back to when it stops scouting. */
+const DEFAULT_MISSION: Record<PlaneKind, WingMission> = { fighter: 'superiority', bomber: 'ground' };
+
+export function giveWingOrder(d: Pick<ForceDraft, 'wings' | 'controller' | 'day' | 'economies'>, o: WingOrder, friends?: Set<string>): void {
   const wing = d.wings.find((x) => x.id === o.wing);
   if (!wing) return;
-  if (o.mission && MISSIONS[wing.type].includes(o.mission)) wing.mission = o.mission;
   if (o.base !== undefined && o.base !== wing.base && !cannotBase(d, wing.owner, o.base, friends)) {
     wing.base = o.base;
     wing.ready = d.day + REBASE_DAYS;
   }
+  if (o.target === null) wing.target = undefined;
+  else if (o.target !== undefined && Number.isInteger(o.target) && !cannotAim(d, wing, o.target)) wing.target = o.target;
+  if (o.mission && MISSIONS[wing.type].includes(o.mission) && (o.mission !== 'scout' || wing.target !== undefined)) wing.mission = o.mission;
+  // An aim the new base cannot reach, or a mission that cannot be aimed, drops the aim. A scout with nothing to scout goes back to its usual work.
+  if (wing.target !== undefined && (!AIMABLE.includes(wing.mission) || cannotAim(d, wing, wing.target))) wing.target = undefined;
+  if (wing.mission === 'scout' && wing.target === undefined) wing.mission = DEFAULT_MISSION[wing.type];
 }
 
 /** Why a wing of this kind cannot be formed right now, or null if it can. */

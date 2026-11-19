@@ -21,7 +21,7 @@ export function pocketsOf(w: Pick<World, 'units'>): Pocket[] {
   // Trapped divisions by country and province. A division at sea or storming a beach is not in a pocket.
   const trapped = new Map<string, Map<number, number>>();
   for (const u of w.units) {
-    if (u.supply > 0 || u.sea || u.landing) continue;
+    if (u.supply > 0 || u.sea || u.landing || u.drop) continue;
     let m = trapped.get(u.owner);
     if (!m) trapped.set(u.owner, (m = new Map()));
     m.set(u.at, (m.get(u.at) ?? 0) + 1);

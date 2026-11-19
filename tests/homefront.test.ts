@@ -25,11 +25,13 @@ const knowing = (w: World, country: string, ...ids: string[]): World => withEcon
 const unit = (owner: string, at: number, type: Unit['type'] = 'infantry'): Unit => ({ id: 9000 + at, owner, type, at, strength: 100, organisation: 100, path: [], progress: 0, dugIn: 0, supply: 1 });
 
 describe('the list of technologies', () => {
-  it('has six branches of four technologies, in order of year, each with an effect and a history note', () => {
-    expect(TECHS).toHaveLength(24);
-    expect(new Set(TECHS.map((t) => t.id)).size).toBe(24);
+  it('has six branches of four technologies (and Airborne forces on the side), in order of year, each with an effect and a history note', () => {
+    expect(TECHS).toHaveLength(25);
+    expect(new Set(TECHS.map((t) => t.id)).size).toBe(25);
+    // Airborne forces (Stage K3) sits beside the infantry line: it needs Infantry weapons.
+    expect(TECHS.find((t) => t.id === 'para')).toMatchObject({ branch: 'infantry', tier: 2, year: 1938, needs: 'inf1' });
     for (const b of BRANCHES) {
-      const branch = TECHS.filter((t) => t.branch === b.id).sort((x, y) => x.tier - y.tier);
+      const branch = TECHS.filter((t) => t.branch === b.id && !t.needs).sort((x, y) => x.tier - y.tier);
       expect(branch.map((t) => t.tier), b.name).toEqual([1, 2, 3, 4]);
       expect(branch.map((t) => t.year), b.name).toEqual([1936, 1938, 1940, 1942]);
     }

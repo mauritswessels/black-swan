@@ -2,7 +2,8 @@
 
 export type Terrain = 'plains' | 'forest' | 'hills' | 'mountains' | 'marsh' | 'desert';
 export type Government = 'democracy' | 'authoritarian' | 'fascist' | 'communist';
-export type UnitType = 'infantry' | 'armour' | 'artillery';
+/** Paratroopers (airborne) need the Airborne forces technology (research.ts) and can drop behind the enemy's line (strike.ts). */
+export type UnitType = 'infantry' | 'armour' | 'artillery' | 'airborne';
 export type Mode = 'story' | 'freeForAll';
 /** Warships are counted by kind: capital ships (battleships and carriers), escorts (cruisers and destroyers) and submarines. */
 export type ShipKind = 'capital' | 'escort' | 'submarine';
@@ -63,6 +64,8 @@ export interface Fleet {
   ships: Record<ShipKind, number>;
   /** The day it arrives in `zone`. Until then it is at sea and does nothing. */
   arrives: number;
+  /** A coastal province on its zone that it shells while a battle is fought there (navy.ts). Only a fleet on patrol shells. */
+  target?: number;
 }
 
 /**
@@ -71,9 +74,13 @@ export interface Fleet {
  *   ground       bombers: help the army in battles in range;
  *   strategic    bombers: bomb the enemy's factories in range;
  *   naval        bombers: attack enemy ships in the sea zones in range;
+ *   scout        either kind: fly over `target` and report what is there and next to it;
  *   rest         stand down and repair.
+ *
+ * Fighters on superiority, bombers on ground support or strategic bombing may be aimed at one
+ * province (`target`): they put everything into it (air.ts).
  */
-export type WingMission = 'superiority' | 'ground' | 'strategic' | 'naval' | 'rest';
+export type WingMission = 'superiority' | 'ground' | 'strategic' | 'naval' | 'scout' | 'rest';
 
 /** About a hundred aircraft of one kind, flying from one province. */
 export interface Wing {
@@ -87,6 +94,8 @@ export interface Wing {
   strength: number;
   /** The day it can fly again after moving to a new base. */
   ready: number;
+  /** The one province it is aimed at, if any (air.ts). A scout always has one. */
+  target?: number;
 }
 
 /** One line of news from the war at sea and in the air. */
@@ -253,9 +262,31 @@ export interface Unit {
   /** How much of its daily supply arrived, from 0 (cut off) to 1 (all of it). */
   supply: number;
   /** Getting ready to go by sea to province `to`. `landing` means the far shore is in enemy hands. */
-  sea?: { to: number; daysLeft: number; landing: boolean };
+  sea?: { to: number; daysLeft: number; landing: boolean; strike?: number };
   /** It is storming a beach: its path leads across the sea, and it attacks at a disadvantage. */
   landing?: boolean;
+  /** Paratroopers getting ready to drop on province `to` (strike.ts). */
+  drop?: { to: number; daysLeft: number };
+  /** Paratroopers who came down into a fight (with `landing`): they attack at 70%, cannot be called back, and are lost if the attack fails. */
+  dropped?: boolean;
+}
+
+/**
+ * A joint attack (strike.ts): land, sea and air timed to start on the same day. The fleets and
+ * air wings get their orders at once; the divisions go when the fleets have arrived and the
+ * wings are ready (and, for a landing, when the sea off the beach is yours).
+ */
+export interface Strike {
+  id: number;
+  owner: string;
+  province: number;
+  /** How the divisions go in: on foot, from the sea, or from the air. */
+  how: 'land' | 'sea' | 'drop';
+  units: number[];
+  wings: number[];
+  fleets: number[];
+  /** The day it was ordered. */
+  day: number;
 }
 
 /** A battle being fought right now for one province. */
@@ -317,6 +348,9 @@ export interface BattleTally {
   river?: number;
   /** Days fought in mud or snow. */
   badGround?: number;
+  /** Fire support from aimed bombers and shelling ships, as a share of each side's damage (games saved before version 1.4 have none). */
+  attackerFire?: number;
+  defenderFire?: number;
 }
 
 /** One reason for how a battle ended, e.g. "attacking into mountains". */
@@ -397,6 +431,9 @@ export interface World {
   /** Armies: groups of divisions with one order between them (armies.ts). Games saved before version 1.3 have none. */
   armies?: Army[];
   nextArmyId?: number;
+  /** Joint attacks waiting to go (strike.ts). Games saved before version 1.4 have none. */
+  strikes?: Strike[];
+  nextStrikeId?: number;
 }
 
 /** How hard an army pushes: how good the odds must be before it attacks. */
@@ -636,11 +673,15 @@ export type Order =
   /** Send a division by sea to a coastal province: a transport to friendly land, a landing on an enemy shore. */
   | { type: 'ship'; unit: number; to: number }
   /** Send a fleet to a sea zone, give it a mission, or both. */
-  | { type: 'fleet'; fleet: number; zone?: string; mission?: FleetMission }
+  | { type: 'fleet'; fleet: number; zone?: string; mission?: FleetMission; target?: number | null }
   /** Move ships from one fleet to another in the same zone, or (with `to` null) into a new fleet. */
   | { type: 'transfer'; fleet: number; to: number | null; kind: ShipKind; count: number }
-  /** Move a wing to a new base, give it a mission, or both. */
-  | { type: 'wing'; wing: number; base?: number; mission?: WingMission }
+  /** Move a wing to a new base, give it a mission, aim it at one province (null: spread out again), or all three. */
+  | { type: 'wing'; wing: number; base?: number; mission?: WingMission; target?: number | null }
+  /** Paratroopers drop on a province behind the enemy's line (strike.ts). */
+  | { type: 'drop'; unit: number; to: number }
+  /** A joint attack on a province: these divisions go in by `how` once these fleets and wings are in place. */
+  | { type: 'strike'; country: string; province: number; how: Strike['how']; units: number[]; wings: number[]; fleets: number[] }
   // Diplomacy (Stage F). `by` is the country giving the order.
   | { type: 'declareWar'; by: string; on: string }
   /** Sign a white peace at once. Used by treaties and tests; players and AI countries use offerPeace. */

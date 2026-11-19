@@ -24,7 +24,9 @@ import type { Economy, FactoryKind, Government, InflationCauses, LineKind, Month
 import { linkedProvinces, supplyCapacity } from './supply';
 import { enemiesOf, warKey } from './war';
 
-export const UNIT_TYPES: UnitType[] = ['infantry', 'armour', 'artillery'];
+export const UNIT_TYPES: UnitType[] = ['infantry', 'armour', 'artillery', 'airborne'];
+/** The kinds of division a country starts with, in the order of `startArmy` (countries.ts). Nobody had paratroopers in 1936. */
+export const START_TYPES: UnitType[] = ['infantry', 'armour', 'artillery'];
 export const PLANE_KINDS: PlaneKind[] = ['fighter', 'bomber'];
 /** Everything a production line can make, in the order the Production panel lists it. */
 export const LINE_KINDS: LineKind[] = [...UNIT_TYPES, ...PLANE_KINDS, ...SHIP_KINDS];
@@ -42,7 +44,7 @@ export const GOVERNMENT_SHARE = 0.12;
 /** Monthly cost of running one military factory, or one civilian factory on construction. */
 export const FACTORY_COST = 2;
 /** Monthly cost of a division at peace. At war it costs WAR_UPKEEP times as much (ammunition, fuel, losses). */
-export const UPKEEP: Record<UnitType, number> = { infantry: 0.3, armour: 0.6, artillery: 0.45 };
+export const UPKEEP: Record<UnitType, number> = { infantry: 0.3, armour: 0.6, artillery: 0.45, airborne: 0.5 };
 export const WAR_UPKEEP = 3;
 /**
  * A soldier's pay, food and clothing cost about what a worker earns, so a poorer country keeps a
@@ -63,9 +65,9 @@ export const PAY_LEVEL: Readonly<Record<string, number>> = Object.fromEntries(
 export const payLevel = (country: string): number => PAY_LEVEL[country] ?? 1;
 
 /** Factory-days of work to equip one division. */
-export const KIT_COST: Record<LineKind, number> = { infantry: 120, armour: 300, artillery: 180, fighter: 80, bomber: 120, capital: 800, escort: 160, submarine: 130 };
+export const KIT_COST: Record<LineKind, number> = { infantry: 120, armour: 300, artillery: 180, airborne: 220, fighter: 80, bomber: 120, capital: 800, escort: 160, submarine: 130 };
 /** Days to train a new division once its equipment and men are ready. */
-export const TRAINING_DAYS: Record<UnitType, number> = { infantry: 30, armour: 60, artillery: 40 };
+export const TRAINING_DAYS: Record<UnitType, number> = { infantry: 30, armour: 60, artillery: 40, airborne: 75 };
 /** A new division arrives with this much organisation: it needs a few weeks to shake down. */
 export const NEW_DIVISION_ORGANISATION = 40;
 /**
@@ -326,7 +328,7 @@ export function tallies(w: Holdings): Map<string, Tally> {
   const out = new Map<string, Tally>();
   const get = (name: string): Tally => {
     let t = out.get(name);
-    if (!t) out.set(name, (t = { civ: 0, mil: 0, steel: 0, oil: 0, population: 0, homeLost: 0, divisions: { infantry: 0, armour: 0, artillery: 0 }, wings: { fighter: 0, bomber: 0 }, ships: { capital: 0, escort: 0, submarine: 0 }, bombed: 0 }));
+    if (!t) out.set(name, (t = { civ: 0, mil: 0, steel: 0, oil: 0, population: 0, homeLost: 0, divisions: { infantry: 0, armour: 0, artillery: 0, airborne: 0 }, wings: { fighter: 0, bomber: 0 }, ships: { capital: 0, escort: 0, submarine: 0 }, bombed: 0 }));
     return t;
   };
   const standing = new Map<string, number>();
@@ -596,8 +598,8 @@ export function startEconomies(w: Holdings): Record<string, Economy> {
     e.taxRate = START_TAX[c.government];
     const total = c.startArmy[0] + c.startArmy[1] + c.startArmy[2];
     const mil = Math.floor(t.mil);
-    const split = total ? apportion(mil, c.startArmy.map((n, i) => n * KIT_COST[UNIT_TYPES[i]])) : [mil, 0, 0];
-    UNIT_TYPES.forEach((k, i) => (e.lines[k] = { factories: split[i], efficiency: 0.75 }));
+    const split = total ? apportion(mil, c.startArmy.map((n, i) => n * KIT_COST[START_TYPES[i]])) : [mil, 0, 0];
+    START_TYPES.forEach((k, i) => (e.lines[k] = { factories: split[i], efficiency: 0.75 }));
     out[c.name] = e;
     const probe = { ...w, economies: out };
     let v = economyView(probe, c.name, t);
@@ -611,7 +613,7 @@ export function startEconomies(w: Holdings): Record<string, Economy> {
     e.treasury = v.budget.spending;
     e.manpower = Math.max(0, v.manpowerCap - total * MEN_PER_DIVISION);
     // A month of production is already in the depots.
-    for (const k of UNIT_TYPES) e.stock[k] = v.lineRate[k] * 30;
+    for (const k of START_TYPES) e.stock[k] = v.lineRate[k] * 30;
     e.stability = v.stabilityTarget;
     e.warSupport = v.warSupportTarget;
   }
@@ -638,8 +640,9 @@ export function cloneEconomies(es: Record<string, Economy>): Record<string, Econ
 }
 
 /** Orders about armies carry a country too, but belong to armies.ts. */
-const ARMY_ORDERS = new Set(['formArmy', 'armyOrder', 'armyUnits', 'armySettings', 'disbandArmy']);
-export type EconomyOrder = Exclude<Extract<Order, { country: string }>, { type: 'formArmy' | 'armyOrder' | 'armyUnits' | 'armySettings' | 'disbandArmy' }>;
+/** Orders that carry a `country` but are not about the economy: armies and joint attacks. */
+const ARMY_ORDERS = new Set(['formArmy', 'armyOrder', 'armyUnits', 'armySettings', 'disbandArmy', 'strike']);
+export type EconomyOrder = Exclude<Extract<Order, { country: string }>, { type: 'formArmy' | 'armyOrder' | 'armyUnits' | 'armySettings' | 'disbandArmy' | 'strike' }>;
 export const isEconomyOrder = (o: Order): o is EconomyOrder => 'country' in o && !ARMY_ORDERS.has(o.type);
 
 /** Where a new division forms: the capital, or failing that the biggest home city the country still holds. */
@@ -679,6 +682,7 @@ export function formUpPoint(d: Pick<World, 'controller' | 'units'> & { owner?: s
 
 /** Why a division of this type cannot be raised right now, or null if it can. */
 export function cannotRaise(e: Economy, type: UnitType): string | null {
+  if (type === 'airborne' && !modsOf(e).airborne) return 'needs the Airborne forces technology';
   if (e.stock[type] < 1) return 'no finished equipment yet';
   if (e.manpower < MEN_PER_DIVISION) return 'not enough manpower';
   return null;
@@ -723,6 +727,7 @@ export function giveEconomyOrder(d: Pick<World, 'economies' | 'controller' | 'fa
     }
     case 'setLine': {
       if (!LINE_KINDS.includes(o.unit) || !Number.isFinite(o.factories)) break;
+      if (o.unit === 'airborne' && !modsOf(e).airborne && o.factories > 0) break;
       const line = e.lines[o.unit];
       const mil = Math.floor((tallies(d).get(o.country)?.mil ?? 0) + 1e-9);
       const others = LINE_KINDS.reduce((a, k) => a + (k === o.unit ? 0 : e.lines[k].factories), 0);

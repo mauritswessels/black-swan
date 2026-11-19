@@ -22,6 +22,7 @@ import { upgradeWorld } from '../sim/upgrade';
 import { pocketsOf, pocketWords } from '../sim/pockets';
 import { armiesOf, armyCentre, describeOrder, orderFor, pincersOf, type AimKind } from '../sim/armies';
 import { sound } from './audio/sound';
+import type { MenuOption } from '../sim/strike';
 import { lessonById, type LessonView } from '../tutorial/lessons';
 import { markLessonDone } from './lessonProgress';
 import { loadSettings, storeSettings, type Settings } from './settings';
@@ -108,6 +109,12 @@ interface Store {
   bySea: boolean;
   /** With an army selected: the next province clicked gets this order. */
   aim: AimKind | null;
+  /** The attack menu, open over a province (right-click on one that is not yours). x and y are where it opens on screen. */
+  menu: { province: number; x: number; y: number } | null;
+  openMenu: (province: number, x: number, y: number) => void;
+  closeMenu: () => void;
+  /** Carry out one option of the attack menu. */
+  strike: (option: MenuOption) => void;
   mapMode: MapMode;
   news: News[];
   /** A short message about the last order, shown in the sidebar. */
@@ -335,11 +342,11 @@ function diplomaticNews(before: World, after: World): News[] {
   return out;
 }
 
-const fresh = { running: false, selection: null, ordering: false, bySea: false, aim: null, news: [] as News[], notice: '', focus: null, defeated: false, lesson: null, mapMode: 'political' as MapMode };
+const fresh = { running: false, selection: null, ordering: false, bySea: false, aim: null, menu: null, news: [] as News[], notice: '', focus: null, defeated: false, lesson: null, mapMode: 'political' as MapMode };
 
 /** What a lesson's checks can see (see src/tutorial/lessons.ts). */
-export const lessonView = (s: Pick<Store, 'world' | 'selection' | 'mapMode' | 'overlay' | 'running' | 'speed' | 'ordering' | 'bySea' | 'moves'>): LessonView => ({
-  world: s.world!, selection: s.selection, mapMode: s.mapMode, overlay: s.overlay, running: s.running, speed: s.speed, ordering: s.ordering, bySea: s.bySea, moves: s.moves,
+export const lessonView = (s: Pick<Store, 'world' | 'selection' | 'mapMode' | 'overlay' | 'running' | 'speed' | 'ordering' | 'bySea' | 'moves' | 'menu'>): LessonView => ({
+  world: s.world!, selection: s.selection, mapMode: s.mapMode, overlay: s.overlay, running: s.running, speed: s.speed, ordering: s.ordering, bySea: s.bySea, moves: s.moves, menu: s.menu?.province ?? null,
 });
 /** Lessons never touch the player's saves. */
 const saving = (w: World) => !w.story.lesson;
@@ -491,7 +498,7 @@ export const useGame = create<Store>((set, get) => {
     select: (selection) => {
       // Fleets, wings and sea zones only show on the air and sea map.
       const sea = selection?.kind === 'zone' || selection?.kind === 'fleet' || selection?.kind === 'wings';
-      set({ selection, ordering: false, bySea: false, aim: null, notice: '', ...(sea ? { mapMode: 'airsea' as MapMode } : {}) });
+      set({ selection, ordering: false, bySea: false, aim: null, menu: null, notice: '', ...(sea ? { mapMode: 'airsea' as MapMode } : {}) });
     },
     setOrdering: (ordering) => {
       const k = get().selection?.kind;
@@ -568,6 +575,22 @@ export const useGame = create<Store>((set, get) => {
       set({ selection: { kind: 'wings', province }, notice: `${plural(wings.length, 'wing')} moving to ${PROVINCES[province].name}. They fly again in ${REBASE_DAYS} days.`, ordering: false });
     },
     setMapMode: (mapMode) => set({ mapMode }),
+    openMenu: (province, x, y) => {
+      const { world } = get();
+      if (!world?.player || world.capitulated.includes(world.player)) return;
+      set({ menu: { province, x, y }, ordering: false, bySea: false, aim: null });
+    },
+    closeMenu: () => set({ menu: null }),
+    strike: (option) => {
+      const { world, menu } = get();
+      if (!world?.player || !option.orders.length) return;
+      const orders = ownOrders(world, option.orders);
+      if (!orders.length) return;
+      give(orders);
+      if (!get().muted) sound.click();
+      const p = menu ? PROVINCES[menu.province].name : '';
+      set({ menu: null, notice: `${option.label}${p ? ` on ${p}` : ''}: ${option.who ? `${option.who}. ` : ''}${option.preview[0] ?? ''}`.replace(/\s+$/, '') });
+    },
     focusOn: (province) => set({ focus: { province, n: ++focusN } }),
 
     marchTo: (province) => {
@@ -653,7 +676,7 @@ export const useGame = create<Store>((set, get) => {
       const patch: Partial<Store> = {};
       if (a.select !== undefined) {
         const k = a.select?.kind;
-        Object.assign(patch, { selection: a.select as Selection | null, ordering: false, bySea: false, notice: '' }, k === 'zone' || k === 'fleet' || k === 'wings' ? { mapMode: 'airsea' } : {});
+        Object.assign(patch, { selection: a.select as Selection | null, ordering: false, bySea: false, menu: null, notice: '' }, k === 'zone' || k === 'fleet' || k === 'wings' ? { mapMode: 'airsea' } : {});
       }
       if (a.orders?.length) patch.world = applyOrders(s.world, ownOrders(s.world, a.orders));
       if (a.mapMode !== undefined) patch.mapMode = a.mapMode as MapMode;
@@ -661,6 +684,7 @@ export const useGame = create<Store>((set, get) => {
       if (a.run !== undefined) patch.running = a.run;
       if (a.speed !== undefined) patch.speed = a.speed;
       if (a.look !== undefined) Object.assign(patch, { focus: { province: a.look, n: ++focusN }, moves: s.moves + 1 });
+      if (a.menu !== undefined) patch.menu = a.menu === null ? null : { province: a.menu, x: 360, y: 220 };
       set(patch);
       if (!s.muted) sound.click();
       for (let i = 0; i < (a.days ?? 0); i++) get().tick();

@@ -8,6 +8,8 @@ import { visibleProvinces } from '../../sim/intel';
 import { daysToEnter, PROVINCES, routeDays } from '../../sim/map';
 import { economyView, OIL, STEEL, tallies } from '../../sim/economy';
 import { allianceMap, governmentOf, SURRENDER_SHARE } from '../../sim/diplomacy';
+import { dropRange, fireSupport } from '../../sim/forces';
+import { strikeStatus } from '../../sim/strike';
 import { DEPOTS, infrastructure, linkedProvinces, supplyCapacity } from '../../sim/supply';
 import type { Battle, BattleReport, Unit, World } from '../../sim/types';
 import { BRIDGEHEAD } from '../../sim/rivers';
@@ -35,9 +37,9 @@ const days = (d: number) => (d === Infinity ? 'indefinitely' : d < 1.5 ? 'about 
 const GOVERNMENT = { democracy: 'Democracy', authoritarian: 'Authoritarian government', fascist: 'Fascist dictatorship', communist: 'Communist dictatorship' };
 
 function types(units: Unit[]): string {
-  const n = { infantry: 0, armour: 0, artillery: 0 };
+  const n = { infantry: 0, armour: 0, artillery: 0, airborne: 0 };
   for (const u of units) n[u.type]++;
-  return (['infantry', 'armour', 'artillery'] as const).filter((t) => n[t]).map((t) => `${n[t]} ${t}`).join(', ');
+  return (['infantry', 'armour', 'artillery', 'airborne'] as const).filter((t) => n[t]).map((t) => `${n[t]} ${t === 'airborne' ? 'paratrooper' : t}`).join(', ');
 }
 
 export function Row({ label, value, bar, warn }: { label: string; value: ReactNode; bar?: number; warn?: boolean }) {
@@ -122,6 +124,12 @@ export function Link({ to, province, children }: { to: Selection; province?: num
   );
 }
 
+/** Fire support (aimed bombers, shelling ships) in today's world. */
+const fireOf = (w: World) => {
+  const pics = picturesOf(w);
+  return fireSupport(w, pics, pics.friends);
+};
+
 function OutlookBox({ o, mine }: { o: Outlook; mine: 'attacker' | 'defender' | null }) {
   const verdict = o.favours === 'even' ? 'Too close to call' : o.favours === 'attacker' ? 'The attackers should break through' : 'The defenders should hold';
   const good = mine && o.favours !== 'even' ? o.favours === mine : null;
@@ -136,6 +144,8 @@ function OutlookBox({ o, mine }: { o: Outlook; mine: 'attacker' | 'defender' | n
   if (o.defenderEdge > 1.005) factors.push(`Defenders' research and forts: +${pct((o.defenderEdge - 1) * 100)} defence`);
   if (o.directions > 1) factors.push(`Attack from ${o.directions} directions: room for ${o.attackersFighting} attackers at once`);
   if (o.ground !== 'dry') factors.push(`Ground: ${GROUND_WORDS[o.ground]}`);
+  if (o.attackFire > 0.05) factors.push(`Fire support for the attackers (bombers aimed here and ships shelling the coast): +${o.attackFire.toFixed(1)} damage a day, and the defenders cannot dig in`);
+  if (o.defenceFire > 0.05) factors.push(`Fire support for the defenders: +${o.defenceFire.toFixed(1)} damage a day`);
   if (o.river) factors.push(`Crossing the ${o.river}: ${o.riverShare < 0.995 ? 'part of the attack hits' : 'the attackers hit'} 15% less hard, and the line moves at half pace until a bridgehead is won`);
   if (o.attackers > o.attackersFighting) factors.push(`${plural(o.attackers - o.attackersFighting, 'attacking division')} waiting in reserve (only ${o.attackersFighting} fit in the fight)`);
   if (o.defenders > o.defendersFighting) factors.push(`${plural(o.defenders - o.defendersFighting, 'defending division')} in reserve`);
@@ -207,7 +217,7 @@ function Units({ w, ids }: { w: World; ids: number[] }) {
         </p>
       )}
       {attacking.map((p) => {
-        const o = outlookAt(w, p, picturesOf(w).air.battle);
+        const o = outlookAt(w, p, picturesOf(w).air.battle, fireOf(w));
         return o ? <OutlookBox key={p} o={o} mine="attacker" /> : null;
       })}
       <p className="sb-notice" role="status">
@@ -226,6 +236,7 @@ function Units({ w, ids }: { w: World; ids: number[] }) {
           </button>
         )}
       </div>
+      {units.some((u) => u.type === 'airborne') && <p className="sb-note">Paratroopers: right-click an enemy province within {Math.round(dropRange(w, units[0].owner))} km and choose Drop paratroopers. They jump after 3 days and fight at 70% strength while cut off.</p>}
       <ArmyButtons w={w} units={units} />
       <SeaOrders w={w} ids={ids} />
       <form
@@ -317,6 +328,19 @@ function Province({ w, id }: { w: World; id: number }) {
           </div>
         </>
       )}
+      {me && holder !== me && !allianceMap(w.diplomacy).get(me)?.has(holder) && !w.capitulated.includes(me) && (
+        <div className="sb-actions">
+          <button className="sb-btn" onClick={() => useGame.getState().openMenu(id, window.innerWidth - 740, 90)}>
+            Ways to attack {p.name}
+            <small>Every way to hit it, by land, sea and air, with a preview of each. Or right-click it on the map.</small>
+          </button>
+        </div>
+      )}
+      {(w.strikes ?? []).filter((x) => x.owner === me && x.province === id).map((x) => (
+        <p key={x.id} className="sb-note">
+          {strikeStatus(w, x)}.
+        </p>
+      ))}
       {battle && (
         <div className="sb-actions">
           <Link to={{ kind: 'battle', id: battle.id }}>Battle in progress: see the outlook</Link>
@@ -343,7 +367,7 @@ function Province({ w, id }: { w: World; id: number }) {
           !mine.length && <p className="sb-note">None.</p>
         )
       ) : (
-        <p className="sb-note">No reports. You only see foreign divisions on your own land, where your divisions stand, and in the provinces next to those.</p>
+        <p className="sb-note">No reports. You only see foreign divisions on your own land, where your divisions stand, and in the provinces next to those. A scout plane sent over it (right-click, Scout) shows what is there.</p>
       )}
       <h3>Country</h3>
       <div className="sb-actions">
@@ -491,7 +515,7 @@ function BattleView({ w, id }: { w: World; id: number }) {
   const b = w.battles.find((x) => x.id === id);
   if (!b) return null;
   const me = w.player;
-  const o = outlookAt(w, b.province, picturesOf(w).air.battle);
+  const o = outlookAt(w, b.province, picturesOf(w).air.battle, fireOf(w));
   const mine = me && b.attackers.includes(me) ? 'attacker' : me && b.defenders.includes(me) ? 'defender' : null;
   return (
     <Frame kicker="Battle" title={`Battle of ${PROVINCES[b.province].name}`} sub={`Since ${dateLabel({ startDate: w.startDate, day: b.startDay })} · day ${w.day - b.startDay + 1}`}>

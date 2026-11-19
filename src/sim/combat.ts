@@ -54,6 +54,7 @@ import { atWar } from './war';
 import { ln } from './dmath';
 import { BRIDGEHEAD, RIVER_ATTACK, RIVER_PUSH, riverBetween } from './rivers';
 import { GROUND_PUSH, groundOn, type Ground } from './seasons';
+import { fortressAt, fortressAttack } from './fortresses';
 
 export const STATS: Record<UnitType, { attack: number; defence: number }> = {
   infantry: { attack: 10, defence: 15 },
@@ -126,8 +127,11 @@ export function attackPower(u: Unit, target: number, edge = 1): number {
   const terrain = PROVINCES[target].terrain;
   const rough = u.type === 'armour' && ARMOUR_ROUGH.includes(terrain) ? ARMOUR_ROUGH_FACTOR : 1;
   const river = riverBetween(u.at, target) ? RIVER_ATTACK : 1;
-  return STATS[u.type].attack * (u.strength / 100) * TERRAIN_ATTACK[terrain] * rough * river * supplyFactor(u.supply) * edge;
+  return STATS[u.type].attack * (u.strength / 100) * terrainAttack(target) * rough * river * supplyFactor(u.supply) * edge;
 }
+
+/** What attackers keep of their power attacking into a province: its terrain, and its forts if it is a fortress city (fortresses.ts). */
+export const terrainAttack = (province: number): number => TERRAIN_ATTACK[PROVINCES[province].terrain] * fortressAttack(province);
 
 /** A division's hitting power when defending, before luck. `digInKept` is the share of dig-in left after enemy artillery. */
 export function defencePower(u: Unit, digInKept = 1, edge = 1): number {
@@ -224,8 +228,10 @@ export interface Outlook {
   /** Days until the side's fighting divisions run out of organisation at today's rate. */
   attackersLast: number;
   defendersLast: number;
-  /** The multipliers at work (1 = no effect). */
+  /** The multipliers at work (1 = no effect). Terrain includes the forts of a fortress city. */
   terrain: number;
+  /** The province is a fortress city (fortresses.ts). */
+  fortress: boolean;
   dugIn: number;
   attackerSupply: number;
   defenderSupply: number;
@@ -272,7 +278,8 @@ export function outlook(attackers: Unit[], defenders: Unit[], province: number, 
     defence: defenceSum,
     attackersLast,
     defendersLast,
-    terrain: TERRAIN_ATTACK[PROVINCES[province].terrain],
+    terrain: terrainAttack(province),
+    fortress: !!fortressAt(province),
     dugIn: avg(holding.map((u) => 1 + (digInFactor(u) - 1) * digInKept)),
     attackerSupply: avg(front.map((u) => supplyFactor(u.supply))),
     defenderSupply: avg(holding.map((u) => supplyFactor(u.supply))),
@@ -417,7 +424,7 @@ export function fightBattles(d: Draft, rng: Rng): Set<number> {
     t.days++;
     t.attackerCount += attackers.length;
     t.defenderCount += defenders.length;
-    t.terrain += TERRAIN_ATTACK[PROVINCES[province].terrain];
+    t.terrain += terrainAttack(province);
     t.attackerSupply += avg(front.map((u) => supplyFactor(u.supply)));
     t.defenderSupply += avg(holding.map((u) => supplyFactor(u.supply)));
     t.dugIn += avg(holding.map((u) => 1 + (digInFactor(u) - 1) * digInKept));
@@ -541,7 +548,8 @@ export function explain(b: Battle, winner: 'attacker' | 'defender'): Cause[] {
   const aFire = (t.attackerFire || 0) / n;
   const dFire = (t.defenderFire || 0) / n;
   const ratio = b.attackerUnits.length / Math.max(1, b.defenderUnits.length);
-  const place = PROVINCES[b.province].terrain;
+  const fort = fortressAt(b.province);
+  const place = fort ? `the fortress city of ${fort.city}` : PROVINCES[b.province].terrain;
   const versus = `${b.attackerUnits.length} divisions against ${b.defenderUnits.length}`;
   const causes: Cause[] = [];
   const add = (weight: number, text: string) => {
@@ -549,7 +557,7 @@ export function explain(b: Battle, winner: 'attacker' | 'defender'): Cause[] {
   };
 
   if (winner === 'defender') {
-    add(-ln(terrain), `attacking into ${place} (attackers hit ${pct(1 - terrain)} less hard)`);
+    add(-ln(terrain), `attacking ${fort ? '' : 'into '}${place} (attackers hit ${pct(1 - terrain)} less hard)`);
     add(ln(dugIn), `the defenders were dug in (+${pct(dugIn - 1)} defence)`);
     add(ln(edge), `the defenders had better weapons or fortifications (${pct(edge - 1)} stronger)`);
     add(2 * ln(Math.max(1, 2 - air)), 'the defenders controlled the sky (they hit 15% harder, the attackers 15% less hard)');

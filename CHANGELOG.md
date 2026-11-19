@@ -3,6 +3,28 @@
 Versions from 1.0.0 on are numbered. Each one starts with a heading like `## 1.0.1: What it brings`;
 that section becomes the notes on the GitHub release and on the update card in the app.
 
+## 1.4.1: Poland holds out (2026-11-19)
+
+In the September 1939 start Poland gave up on 20 or 21 September, the day Warsaw fell, with its
+whole army still in the field. Warsaw is half of Poland's victory points, and on this map its
+province touches Germany on four sides, so one battle decided the war. In 1939 Warsaw held a
+three-week siege and the last Polish troops fought on until 6 October.
+
+- **Fortress Warsaw.** Warsaw is the first fortress city: attackers hit 30% less hard there,
+  as if attacking up into hills, whoever holds it. Its sidebar and the battle outlook say so,
+  and the codex has a new entry, Fortress city.
+- **Three more rivers** guard Warsaw: the Narew (from East Prussia), the Warta (from Silesia)
+  and the Bzura (from Poznań).
+- **Fighting on after the capital falls.** A country used to give up at 40% of its victory
+  points once its capital had fallen. Now it is 40%, or the capital and 10% more if that is
+  higher (never above the usual 60%). That changes little for most countries: France now goes
+  at 44% instead of 40%, and a small country whose capital is most of it still gives up with
+  it. Poland now fights on from Kraków and Lwów after Warsaw.
+- **Result** (docs/balance-1.4.1-poland.md, six seeds each): led by the AI, Poland now
+  surrenders on 26 to 27 September (was 20 to 21). A player who just sits tight lasts to
+  1 October (was 20 to 21 September), and one who holds Warsaw and Kraków in strength lasts
+  to 8 or 9 October (was 26 September), longer than the real Poland.
+
 ## 1.4.0: Land, sea and air together (2026-11-19)
 
 Right-click a province that is not yours and the new attack menu shows every way to hit it,

@@ -18,6 +18,8 @@ import { topology } from 'topojson-server';
 import { merge, neighbors, feature } from 'topojson-client';
 import { presimplify, simplify, quantile } from 'topojson-simplify';
 import { geoArea, geoCentroid, geoContains, geoDistance } from 'd3-geo';
+import { makeCutter } from './map-cut.mjs';
+import { riverBorders } from './map-rivers.mjs';
 
 const SRC = '.cache/admin1.geojson';
 const URL = 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_1_states_provinces.geojson';
@@ -186,7 +188,8 @@ let topo = topology({ regions: { type: 'FeatureCollection', features: kept } }, 
 const merged = provinces.map((p) => merge(topo, p.members.map((i) => topo.objects.regions.geometries[i])));
 let ptopo = topology({ provinces: { type: 'GeometryCollection', geometries: merged } }, 1e5);
 ptopo = presimplify(ptopo);
-ptopo = simplify(ptopo, quantile(ptopo, 0.12));
+const MIN_WEIGHT = quantile(ptopo, 0.12);
+ptopo = simplify(ptopo, MIN_WEIGHT);
 const geoms = ptopo.objects.provinces.geometries;
 const nb = neighbors(geoms);
 
@@ -310,21 +313,172 @@ for (const p of out) if (seen[p.name] > 1 && p.city) p.name = p.city;
 const dup = out.map((p) => p.name).filter((n, i, a) => a.indexOf(n) !== i);
 if (dup.length) throw new Error('Duplicate province names: ' + dup.join(', '));
 
-// Narrow sea crossings that armies can use without ships.
-const STRAITS = [['Sicily', 'Calabria'], ['Zealand', 'Jutland']]; // the Strait of Messina; the Danish islands
+// ---------- 5 (Stage K4): cut the biggest provinces near the fronts into smaller ones ----------
+/**
+ * [province, parts]. The part holding the place the province is named after (or its capital)
+ * keeps the province's id and name, so everything that names a province still finds it; the
+ * other parts are new provinces at the end of the list, named after a place inside them.
+ */
+const SPLITS = [
+  // The Soviet Union
+  ['Novgorod', 3], ['Moscow', 3], ['Minsk', 2], ['Gomel', 2], ['Kiev', 2], ['Vinnitsa', 2], ['Odessa', 2], ['Poltava', 2], ['Dnepropetrovsk', 2],
+  ['Zaporozhye', 2], ['Donbass', 2], ['Kursk', 2], ['Voronezh', 2], ['Stalingrad', 2], ['Saratov', 2], ['Kalmykia', 2], ['Kuban', 2], ['Penza', 2],
+  ['Gorky', 2], ['Vologda', 2], ['Arkhangelsk', 2], ['Karelia', 2], ['Murmansk', 2], ['Dagestan', 2], ['Azerbaijan', 2],
+  // Poland, Germany, the Low Countries and France
+  ['Poznań', 2], ['Warsaw', 2], ['Lublin', 2], ['Stanisławów', 2], ['Volhynia', 2],
+  ['East Prussia', 2], ['Pomerania', 2], ['Silesia', 2], ['Bavaria', 2], ['Württemberg', 2], ['Rhineland', 2], ['Hanover', 2],
+  ['Brussels', 2], ['Brabant', 2],
+  ['Île-de-France', 3], ['Lorraine', 2], ['Burgundy', 2], ['Normandy', 2], ['Orléanais', 2], ['Brittany', 2], ['Provence', 2], ['Languedoc', 2], ['Limousin', 2],
+  // Italy and North Africa
+  ['Veneto', 2], ['Emilia', 2], ['Umbria', 2], ['Lazio', 2], ['Sicily', 2],
+  ['Tripolitania', 3], ['Cyrenaica', 2], ['Western Desert', 2], ['Tunisia', 2], ['Constantine', 2], ['Oran', 2], ['Fez', 2],
+  // The Balkans and the Near East
+  ['Croatia', 2], ['Serbia', 2], ['Attica', 2], ['Salonika', 2], ['Bessarabia', 2], ['Wallachia', 2], ['Bukovina', 2], ['Great Hungarian Plain', 2],
+  ['Bohemia', 2], ['Slovakia', 2], ['Baghdad', 2], ['Basra', 2], ['Damascus', 2],
+  // The north
+  ['Lithuania', 2], ['Latvia', 2], ['Estonia', 2], ['Helsinki', 2], ['Savonia', 2], ['Lapland', 2], ['Oslo', 2], ['Hedmark', 2], ['Västerbotten', 2], ['Norrbotten', 2],
+  // Spain and Turkey, for Free-for-all
+  ['Madrid', 2], ['Andalusia', 2], ['Aragon', 2], ['Murcia', 2], ['Ankara', 2], ['Konya', 2], ['Sivas', 2], ['Smyrna', 2], ['Van', 2], ['Erzurum', 2],
+];
+/** More place names for the new provinces: [name, lon, lat]. */
+const NEW_PLACES = [
+  ['Lankaran', 48.76, 39.72], ['Cassino', 14.05, 41.63], ['Western Sicily', 13.37, 37.74], ['Southern Tunisia', 9.72, 32.67], ['Ploiești', 25.2, 45.28],
+  ['Łuck', 25.32, 50.75], ['Oppeln', 17.9, 50.67], ['Mozyr', 29.28, 52.28], ['Kostroma', 45.0, 58.0], ['Champagne', 4.4, 49.3], ['Picardy', 2.8, 49.9],
+  ['Tikhvin', 33.6, 59.5], ['Upper Don', 40.6, 50.5], ['Mezen', 45.3, 64.5], ['Kem', 32.5, 64.9], ['Kola Peninsula', 37.7, 67.3], ['Maikop', 40.7, 44.3],
+  ['Karabakh', 46.86, 39.69], ['Kirovograd', 32.12, 48.13], ['Cherkassy', 32.2, 49.4], ['Voroshilovgrad', 38.9, 49.06], ['Równe', 26.4, 51.09],
+  ['Masuria', 20.3, 53.8], ['Neumark', 15.2, 52.4], ['Liegnitz', 16.1, 51.15], ['Franconia', 10.9, 49.6], ['Baden', 8.7, 48.1], ['Oldenburg', 8.2, 53.0],
+  ['Lyonnais', 5.07, 46.1], ['Upper Normandy', 0.98, 49.3], ['Gâtinais', 3.4, 48.1], ['Upper Brittany', -1.2, 48.3], ['Vivarais', 4.3, 44.8],
+  ['Maremma', 11.6, 42.9], ['Eastern Sicily', 14.8, 37.5], ['Sirte', 16.4, 30.3], ['Marmarica', 24.05, 29.8], ['Sollum', 25.9, 29.4],
+  ['Colomb-Béchar', -2.7, 30.0], ['Tafilalt', -3.7, 32.2], ['Syrmia', 18.96, 44.98], ['Moldavia', 27.5, 46.2],
+  ['Southern Bohemia', 14.0, 49.4], ['Western Slovakia', 17.9, 48.5], ['Middle Euphrates', 44.65, 31.4], ['Samogitia', 22.7, 55.6], ['Latgale', 26.5, 56.7],
+  ['Tartu', 26.7, 58.6], ['Inari', 26.2, 68.6], ['Kiruna', 20.5, 67.7], ['Gudbrandsdal', 10.97, 61.6], ['Afyon', 29.9, 38.5],
+];
+/** Provinces that keep their main city rather than the place they are named after, when the two fall in different parts. */
+const KEEP_CITY = ['Bavaria', 'Azerbaijan', 'East Prussia'];
+/** Splits along modern borders given by hand: the modern regions of each new part. The part holding the anchor is what is left. */
+const GROUPS = {
+  Lorraine: [['Bas-Rhin', 'Haut-Rhin', 'Territoire de Belfort']],
+  Normandy: [['Seine-Maritime', 'Eure', 'Yvelines', 'Eure-et-Loir']],
+  'Île-de-France': [['Nord', 'Pas-de-Calais'], ['Ardennes', 'Marne']],
+};
+/** Where the terrain boxes get a cut province wrong. */
+const TERRAIN_FIX = { Wallachia: 'plains' };
+
+const anchorOf = (i) => {
+  const name = out[i].name;
+  const cap = out[i].capital ? CAPITALS[out[i].owner] : null;
+  const named = PLACES.find(([n]) => n === name);
+  const city = KEEP_CITY.includes(name) ? CITIES.find(([n]) => n === out[i].city) : null;
+  return cap ? [cap[1], cap[2]] : city ? [city[1], city[2]] : named ? [named[1], named[2]] : null;
+};
+const indexOf = (name) => { const i = out.findIndex((p) => p.name === name); if (i < 0) throw new Error(`Split: no province called ${name}`); return i; };
+// First, provinces made of many modern regions are split along those regions' borders (real
+// borders, such as French departments), as long as the parts come out of a similar size.
+const groupsOf = provinces.map((p) => p.members);
+const parentOf = provinces.map((_, i) => i);
+const byRegions = new Set();
+for (const [name, k] of SPLITS) {
+  const i = indexOf(name);
+  const members = provinces[i].members;
+  if (members.length < k) continue;
+  let groups;
+  if (GROUPS[name]) {
+    const named = GROUPS[name].map((g) => members.filter((m) => g.includes(kept[m].properties.name)));
+    if (named.some((g, gi) => g.length !== GROUPS[name][gi].length)) throw new Error(`Split ${name}: a region is missing`);
+    groups = [members.filter((m) => !named.flat().includes(m)), ...named];
+  } else {
+    const assign = cluster(members.map((m) => kept[m]), k);
+    groups = Array.from({ length: k }, (_, g) => members.filter((_, j) => assign[j] === g));
+  }
+  const sizes = groups.map((g) => g.reduce((a, m) => a + kept[m].properties.area, 0));
+  if (!GROUPS[name] && Math.min(...sizes) < (0.6 * sizes.reduce((a, b) => a + b, 0)) / k) continue;
+  const anchor = anchorOf(i);
+  const shapes = groups.map((g) => merge(topo, g.map((m) => topo.objects.regions.geometries[m])));
+  let keep = anchor ? shapes.findIndex((sh) => geoContains(sh, anchor)) : -1;
+  if (keep < 0) keep = sizes.indexOf(Math.max(...sizes));
+  groupsOf[i] = groups[keep];
+  groups.forEach((g, gi) => { if (gi !== keep) { groupsOf.push(g); parentOf.push(i); } });
+  byRegions.add(name);
+}
+// The rest are cut across (see map-cut.mjs).
+const cutGeoms = groupsOf.map((g) => merge(topo, g.map((m) => topo.objects.regions.geometries[m])).coordinates.map((poly) => poly.map((ring) => ring.map((pt) => [pt[0], pt[1]]))));
+const cutter = makeCutter(cutGeoms, rnd);
+const flatSize = (gi) => geoArea({ type: 'MultiPolygon', coordinates: cutGeoms[gi] });
+for (const [name, k] of SPLITS) {
+  if (byRegions.has(name)) continue;
+  const i = indexOf(name);
+  const parts = cutter.cutInto(i, k, name);
+  for (const part of parts) if (part !== i) parentOf[part] = i;
+  const anchor = anchorOf(i);
+  const keep = (anchor && cutter.holding(parts, anchor)) ?? parts.reduce((a, b) => (flatSize(b) > flatSize(a) ? b : a));
+  if (keep !== i) [cutGeoms[i], cutGeoms[keep]] = [cutGeoms[keep], cutGeoms[i]];
+}
+console.log(`Split along modern borders: ${[...byRegions].join(', ')}`);
+
+let ftopo = topology({ provinces: { type: 'GeometryCollection', geometries: cutGeoms.map((coordinates) => ({ type: 'MultiPolygon', coordinates })) } }, 1e5);
+ftopo = presimplify(ftopo);
+ftopo = simplify(ftopo, MIN_WEIGHT);
+const fgeoms = ftopo.objects.provinces.geometries;
+const fnb = neighbors(fgeoms);
+const ffeats = fgeoms.map((g) => feature(ftopo, g));
+const ownerOf = (i) => provinces[parentOf[i]].owner;
+const ffind = (lon, lat, owner) => {
+  let hit = ffeats.findIndex((f, i) => (!owner || ownerOf(i) === owner) && geoContains(f, [lon, lat]));
+  if (hit < 0) {
+    let bd = Infinity;
+    ffeats.forEach((f, i) => { if (owner && ownerOf(i) !== owner) return; const d = geoDistance(geoCentroid(f), [lon, lat]); if (d < bd) { bd = d; hit = i; } });
+  }
+  return hit;
+};
+const used = new Set(out.map((p) => p.name));
+const fout = ffeats.map((f, i) => {
+  const centre = geoCentroid(f).map((v) => round(v, 3));
+  let name = i < out.length ? out[i].name : null;
+  if (!name) {
+    const inside = [...NEW_PLACES, ...PLACES].filter(([n, lon, lat]) => !used.has(n) && geoContains(f, [lon, lat])).sort((a, b) => Number(NEW_PLACES.includes(b)) - Number(NEW_PLACES.includes(a)) || geoDistance(centre, [a[1], a[2]]) - geoDistance(centre, [b[1], b[2]]));
+    const region = provinces[parentOf[i]].members.map((m) => kept[m].properties).filter((r) => !used.has(r.name) && geoContains(f, r.c)).sort((a, b) => b.area - a.area)[0];
+    name = inside.length ? inside[0][0] : region ? region.name : null;
+    if (!name) { name = `?${i}`; console.log(`NO NAME: part of ${out[parentOf[i]].name} around ${centre}`); }
+    used.add(name);
+  }
+  return { id: i, name, owner: ownerOf(i), terrain: TERRAIN_FIX[name] ?? terrainAt(centre), centre, areaKm2: Math.round(geoArea(f) * 6371 ** 2), neighbours: [...fnb[i]].sort((a, b) => a - b), victoryPoints: 1, city: null, capital: false };
+});
+for (const [country, [city, lon, lat]] of Object.entries(CAPITALS)) {
+  const i = ffind(lon, lat, country);
+  const was = out.findIndex((p) => p.capital && p.owner === country);
+  if (i !== was) throw new Error(`The capital of ${country} moved from province ${was} to ${i}`);
+  Object.assign(fout[i], { city, capital: true, victoryPoints: 20 });
+}
+for (const [city, lon, lat, vp] of CITIES) {
+  const i = ffind(lon, lat, null);
+  fout[i].victoryPoints += vp;
+  if (!fout[i].city) fout[i].city = city;
+}
+const fdup = fout.map((p) => p.name).filter((n, i, a) => a.indexOf(n) !== i);
+if (fdup.length) throw new Error('Duplicate province names: ' + fdup.join(', '));
+
+// Narrow sea crossings that armies can use without ships: [from, to] as [lon, lat] on each shore.
+// The Strait of Messina; the Danish islands; and the coast road round the Gulf of Sirte (the Via Balbia), which the
+// map's edge at 29.5 degrees north cuts off.
+const STRAITS = [[[15.55, 38.19], [15.65, 38.11]], [[11.9, 55.4], [10.4, 55.3]], [[17.5, 30.8], [20.3, 30.6]]];
 for (const [a, b] of STRAITS) {
-  const i = out.findIndex((p) => p.name === a), j = out.findIndex((p) => p.name === b);
-  if (i < 0 || j < 0) throw new Error(`Strait ${a} to ${b}: province not found`);
-  if (!out[i].neighbours.includes(j)) { out[i].neighbours.push(j); out[j].neighbours.push(i); }
-  out[i].neighbours.sort((x, y) => x - y); out[j].neighbours.sort((x, y) => x - y);
+  const i = ffind(a[0], a[1], null), j = ffind(b[0], b[1], null);
+  if (i === j) throw new Error(`Strait at ${a}: both shores in ${fout[i].name}`);
+  if (!fout[i].neighbours.includes(j)) { fout[i].neighbours.push(j); fout[j].neighbours.push(i); }
+  fout[i].neighbours.sort((x, y) => x - y); fout[j].neighbours.sort((x, y) => x - y);
 }
 // Keep the drawing data small: whole numbers on a fine grid.
 const { quantize } = await import('topojson-client');
-const small = quantize(ptopo, 2e4);
+const small = quantize(ftopo, 2e4);
+const rivers = await riverBorders(small, fout);
 small.objects.provinces.geometries.forEach((g, i) => { g.id = i; delete g.properties; });
-fs.writeFileSync('src/content/map/europe1936.json', JSON.stringify({ source: 'Natural Earth (public domain), regrouped to 1936 borders by scripts/build-map.mjs', knownGaps: KNOWN_GAPS, provinces: out }, null, 1));
+const splitFrom = fout.map((_, i) => parentOf[i]).map((p, i) => [i, p]).filter(([i, p]) => i !== p);
+fs.writeFileSync('src/content/map/europe1936.json', JSON.stringify({ source: 'Natural Earth (public domain), regrouped to 1936 borders by scripts/build-map.mjs', knownGaps: KNOWN_GAPS, splitFrom, rivers: rivers.map((r) => ({ name: r.name, borders: r.borders.map(([a, b]) => [fout[a].name, fout[b].name]) })), provinces: fout }, null, 1));
 fs.writeFileSync('src/content/map/europe1936.topo.json', JSON.stringify(small));
-const owners = [...new Set(out.map((p) => p.owner))];
-console.log(`${out.length} provinces, ${owners.length} countries, drawing data ${(JSON.stringify(small).length / 1024).toFixed(0)} KB`);
-console.log(owners.map((o) => `${o} ${out.filter((p) => p.owner === o).length}`).join(', '));
-console.log('isolated:', out.filter((p) => !p.neighbours.length).map((p) => p.name).join(', '));
+const owners = [...new Set(fout.map((p) => p.owner))];
+console.log(`${fout.length} provinces (${out.length} before the split), ${owners.length} countries, drawing data ${(JSON.stringify(small).length / 1024).toFixed(0)} KB`);
+console.log(owners.map((o) => `${o} ${fout.filter((p) => p.owner === o).length}`).join(', '));
+for (const r of rivers) console.log(`${r.name}: ${r.borders.map(([a, b]) => `${fout[a].name}-${fout[b].name}`).join(', ')}`);
+console.log('isolated:', fout.filter((p) => !p.neighbours.length).map((p) => p.name).join(', '));
+console.log('new:', fout.slice(out.length).map((p) => `${p.name} (from ${out[parentOf[p.id]].name}, ${Math.round(p.areaKm2 / 1000)}k)`).join(', '));
+if (process.env.SHOW) for (const n of process.env.SHOW.split(',')) { const i = out.findIndex((p) => p.name === n); console.log(n, ':', provinces[i].members.map((m) => kept[m].properties.name).join(' | ')); const kids = fout.filter((p) => parentOf[p.id] === i).map((p) => `${p.name}@${p.centre}`); console.log('   parts:', kids.join('  ')); }

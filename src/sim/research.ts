@@ -1,5 +1,5 @@
 /**
- * Research: six branches of four technologies each, 24 in all.
+ * Research: six branches of four technologies each, plus Airborne forces off the infantry line: 25 in all.
  *
  * A country works on one technology per research team: the six major powers have two teams,
  * everyone else has one. Inside a branch the technologies come in order. Every technology has
@@ -31,6 +31,8 @@ export interface Tech {
   what: string;
   /** What really happened. */
   history: string;
+  /** A technology off the main line of its branch: it needs this one first instead of the one a tier below. */
+  needs?: string;
 }
 
 export const BRANCHES: { id: Branch; name: string; note: string }[] = [
@@ -101,6 +103,10 @@ export const TECHS: Tech[] = [
     'Britain began food rationing in January 1940. People largely accepted it because it was seen to be fair: everyone had the same book.'),
   t('soc4', 'society', 4, 1942, 'Women in the war industries', { conscriptionDrag: -0.5 }, 'Women take over factory jobs from the men who are called up.',
     'Britain conscripted women for war work from December 1941. In the Soviet Union women were more than half of the industrial workforce by 1943.'),
+
+  // Off the main line: it needs light machine guns, and nothing in the branch needs it.
+  { ...t('para', 'infantry', 2, 1938, 'Airborne forces', { airborne: 1 }, 'Volunteers trained to jump from transport aircraft, and gliders to carry their guns. Paratroopers can then be built and dropped behind the enemy line.',
+    'The Soviet Union showed whole battalions jumping at once in 1935 and 1936. Germany used paratroopers to take the Belgian fort of Eben-Emael and the Dutch bridges in May 1940, and to take Crete in 1941 at such a cost that it never tried a big drop again.'), needs: 'inf1' },
 ];
 
 const BY_ID = new Map(TECHS.map((x) => [x.id, x]));
@@ -126,7 +132,7 @@ export const researchSpeed = (tech: Tech, year: number): number => 1 / (1 + AHEA
 /** Why this technology cannot be started, or null if it can. */
 export function cannotResearch(r: ResearchState, tech: Tech): string | null {
   if (r.done.includes(tech.id)) return 'already known';
-  const before = TECHS.find((x) => x.branch === tech.branch && x.tier === tech.tier - 1);
+  const before = tech.needs ? BY_ID.get(tech.needs) : TECHS.find((x) => x.branch === tech.branch && x.tier === tech.tier - 1);
   if (before && !r.done.includes(before.id)) return `needs ${before.name} first`;
   return null;
 }

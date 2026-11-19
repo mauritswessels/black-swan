@@ -28,13 +28,22 @@
  * Troops go by sea too: a transport to friendly shores takes a few days, a landing on an
  * enemy shore needs two weeks of preparation, control of the sea off the beach, and the
  * attackers fight at 60% as they come ashore.
+ *
+ * Shelling the coast (Stage K3). A fleet on patrol can be aimed at a coastal province on its
+ * zone. While a battle is fought there, its guns add to its side's damage (forces.ts):
+ *
+ *   shelling = 3 per capital ship + 0.5 per escort flotilla, at most 20 a day for one side,
+ *              half that while the zone is contested
+ *
+ * and the shore batteries hit back: the fleet loses 0.3% of its ships a day. Before a battle,
+ * shelling stops the defenders from digging in (world.ts).
  */
 import { COUNTRIES } from './countries';
 import { PROVINCES } from './map';
 import { modsOf, type Mods } from './mods';
 import { Rng } from './rng';
 import { COAST, DAYS_PER_ZONE, fleetPower, HOME_ZONES, seaPicture, seaRoute, shipCount, SHIP_KINDS, TRADE_ROUTE, ZONE_INDEX, zonePath, ZONES, type SeaPicture } from './sea';
-import type { Economy, Fleet, FleetMission, ForceEvent, Order, ShipKind, Unit, World } from './types';
+import type { Economy, Fleet, FleetMission, ForceEvent, Order, ShipKind, Strike, Unit, World } from './types';
 import { atWar, enemiesOf } from './war';
 
 /** Share of the enemy's fighting strength a fleet loses each day of battle. */
@@ -50,6 +59,13 @@ export const TRANSPORT_DAYS = 3;
 export const LANDING_PREP_DAYS = 14;
 /** Divisions that can prepare a landing through one zone at once: this many, plus one for each friendly surface ship there. */
 export const LANDING_BASE = 2;
+/** Damage a day one ship adds to a battle on the coast it shells, by kind, and the most one side's fleets can add. */
+export const SHELL_POWER: Record<ShipKind, number> = { capital: 3, escort: 0.5, submarine: 0 };
+export const SHELL_MAX = 20;
+/** Share of its ships a shelling fleet loses each day to the shore batteries. */
+export const SHELL_LOSS = 0.003;
+/** Days a landing that is part of a joint attack waits for the sea to be cleared before it is called off. */
+export const STRIKE_SEA_WAIT = 45;
 
 export const MISSION_NAME: Record<FleetMission, string> = { patrol: 'Patrol', escort: 'Escort convoys', raid: 'Raid convoys', port: 'Stay in port' };
 export const MISSION_NOTE: Record<FleetMission, string> = {
@@ -107,6 +123,8 @@ export interface ForceDraft {
   clashes: string[];
   forceLog: ForceEvent[];
   nextForceEventId: number;
+  /** Joint attacks waiting to go (strike.ts): divisions ready to land wait for the fleet. */
+  strikes?: Strike[];
 }
 
 export function logForce(d: Pick<ForceDraft, 'day' | 'forceLog' | 'nextForceEventId'>, kind: ForceEvent['kind'], text: string, countries: string[], where: { zone?: string; province?: number } = {}): void {
@@ -277,10 +295,15 @@ export function giveFleetOrder(d: Pick<ForceDraft, 'fleets' | 'day' | 'nextForce
     if (o.mission && o.mission in MISSION_POWER) f.mission = o.mission;
     if (o.zone !== undefined && o.zone !== f.zone && o.zone in ZONE_INDEX) {
       const path = zonePath(ZONE_INDEX[f.zone], ZONE_INDEX[o.zone]);
-      if (!path) return;
-      f.zone = o.zone;
-      f.arrives = Math.max(d.day, f.arrives) + DAYS_PER_ZONE * (path.length - 1);
+      if (path) {
+        f.zone = o.zone;
+        f.arrives = Math.max(d.day, f.arrives) + DAYS_PER_ZONE * (path.length - 1);
+      }
     }
+    if (o.target === null) f.target = undefined;
+    else if (o.target !== undefined && COAST[o.target]?.includes(ZONE_INDEX[f.zone])) f.target = o.target;
+    // Only a fleet on patrol shells, and only a coast on its own zone.
+    if (f.target !== undefined && (f.mission !== 'patrol' || !COAST[f.target].includes(ZONE_INDEX[f.zone]))) f.target = undefined;
     return;
   }
   if (!SHIP_KINDS.includes(o.kind) || !(o.count > 0)) return;
@@ -303,20 +326,20 @@ export function giveFleetOrder(d: Pick<ForceDraft, 'fleets' | 'day' | 'nextForce
 type ShipView = Pick<World, 'units' | 'controller' | 'wars' | 'economies'>;
 
 /** How a division would go by sea to a province: how long it takes and whether it is a landing. Or why it cannot. */
-export function shipPlan(w: ShipView, sea: SeaPicture, friends: Map<string, Set<string>>, u: Unit, to: number): { days: number; landing: boolean; zones: number[] } | { why: string } {
+export function shipPlan(w: ShipView, sea: SeaPicture, friends: Map<string, Set<string>>, u: Unit, to: number, planned = false): { days: number; landing: boolean; zones: number[] } | { why: string } {
   const p = PROVINCES[to];
   if (!p) return { why: 'no such province' };
   if (u.at === to) return { why: `already in ${p.name}` };
   const holder = w.controller[to];
   const landing = atWar(w, u.owner, holder);
   if (!landing && holder !== u.owner && !friends.get(u.owner)?.has(holder)) return { why: `${p.name} belongs to ${holder}, which is neutral` };
-  const route = seaRoute(sea, u.owner, u.at, to, landing);
+  const route = seaRoute(sea, u.owner, u.at, to, landing, planned && landing);
   if ('why' in route) return route;
   if (landing) {
     const zone = route.zones[route.zones.length - 1];
     let afloat = 0;
     for (const [name, n] of sea.ships[zone]) if (name === u.owner || friends.get(u.owner)?.has(name)) afloat += n;
-    const room = LANDING_BASE + Math.floor(afloat);
+    const room = LANDING_BASE + Math.floor(afloat) + (planned ? 2 : 0);
     const waiting = w.units.filter((x) => x.id !== u.id && x.owner === u.owner && ((x.sea?.landing && COAST[x.sea.to].includes(zone)) || (x.landing && x.path.length && COAST[x.path[0]].includes(zone)))).length;
     if (waiting >= room) return { why: `your ships in the ${ZONES[zone].name} can land only ${room} divisions at a time` };
   }
@@ -352,6 +375,12 @@ export function runShipping(d: ForceDraft, sea: SeaPicture, friends: Map<string,
     let plan = shipPlan(d, sea, friends, { ...u, sea: undefined }, to);
     // Troops sent as reinforcements do not storm a beach if the port has fallen in the meantime.
     if (!('why' in plan) && plan.landing && !landing) plan = { why: `${PROVINCES[to].name} has fallen to the enemy` };
+    // Part of a joint attack: wait, ready to sail, until the fleet has cleared the sea off the beach.
+    const strike = u.sea.strike === undefined ? undefined : d.strikes?.find((s) => s.id === u.sea!.strike);
+    if ('why' in plan && strike && d.day - strike.day < STRIKE_SEA_WAIT && atWar(d, u.owner, d.controller[to])) {
+      u.sea = { ...u.sea, daysLeft: 1 };
+      continue;
+    }
     u.sea = undefined;
     if ('why' in plan) {
       if (!d.forceLog.some((e) => e.day === d.day && e.kind === 'landing' && e.province === to && e.countries[0] === u.owner))

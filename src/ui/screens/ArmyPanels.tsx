@@ -26,9 +26,9 @@ const AIMS: { kind: AimKind; label: string; help: string }[] = [
 ];
 
 function types(units: Unit[]): string {
-  const n = { infantry: 0, armour: 0, artillery: 0 };
+  const n = { infantry: 0, armour: 0, artillery: 0, airborne: 0 };
   for (const u of units) n[u.type]++;
-  return (['infantry', 'armour', 'artillery'] as const).filter((t) => n[t]).map((t) => `${n[t]} ${t}`).join(', ') || 'none';
+  return (['infantry', 'armour', 'artillery', 'airborne'] as const).filter((t) => n[t]).map((t) => `${n[t]} ${t === 'airborne' ? 'paratrooper' : t}`).join(', ') || 'none';
 }
 
 export function ArmyView({ w, id }: { w: World; id: number }) {

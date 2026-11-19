@@ -179,21 +179,23 @@ export const calmSea = (): SeaPicture => seaPicture({ wars: [] }, ZONES.map(() =
 
 /**
  * Can this country ship a division from one coastal province to another, and how many zones
- * would it cross? Returns the reason if it cannot. A landing needs the last zone to be its own.
+ * would it cross? Returns the reason if it cannot. A landing needs the last zone to be its own,
+ * unless it is `planned` as part of a joint attack, which waits for the fleet to clear it.
  */
-export function seaRoute(sea: SeaPicture, country: string, from: number, to: number, landing: boolean): { zones: number[] } | { why: string } {
+export function seaRoute(sea: SeaPicture, country: string, from: number, to: number, landing: boolean, planned = false): { zones: number[] } | { why: string } {
   if (!COAST[from].length) return { why: `${PROVINCES[from].name} has no coast` };
   if (!COAST[to].length) return { why: `${PROVINCES[to].name} has no coast` };
   const open = (z: number) => sea.status(country, z) !== 'enemy';
   let best: number[] | null = null;
   let controlled = false;
   for (const end of COAST[to]) {
-    if (landing && sea.status(country, end) !== 'own') continue;
+    // A joint attack (strike.ts) is planned before the fleet has cleared the sea: it only needs a way there.
+    if (landing && !planned && sea.status(country, end) !== 'own') continue;
     controlled = true;
-    if (!open(end)) continue;
+    if (!open(end) && !planned) continue;
     for (const start of COAST[from]) {
       if (!open(start)) continue;
-      const path = zonePath(start, end, open);
+      const path = zonePath(start, end, planned ? (z) => z === end || open(z) : open);
       if (path && (!best || path.length < best.length)) best = path;
     }
   }

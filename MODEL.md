@@ -827,6 +827,65 @@ and stability a little in the country being bombed.
 **Naval strike.** Bombers add to their side's strength in every sea zone in range, so they
 help hold a sea and wear down enemy fleets there.
 
+## Land, sea and air together (`src/sim/strike.ts`, `src/sim/forces.ts`)
+
+Stage K3 adds ways to put the navy and the air force behind one attack.
+
+**Aimed wings.** A wing on Air superiority, Ground support or Strategic bombing can be aimed at
+one province in its reach. It then flies only there: it counts 1.5 times in the air score over
+that province and nowhere else. Moving the wing out of reach, or giving it Naval strike or
+Rest, drops the aim.
+
+**Close air support.** Each bomber wing aimed at a province on Ground support adds damage to
+its side in a battle there:
+
+    damage a day = 3 x strength / 100 x (1 + bomber research) / (1 + enemy fighters over it)
+
+**Shore bombardment.** A fleet on Patrol can be aimed at a coastal province on its zone. Once
+it has arrived, and unless the enemy controls the zone, it adds
+
+    damage a day = 3 per capital ship + 0.5 per escort flotilla (x naval research)
+
+halved if the zone is contested, at most 20 for each side of a battle. Ships that shell a
+battle lose 0.3% of themselves a day to coastal guns.
+
+**Softening up.** Divisions in a province that enemy bombers or ships are aimed at cannot dig
+in: they lose a day of digging in each day instead of gaining one.
+
+**Scouting.** A wing on Scouting must be aimed at a province. While it flies, its country sees
+every division in that province and the ones next to it. Enemy fighters over the target shoot
+some down: loss a day = 0.15 x threat / (1 + threat).
+
+**Paratroopers.** A division type that needs the Airborne forces research (attack 13 and defence
+13, against infantry's 10 and 15; equipment 220, upkeep 0.5, 75 days of training). A drop needs a friendly
+province to take off from, a target within 400 km (more with aircraft range research) that is
+not neutral, and organisation of at least 60. The divisions jump 3 days after the order:
+
+    the jump costs 20 organisation, and strength: 30 under an enemy sky, 10 under a contested one
+    an empty enemy province is taken at once (land of an ally still at war goes back to it)
+    a province with enemy divisions: they join the attack there from a new direction, as a
+    landing does, and fight at 70%; if their organisation falls below the break-off point
+    they cannot retreat, and are captured
+
+**Joint attacks.** The menu's Joint attack aims the bombers and fighters in reach and the
+warships that can reach the sea off the province, and keeps a record of the attack. Each
+morning, once its wings can fly and its fleets have arrived (or after 10 days in any case), its
+divisions march (or jump). For a landing the divisions start their preparation at once and
+wait at the end of it until the sea off the beach is theirs, for up to 45 days from the order.
+Another order to one of its divisions takes that division out of the joint attack.
+
+**The attack menu.** Every option and its preview is worked out by `attackMenu()` from what the
+country can see, with the same outlook as the battle itself. The forecast assumes today's
+damage rates hold: the attack wins when the defenders run out of organisation or the front
+line reaches 100 before the attackers run out themselves, looking ahead at most 60 days.
+
+**The AI.** Ground-support bombers aim at the battle with most of the country's attacking
+divisions (or, failing that, its defence with most divisions). Fleets on patrol shell coastal
+battles their side is attacking, landings first. Germany, the Soviet Union, Italy and Britain
+research Airborne forces (about half a year late) and give 4% of their army to paratroopers;
+they drop on an empty province behind the enemy front or into a battle they are winning, never
+under an enemy sky, at most 3 divisions a day.
+
 ## Starting armies
 
 Divisions start in the homeland (the land connected to the capital), on the capital and the

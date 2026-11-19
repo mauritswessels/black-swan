@@ -244,9 +244,11 @@ export function armyOrders(w: World, country: string, opts: ArmyOrderOptions = {
   const hostile = (p: number) => enemyAt.get(p)?.length ?? 0;
   const attacking = (u: Unit) => u.path.length > 0 && hostile(u.path[0]) > 0;
   const orders: Order[] = [];
+  // Divisions waiting for a joint attack to go in are left alone (strike.ts).
+  const waiting = new Set((w.strikes ?? []).flatMap((s) => s.units));
 
   for (const a of list) {
-    const units = a.units.map((id) => byId.get(id)).filter((u): u is Unit => !!u && !u.sea && !u.landing);
+    const units = a.units.map((id) => byId.get(id)).filter((u): u is Unit => !!u && !u.sea && !u.landing && !u.drop && !waiting.has(u.id));
     if (!units.length) continue;
     const fresh = a.orderDay >= w.day;
     const mine = new Set(units.map((u) => u.id));

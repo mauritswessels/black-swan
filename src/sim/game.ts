@@ -4,7 +4,8 @@
  *
  * Every AI country runs its economy (aiEconomy.ts) and its diplomacy (agenda.ts) every day.
  * Its army commander (ai.ts) gives orders while the country is at war, or about to start a war
- * its government has planned; its admirals and air marshals (aiForces.ts) only while it is at war.
+ * its government has planned; its admirals and air marshals (aiForces.ts) and its paratroopers
+ * (strike.ts) only while it is at war.
  * The player's armies (armies.ts) give their divisions orders every day, the AI's front code included.
  */
 import { aiDiplomacyOrders, plannedWars } from './agenda';
@@ -16,6 +17,7 @@ import { allAiEconomyOrders } from './aiEconomy';
 import { isEconomyOrder } from './economy';
 import { opportunistOrders } from './opportunist';
 import { armyOrders, isArmyOrder } from './armies';
+import { aiDropOrders } from './strike';
 import type { Order, World } from './types';
 import { step } from './world';
 
@@ -30,7 +32,8 @@ export function aiCountries(w: World): string[] {
 export function ownOrders(w: World, orders: Order[]): Order[] {
   const own = new Set(w.units.filter((u) => u.owner === w.player).map((u) => u.id));
   return orders.filter((o) => {
-    if (o.type === 'move' || o.type === 'halt' || o.type === 'ship') return own.has(o.unit);
+    if (o.type === 'move' || o.type === 'halt' || o.type === 'ship' || o.type === 'drop') return own.has(o.unit);
+    if (o.type === 'strike') return o.country === w.player;
     if (o.type === 'fleet' || o.type === 'transfer') return w.fleets.some((f) => f.id === o.fleet && f.owner === w.player);
     if (o.type === 'wing') return w.wings.some((x) => x.id === o.wing && x.owner === w.player);
     if (isEconomyOrder(o) || isArmyOrder(o)) return o.country === w.player;
@@ -52,7 +55,7 @@ export function advance(w: World, playerOrders: Order[] = []): World {
   const seen = friends ? pictures(w, friends) : undefined;
   const ai = commanded.flatMap((c) => [
     ...aiOrders(w, c, { sea: seen?.sea, air: seen?.air.battle, planned: planned.get(c) }),
-    ...(seen && friends && fighting.includes(c) ? aiForceOrders(w, c, seen.sea, friends) : []),
+    ...(seen && friends && fighting.includes(c) ? [...aiForceOrders(w, c, seen.sea, friends), ...aiDropOrders(w, c, friends, seen)] : []),
   ]);
   // The player's armies carry out their orders (armies.ts). Orders the player gives by hand today come after, so they win.
   const generals = [...new Set((w.armies ?? []).map((a) => a.owner))].sort();

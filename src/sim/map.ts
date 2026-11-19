@@ -11,7 +11,7 @@ export const PROVINCES = data.provinces as unknown as Province[];
 export const KNOWN_GAPS: string[] = data.knownGaps;
 
 /** Kilometres a division covers in a day on a good road across open country. */
-export const SPEED_KM_PER_DAY: Record<UnitType, number> = { infantry: 25, armour: 60, artillery: 20 };
+export const SPEED_KM_PER_DAY: Record<UnitType, number> = { infantry: 25, armour: 60, artillery: 20, airborne: 25 };
 
 /** How much slower each terrain is than open plains. */
 export const TERRAIN_SLOWDOWN: Record<Terrain, number> = { plains: 1, forest: 1.4, hills: 1.5, marsh: 1.8, mountains: 2.2, desert: 1.5 };

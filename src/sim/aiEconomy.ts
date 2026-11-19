@@ -19,8 +19,9 @@ import { HOME_ZONES } from './sea';
 import { supplyCapacity } from './supply';
 import { atWar, enemiesOf, warKey } from './war';
 import { cannotStartPlan, plansFor } from './plans';
-import { cannotResearch, TECHS, yearAt, type Branch } from './research';
-import type { Government, LineKind, Order, World } from './types';
+import { cannotResearch, TECHS, yearAt, type Branch, type Tech } from './research';
+import type { Government, LineKind, Order, UnitType, World } from './types';
+import { modsOf } from './mods';
 
 /** The deficit a government accepts in peacetime, as a share of output. */
 const PEACE_DEFICIT: Record<Government, number> = { democracy: 0.02, authoritarian: 0.03, fascist: 0.1, communist: 0.08 };
@@ -60,7 +61,7 @@ export const ARMED_NEUTRALITY = 2;
 const LONG_WAR = 90;
 const WAR_TAX_MAX = 0.45;
 /** The mix of military factories the army aims for: mostly infantry, some guns, some tanks. */
-const ARMY_MIX = { infantry: 0.6, armour: 0.2, artillery: 0.2 };
+const ARMY_MIX: Record<UnitType, number> = { infantry: 0.6, armour: 0.2, artillery: 0.2, airborne: 0 };
 /** Share of military factories building warships, for the countries with a navy to speak of. Britain builds escorts, Germany submarines. */
 const NAVY_MIX: Record<string, Partial<Record<LineKind, number>>> = {
   'United Kingdom': { escort: 0.05, capital: 0.02 },
@@ -71,13 +72,20 @@ const NAVY_MIX: Record<string, Partial<Record<LineKind, number>>> = {
 };
 /** Share of military factories building [fighters, bombers]. Germany built the biggest air force of the late 1930s; Britain put fighters first. */
 const AIR_MIX: Record<string, [number, number]> = { Germany: [0.05, 0.04], 'United Kingdom': [0.06, 0.03], 'Soviet Union': [0.05, 0.03], France: [0.05, 0.03], Italy: [0.05, 0.03], Poland: [0.05, 0.02] };
-/** The mix of military factories a country aims for: aircraft and ships first, the army shares the rest. */
-export function lineMix(country: string): Record<LineKind, number> {
+/**
+ * The great powers that built paratroopers: the Soviet Union first, then Germany, Italy and
+ * Britain. Once they know Airborne forces they put this share of the army's factories on them.
+ */
+export const AIRBORNE_POWERS = ['Germany', 'Soviet Union', 'Italy', 'United Kingdom'];
+export const AIRBORNE_SHARE = 0.04;
+/** The mix of military factories a country aims for: aircraft and ships first, the army shares the rest. `airborne`: it can build paratroopers. */
+export function lineMix(country: string, airborne = false): Record<LineKind, number> {
   const mix = Object.fromEntries(LINE_KINDS.map((k) => [k, 0])) as Record<LineKind, number>;
   [mix.fighter, mix.bomber] = AIR_MIX[country] ?? [0.05, 0];
   Object.assign(mix, NAVY_MIX[country]);
   const army = 1 - LINE_KINDS.reduce((a, k) => a + mix[k], 0);
-  for (const k of UNIT_TYPES) mix[k] = army * ARMY_MIX[k];
+  const paras = airborne && AIRBORNE_POWERS.includes(country) ? AIRBORNE_SHARE : 0;
+  for (const k of UNIT_TYPES) mix[k] = army * (k === 'airborne' ? paras : ARMY_MIX[k] * (1 - paras));
   return mix;
 }
 /** Which research branch comes first when two technologies are equally due. Countries that are arming put weapons first. */
@@ -108,7 +116,8 @@ export function aiEconomyOrders(w: World, country: string, tally?: Tally): Order
   const armyLimit = (total ? TOTAL_WAR_DEFICIT : v.atWar ? WAR_ARMY_DEFICIT : peaceDeficit) * v.nominalGDP * prudence;
   let manpower = e.manpower;
   let balance = v.budget.balance;
-  for (const k of UNIT_TYPES) {
+  // Paratroopers first: there are only ever a few, and their equipment would wait for men otherwise.
+  for (const k of [...UNIT_TYPES].sort((a, b) => Number(b === 'airborne') - Number(a === 'airborne'))) {
     for (let stock = e.stock[k]; stock >= 1 && manpower >= MEN_PER_DIVISION && !cannotRaise(e, k); stock--) {
       const upkeep = UPKEEP[k] * (v.atWar ? WAR_UPKEEP : 1) * payLevel(country) * (e.priceLevel / 100);
       if (balance - upkeep < -armyLimit) break;
@@ -163,12 +172,14 @@ export function aiEconomyOrders(w: World, country: string, tally?: Tally): Order
   // It also moves one factory a month from the line furthest above the mix to one well below it.
   {
     const total = v.milUsed + v.milFree;
-    const mix = lineMix(country);
+    const mix = lineMix(country, modsOf(e).airborne > 0);
+    // Lines it does not want at all (paratroopers before it can build them) are left out.
+    const kinds = LINE_KINDS.filter((k) => k !== 'airborne' || mix.airborne > 0 || e.lines.airborne.factories > 0);
     const lines = Object.fromEntries(LINE_KINDS.map((k) => [k, e.lines[k].factories])) as Record<LineKind, number>;
     const over = (k: LineKind) => lines[k] - mix[k] * total;
-    const least = () => LINE_KINDS.reduce((a, b) => (over(b) < over(a) ? b : a));
+    const least = () => kinds.reduce((a, b) => (over(b) < over(a) ? b : a));
     for (let n = v.milFree; n > 0; n--) lines[least()]++;
-    const most = LINE_KINDS.reduce((a, b) => (over(b) > over(a) ? b : a));
+    const most = kinds.reduce((a, b) => (over(b) > over(a) ? b : a));
     if (over(most) >= 0.5 && over(least()) <= -0.5 && lines[most] > 0) {
       lines[most]--;
       lines[least()]++;
@@ -194,7 +205,9 @@ export function aiEconomyOrders(w: World, country: string, tally?: Tally): Order
   const busy = new Set(e.research.slots.filter((x): x is string => !!x));
   // A country without a coast has no use for naval research.
   const coastal = (HOME_ZONES[country] ?? []).length > 0;
-  const open = TECHS.filter((x) => !busy.has(x.id) && !cannotResearch(e.research, x) && (coastal || x.branch !== 'navy')).sort((a, b) => a.year - b.year || BRANCH_ORDER[style].indexOf(a.branch) - BRANCH_ORDER[style].indexOf(b.branch));
+  // Only the powers that really built paratroopers research them, after the other technologies of the year.
+  const due = (x: Tech) => x.year + (x.id === 'para' ? 0.5 : 0);
+  const open = TECHS.filter((x) => !busy.has(x.id) && !cannotResearch(e.research, x) && (coastal || x.branch !== 'navy') && (x.id !== 'para' || AIRBORNE_POWERS.includes(country))).sort((a, b) => due(a) - due(b) || BRANCH_ORDER[style].indexOf(a.branch) - BRANCH_ORDER[style].indexOf(b.branch));
   e.research.slots.forEach((id, slot) => {
     const next = id ? undefined : open.shift();
     if (next) orders.push({ type: 'setResearch', country, slot, tech: next.id });

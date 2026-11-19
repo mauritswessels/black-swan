@@ -2,6 +2,7 @@
  * The Economy and Production panels, shown in the sidebar. They only display what the engine
  * (src/sim/economy.ts) works out and send orders back; no game maths happens here.
  */
+import { modsOf } from '../../sim/mods';
 import type { ReactNode } from 'react';
 import {
   BUILD_COST, BUILDERS_PER_PROJECT, cannotRaise, FORCE_UPKEEP, CONSCRIPTION, conscriptionBlocked, economyView, FACTORY_COST, KIT_COST, MEN_PER_DIVISION, musterPoint, payLevel, WAR_RATE_CAP, TAX_MAX, TAX_MIN, TAX_STABILITY, TRAINING_DAYS, UNIT_TYPES, UPKEEP, WAR_UPKEEP,
@@ -24,7 +25,7 @@ export const money = (x: number): string => {
 const pct = (x: number, digits = 0) => `${x.toFixed(digits)}%`;
 const signed = (x: number, digits = 1) => `${x >= 0 ? '+' : '-'}${Math.abs(x).toFixed(digits)}`;
 const men = (thousands: number) => `${(Math.round(thousands) * 1000).toLocaleString('en-GB')} men`;
-const NAME: Record<UnitType, string> = { infantry: 'Infantry', armour: 'Armour', artillery: 'Artillery' };
+const NAME: Record<UnitType, string> = { infantry: 'Infantry', armour: 'Armour', artillery: 'Artillery', airborne: 'Paratroopers' };
 const FORCE_LINES = ['fighter', 'bomber', 'capital', 'escort', 'submarine'] as const;
 const FORCE_NAME: Record<(typeof FORCE_LINES)[number], string> = { fighter: 'Fighters', bomber: 'Bombers', capital: 'Capital ships', escort: 'Escorts', submarine: 'Submarines' };
 const FORCE_ONE: Record<(typeof FORCE_LINES)[number], string> = { fighter: 'wing of fighters', bomber: 'wing of bombers', capital: 'capital ship', escort: 'escort flotilla', submarine: 'submarine flotilla' };
@@ -341,6 +342,12 @@ export function ProductionPanel({ w, me }: { w: World; me: string }) {
         const line = e.lines[k];
         const rate = v.lineRate[k];
         const blocked = cannotRaise(e, k);
+        if (k === 'airborne' && !modsOf(e).airborne && !line.factories && e.stock[k] < 0.05)
+          return (
+            <p className="sb-fine" key={k}>
+              <b>Paratroopers</b>: research Airborne forces (Research, Infantry) to build them. They jump behind the enemy's line from the attack menu.
+            </p>
+          );
         return (
           <div className="sb-prod" key={k}>
             <div className="sb-line">
@@ -352,7 +359,7 @@ export function ProductionPanel({ w, me }: { w: World; me: string }) {
               {e.stock[k] >= 1.95 || e.stock[k] < 0.95 ? 'divisions' : 'division'}.
             </p>
             <button className="sb-btn" disabled={!!blocked} onClick={() => order({ type: 'raise', unit: k })}>
-              Raise an {k} division
+              Raise {k === 'airborne' ? 'a paratrooper' : `an ${k}`} division
               <small>
                 {blocked ? `Not yet: ${blocked}.` : `${MEN_PER_DIVISION},000 men, ${TRAINING_DAYS[k]} days of training, then ${money(UPKEEP[k] * p)} a month (${money(UPKEEP[k] * WAR_UPKEEP * p)} at war).`}
               </small>

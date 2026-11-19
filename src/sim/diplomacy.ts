@@ -239,7 +239,7 @@ const enemies = (w: Pick<World, 'wars'>, name: string): string[] => {
   return out;
 };
 
-const WEIGHT: Record<UnitType, number> = { infantry: 1, armour: 2.5, artillery: 1.5 };
+const WEIGHT: Record<UnitType, number> = { infantry: 1, armour: 2.5, artillery: 1.5, airborne: 1.3 };
 /** A rough measure of each army: divisions weighted by type and by how much of their strength is left. */
 export function strengths(units: Unit[]): Map<string, number> {
   const out = new Map<string, number>();

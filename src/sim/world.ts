@@ -18,7 +18,10 @@ import { COUNTRIES } from './countries';
 import { carryOutAim } from './agenda';
 import { allianceMap, cloneDiplomacy, giveDiplomacyOrder, isDiplomacyOrder, onGovernmentFell, runDiplomacy, startDiplomacy, surrenders, type DipDraft } from './diplomacy';
 import { cloneEconomies, giveEconomyOrder, isEconomyOrder, MEN_PER_DIVISION, monthEnds, moraleOf, onBattleEnded, reinforce, runEconomies, startEconomies, startFactories } from './economy';
-import { disband, giveForceOrder, isForceOrder, pictures, runForces, startForces, type Pictures } from './forces';
+import { disband, fireSupport, giveForceOrder, isForceOrder, pictures, pounding, runForces, startForces, type Pictures } from './forces';
+import { giveStrikeOrder, leaveStrikes, runStrikes, type StrikeDraft } from './strike';
+import { SHELL_LOSS } from './navy';
+import { SHIP_KINDS } from './sea';
 import { combatEdges, isWinter, modsOf, WINTER_LANDS } from './mods';
 import { recordFront, startReplay } from './replay';
 import { GROUND_MARCH, groundMap } from './seasons';
@@ -109,7 +112,7 @@ export function newWorld(mode: Mode, seedText: string, startDate = '1936-01-01',
   const factories = startFactories();
   const forces = startForces();
   const economies = startEconomies({ controller, factories, units, wars: [], fleets: forces.fleets, wings: forces.wings });
-  return { mode, player, seed, rng: rng.state, day: 0, startDate, units, nextUnitId: units.length, controller, owner: [...controller], diplomacy: startDiplomacy(economies), wars: [], declaredBy: {}, capitulated: [], battles: [], nextBattleId: 0, reports: [], economies, factories, ...forces, story: startStory('1936', 'close', seed), replay: startReplay(controller, 0), armies: [], nextArmyId: 0 };
+  return { mode, player, seed, rng: rng.state, day: 0, startDate, units, nextUnitId: units.length, controller, owner: [...controller], diplomacy: startDiplomacy(economies), wars: [], declaredBy: {}, capitulated: [], battles: [], nextBattleId: 0, reports: [], economies, factories, ...forces, story: startStory('1936', 'close', seed), replay: startReplay(controller, 0), armies: [], nextArmyId: 0, strikes: [], nextStrikeId: 0 };
 }
 
 /** Organisation regained per day of rest with full supply. */
@@ -133,12 +136,13 @@ const recover = (e: Economy | undefined, strength: number): void => {
 };
 export { SURRENDER_SHARE } from './diplomacy';
 
-type StepDraft = DipDraft & ForceDraft & ArmyDraft;
+type StepDraft = DipDraft & ForceDraft & ArmyDraft & StrikeDraft;
 
 /** A copy of the world that orders and diplomacy may change freely. */
 function draftOf(world: World): StepDraft {
   return {
     armies: (world.armies ?? []).map((a) => ({ ...a, units: [...a.units], order: { ...a.order } })), nextArmyId: world.nextArmyId ?? 0,
+    strikes: (world.strikes ?? []).map((s) => ({ ...s, units: [...s.units], wings: [...s.wings], fleets: [...s.fleets] })), nextStrikeId: world.nextStrikeId ?? 0,
     fleets: world.fleets.map((f) => ({ ...f, ships: { ...f.ships } })), wings: world.wings.map((x) => ({ ...x })), nextForceId: world.nextForceId, bombed: { ...world.bombed },
     clashes: world.clashes, forceLog: world.forceLog, nextForceEventId: world.nextForceEventId,
     day: world.day, startDate: world.startDate, mode: world.mode, player: world.player,
@@ -156,6 +160,7 @@ function giveOrders(d: StepDraft, orders: Order[]): void {
   let friends: Map<string, Set<string>> | null = null;
   for (const order of orders) {
     if (isForceOrder(order)) {
+      if ((order.type === 'ship' || order.type === 'drop') && d.strikes.length) leaveStrikes(d, [order.unit]);
       friends ??= allianceMap(d.diplomacy);
       giveForceOrder(d, order, friends, () => (seas ??= pictures(d, friends!)).sea);
       if (order.type !== 'ship') seas = null; // fleets and wings may have moved
@@ -167,6 +172,11 @@ function giveOrders(d: StepDraft, orders: Order[]): void {
     }
     if (isArmyOrder(order)) {
       giveArmyOrder(d, order);
+      continue;
+    }
+    if (order.type === 'strike') {
+      friends ??= allianceMap(d.diplomacy);
+      giveStrikeOrder(d, order, friends, () => (seas ??= pictures(d, friends!)).sea);
       continue;
     }
     if (order.type === 'aim' || isDiplomacyOrder(order)) {
@@ -182,8 +192,11 @@ function giveOrders(d: StepDraft, orders: Order[]): void {
     }
     const u = byId.get(order.unit);
     if (!u) continue; // an order for a unit that no longer exists is ignored
-    // A new order on land cancels a crossing that has not sailed yet.
+    if (u.dropped && u.path.length) continue; // paratroopers in a fight cannot be called back
+    // A new order on land cancels a crossing that has not sailed yet, a drop, and any joint attack it was waiting for.
     u.sea = undefined;
+    u.drop = undefined;
+    if (d.strikes.length) leaveStrikes(d, [u.id]);
     if (order.type === 'halt') {
       u.path = [];
       u.progress = 0;
@@ -203,7 +216,7 @@ function giveOrders(d: StepDraft, orders: Order[]): void {
 }
 
 const fromDraft = (world: World, d: StepDraft): World => ({
-  ...world, armies: d.armies, nextArmyId: d.nextArmyId, fleets: d.fleets, wings: d.wings, nextForceId: d.nextForceId, bombed: d.bombed, clashes: d.clashes, forceLog: d.forceLog, nextForceEventId: d.nextForceEventId, units: d.units, nextUnitId: d.nextUnitId, controller: d.controller, owner: d.owner, wars: d.wars, declaredBy: d.declaredBy, capitulated: d.capitulated, economies: d.economies, factories: d.factories, diplomacy: d.diplomacy, story: d.story,
+  ...world, armies: d.armies, nextArmyId: d.nextArmyId, strikes: d.strikes, nextStrikeId: d.nextStrikeId, fleets: d.fleets, wings: d.wings, nextForceId: d.nextForceId, bombed: d.bombed, clashes: d.clashes, forceLog: d.forceLog, nextForceEventId: d.nextForceEventId, units: d.units, nextUnitId: d.nextUnitId, controller: d.controller, owner: d.owner, wars: d.wars, declaredBy: d.declaredBy, capitulated: d.capitulated, economies: d.economies, factories: d.factories, diplomacy: d.diplomacy, story: d.story,
 });
 
 /**
@@ -224,6 +237,8 @@ export function step(world: World, orders: Order[] = []): World {
 
   // 1. Orders, then the day's diplomacy: deadlines, cases for war, and once a month the drift of relations.
   giveOrders(dd, orders);
+  // Joint attacks whose fleets and wings are in place go in (strike.ts).
+  if (dd.strikes.length) giveOrders(dd, runStrikes(dd));
   const monthEnd = monthEnds(world.startDate, world.day);
   runDiplomacy(dd, monthEnd);
   // 1a. The story: history cards, events with choices, chapters and the end of the game (story.ts).
@@ -256,6 +271,12 @@ export function step(world: World, orders: Order[] = []): World {
   runForces(dd, rng, seen, friends);
   d.units = dd.units;
   d.air = seen.air.battle;
+  // Fire support in battles: aimed bombers and ships shelling the coast (forces.ts).
+  const anyFire = seen.air.aimed.size > 0 || dd.fleets.some((f) => f.target !== undefined);
+  if (anyFire) {
+    d.fire = fireSupport(dd, seen, friends);
+    d.shelled = new Set();
+  }
 
   // 2. Supply, from where everyone stands this morning.
   const levels = supplyLevels(d, friends, seen.sea);
@@ -280,6 +301,8 @@ export function step(world: World, orders: Order[] = []): World {
     for (const [side, lost] of [[r.attackers, r.attackerLosses], [r.defenders, r.defenderLosses + r.surrendered]] as const) for (const name of side) dd.story.losses[name] = (dd.story.losses[name] ?? 0) + lost / side.length;
   }
   for (const r of d.reports) if (!known.has(r.id)) onBattleEnded(economies, r.winner === 'attacker' ? r.attackers : r.defenders, r.winner === 'attacker' ? r.defenders : r.attackers);
+  // The shore batteries hit back at the ships that shelled them.
+  if (d.shelled?.size) for (const f of dd.fleets) if (d.shelled.has(f.id)) for (const k of SHIP_KINDS) f.ships[k] *= 1 - SHELL_LOSS;
 
   // 4. Marching. A division cannot walk into a province while enemy divisions stand in it.
   const occupied = new Map<number, Set<string>>();
@@ -343,6 +366,9 @@ export function step(world: World, orders: Order[] = []): World {
   // Armies: a commander good at supply speeds recovery; an army falling back digs in faster.
   const traits = commanderTraits(dd.armies);
   const digging = new Set(dd.armies.filter((a) => a.order.kind === 'fallBack').flatMap((a) => a.units));
+  // Under the bombs and the guns of an enemy aimed at them, divisions cannot dig in (forces.ts).
+  const pounded = anyFire ? pounding(dd, seen) : null;
+  const underFire = (u: Unit): boolean => !!pounded?.get(u.at)?.some((c) => atWar(d, c, u.owner));
   const front = new Map<string, boolean>();
   const atFront = (u: Unit): boolean => {
     const k = `${u.owner}@${u.at}`;
@@ -351,7 +377,7 @@ export function step(world: World, orders: Order[] = []): World {
     return x;
   };
   for (const u of d.units) {
-    u.dugIn = u.path.length ? 0 : Math.min(DIG_IN_MAX_DAYS, u.dugIn + (digging.has(u.id) ? FALL_BACK_DIG : 1));
+    u.dugIn = u.path.length ? 0 : underFire(u) ? Math.max(0, u.dugIn - 1) : Math.min(DIG_IN_MAX_DAYS, u.dugIn + (digging.has(u.id) ? FALL_BACK_DIG : 1));
     // Wear and tear at the front. Divisions in a battle take their losses there instead.
     const hot = ground[u.at] === 'heat';
     if (!fought.has(u.id) && atFront(u)) {
@@ -359,7 +385,7 @@ export function step(world: World, orders: Order[] = []): World {
       u.strength -= worn;
       recover(economies[u.owner], worn);
     }
-    if (u.landing && !u.path.length) u.landing = undefined; // ashore, or the landing was beaten off
+    if (u.landing && !u.path.length) u.landing = u.dropped = undefined; // ashore, or the landing was beaten off
     // Supply sets a ceiling on organisation: a division getting 70% of its supply cannot stay
     // above 70 organisation. A division that is cut off sinks to zero and then starts to starve.
     const ceiling = 100 * u.supply;

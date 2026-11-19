@@ -7,18 +7,19 @@ import type { World } from '../sim/types';
 import { applyOrders } from '../sim/world';
 import type { Action, Lesson, LessonView } from './lessons';
 
-export const viewOf = (world: World): LessonView => ({ world, selection: null, mapMode: 'political', overlay: null, running: false, speed: 2, ordering: false, bySea: false, moves: 0 });
+export const viewOf = (world: World): LessonView => ({ world, selection: null, mapMode: 'political', overlay: null, running: false, speed: 2, ordering: false, bySea: false, moves: 0, menu: null });
 
 /** Do what "Show me" does, without the clock. */
 export function perform(v: LessonView, a: Action): LessonView {
   let next: LessonView = { ...v };
-  if (a.select !== undefined) next = { ...next, selection: a.select, ordering: false, bySea: false };
+  if (a.select !== undefined) next = { ...next, selection: a.select, ordering: false, bySea: false, menu: null };
   if (a.orders?.length) next = { ...next, world: applyOrders(next.world, ownOrders(next.world, a.orders)) };
   if (a.mapMode !== undefined) next = { ...next, mapMode: a.mapMode };
   if (a.overlay !== undefined) next = { ...next, overlay: a.overlay };
   if (a.run !== undefined) next = { ...next, running: a.run };
   if (a.speed !== undefined) next = { ...next, speed: a.speed };
   if (a.look !== undefined) next = { ...next, moves: next.moves + 1 };
+  if (a.menu !== undefined) next = { ...next, menu: a.menu };
   for (let i = 0; i < (a.days ?? 0); i++) next = { ...next, world: advance(next.world) };
   return next;
 }

@@ -114,6 +114,33 @@ function fleetOrders(w: World, country: string, enemies: string[], sea: SeaPictu
     if (target !== undefined && fleets.filter((x) => x.zone === f.zone && x.id < f.id && x.ships.capital + x.ships.escort >= 0.5).length > 0) send(f, target, 'patrol');
     else send(f, here, task);
   }
+  // Fleets staying on patrol shell the coast where their side is attacking: a landing first,
+  // then the battle with most of their own divisions in it.
+  const busy = new Set(orders.map((o) => (o.type === 'fleet' ? o.fleet : -1)));
+  const shellable = fleets.some((f) => !busy.has(f.id) && (f.mission === 'patrol' || f.target !== undefined)) ? w.battles.filter((b) => COAST[b.province].length && b.attackers.some(mine) && b.defenders.some(foe)) : [];
+  const attackers = new Map<number, { n: number; landing: boolean }>();
+  if (shellable.length) for (const u of w.units) if (u.path.length && mine(u.owner) && shellable.some((b) => b.province === u.path[0])) {
+    const a = attackers.get(u.path[0]) ?? attackers.set(u.path[0], { n: 0, landing: false }).get(u.path[0])!;
+    a.n++;
+    a.landing ||= !!u.landing;
+  }
+  for (const f of fleets) {
+    if (busy.has(f.id) || f.mission !== 'patrol' || f.ships.capital + f.ships.escort < 0.5) continue;
+    const z = ZONE_INDEX[f.zone];
+    let best = -1;
+    let score = 0;
+    for (const b of shellable) {
+      if (!COAST[b.province].includes(z)) continue;
+      const a = attackers.get(b.province);
+      const s = (a?.n ?? 0) + (a?.landing ? 100 : 0);
+      if (s > score || (s === score && best >= 0 && b.province < best)) {
+        score = s;
+        best = b.province;
+      }
+    }
+    if (best >= 0 && f.target !== best) orders.push({ type: 'fleet', fleet: f.id, target: best });
+    else if (best < 0 && f.target !== undefined) orders.push({ type: 'fleet', fleet: f.id, target: null });
+  }
   return orders;
 }
 
@@ -161,6 +188,9 @@ function wingOrders(w: World, country: string, enemies: string[], mates?: Set<st
     }
   }
 
+  // Divisions of this country attacking each province, and standing in each.
+  const attackingAt = new Map<number, number>();
+  if (w.battles.length) for (const u of w.units) if (u.owner === country && u.path.length) attackingAt.set(u.path[0], (attackingAt.get(u.path[0]) ?? 0) + 1);
   let fighterNo = 0;
   for (const x of wings) {
     const tired = x.strength < 35 || (x.mission === 'rest' && x.strength < 70);
@@ -185,7 +215,24 @@ function wingOrders(w: World, country: string, enemies: string[], mates?: Set<st
       mission = 'naval';
     }
     if (tired) mission = 'rest';
-    if (base !== x.base || mission !== x.mission) orders.push({ type: 'wing', wing: x.id, base: base === x.base ? undefined : base, mission });
+    // Ground-support bombers put everything into one battle: the attack with most of the
+    // country's divisions in it, or failing that the defence with most.
+    let target: number | undefined;
+    if (mission === 'ground') {
+      let best = 0;
+      for (const b of w.battles) {
+        if (km(base, b.province) > range) continue;
+        const attacking = b.attackers.includes(country);
+        if (!attacking && !b.defenders.includes(country)) continue;
+        const n = (attacking ? 1000 + (attackingAt.get(b.province) ?? 0) : (count.get(b.province) ?? 0));
+        if (n > best || (n === best && target !== undefined && b.province < target)) {
+          best = n;
+          target = b.province;
+        }
+      }
+    }
+    const aimChange = target !== x.target;
+    if (base !== x.base || mission !== x.mission || aimChange) orders.push({ type: 'wing', wing: x.id, base: base === x.base ? undefined : base, mission, ...(aimChange ? { target: target ?? null } : {}) });
   }
   return orders;
 }

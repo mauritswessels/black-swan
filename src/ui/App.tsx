@@ -26,7 +26,8 @@ function useShortcuts() {
         if (g.overlay) return g.setOverlay(null);
         if (g.screen === 'setup' || g.screen === 'lessons') return g.go('title');
         if (g.screen === 'game') {
-          if (g.aim) g.setAim(null);
+          if (g.menu) g.closeMenu();
+          else if (g.aim) g.setAim(null);
           else if (g.ordering) g.setOrdering(false);
           else g.select(null);
           (document.querySelector('.mt-map') as HTMLElement | null)?.focus();

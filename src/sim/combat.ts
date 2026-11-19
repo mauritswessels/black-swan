@@ -101,11 +101,21 @@ export const PUSH_PER_DAY = 10;
 export const BREAKTHROUGH_JUMP = 0.6;
 export const BREAKTHROUGH_JUMP_PURSUED = 0.85;
 
-/** Deep attacks (pushOn): divisions push on into the next province once the line is this far in, and they are this well organised. */
-export const PUSH_ON_LINE = 15;
+/**
+ * Deep attacks (pushOn). A fight is going well enough to push on from when the line is a little
+ * way in (PUSH_ON_START) and moved at least PUSH_ON_PUSH today (the attackers dealt about 1.7
+ * times the damage they took), or once it is past halfway and still moving forward. Only
+ * divisions this well organised push on.
+ */
+export const PUSH_ON_START = 5;
+export const PUSH_ON_PUSH = 2.5;
+export const PUSH_ON_LINE = 50;
 export const PUSH_ON_ORG = 40;
-/** A division that pushed on falls back to where it set out from if the line behind it drops below this. */
+/** A division that pushed on falls back to where it set out from once the line behind it is pushed back while still short of this. */
 export const PUSH_ON_HOLD = 10;
+export const goingWell = (b: Pick<Battle, 'line' | 'push'>): boolean => b.line < 100 && (b.line >= PUSH_ON_LINE ? b.push > 0 : b.line >= PUSH_ON_START && b.push >= PUSH_ON_PUSH);
+/** Is the fight behind a division that pushed on still holding? */
+export const stillHolding = (b: Pick<Battle, 'line' | 'push'>): boolean => b.push >= 0 || b.line >= PUSH_ON_HOLD;
 
 /** Against an army that is reeling, the line can move this far in a day. */
 export const REELING_PUSH_MAX = 15;
@@ -485,7 +495,7 @@ export function fightBattles(d: Draft, rng: Rng): Set<number> {
       }
     }
     for (const u of attackers) if (!removed.has(u.id) && u.path[0] === province) u.progress = battle.line / 100;
-    if (battle.line >= PUSH_ON_LINE && battle.line < 100 && battle.push > 0) pushOn(battle, attackers.filter((u) => !removed.has(u.id) && u.path[0] === province), defenders.filter((u) => !removed.has(u.id) && u.at === province), digInKept, d.edges);
+    if (goingWell(battle)) pushOn(battle, attackers.filter((u) => !removed.has(u.id) && u.path[0] === province), defenders.filter((u) => !removed.has(u.id) && u.at === province), digInKept, d.edges);
 
     const defendersLeft = defenders.some((u) => !removed.has(u.id) && u.at === province);
     const attackersLeft = attackers.some((u) => !removed.has(u.id) && u.path[0] === province);
@@ -498,8 +508,8 @@ export function fightBattles(d: Draft, rng: Rng): Set<number> {
 }
 
 /**
- * Deep attacks. Once the front line in a province is past halfway and still moving forward,
- * divisions ordered further on push into the next province, while the rest finish the fight
+ * Deep attacks. Once the fight for a province is going well (goingWell), divisions ordered
+ * further on push into the next province, while the rest finish the fight
  * behind them. Tanks go first. Enough stay behind to keep hitting at least as hard as the
  * defenders still there, so the battle they leave is not lost.
  */

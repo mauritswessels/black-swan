@@ -59,7 +59,7 @@ describe('deep attacks', () => {
     expect(w.controller[id('Palatinate')]).toBe('France');
   });
 
-  it('supply follows the attack through a province whose front line is past halfway', () => {
+  it('supply follows the attack through a province where the attack is going well', () => {
     // A French division in Hesse, behind the German-held Palatinate.
     const base = world([div('France', 'Hesse'), ...many(2, 'Germany', 'Palatinate')]);
     const controller = [...base.controller];

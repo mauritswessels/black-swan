@@ -13,7 +13,7 @@
  * any surrenders, and once a week a record of the front for the war replay (replay.ts). Divisions may only
  * enter their own land, the land of an ally, or the land of a country they are at war with.
  */
-import { DIG_IN_MAX_DAYS, fightBattles, PUSH_ON_HOLD, type Draft } from './combat';
+import { DIG_IN_MAX_DAYS, fightBattles, stillHolding, type Draft } from './combat';
 import { COUNTRIES } from './countries';
 import { carryOutAim } from './agenda';
 import { allianceMap, cloneDiplomacy, giveDiplomacyOrder, isDiplomacyOrder, onGovernmentFell, runDiplomacy, startDiplomacy, surrenders, type DipDraft } from './diplomacy';
@@ -343,7 +343,7 @@ export function step(world: World, orders: Order[] = []): World {
         // Taken, or its defenders have gone: the division is standing in it.
         u.via = undefined;
         arrive(u, b, allies);
-      } else if (!atWar(d, u.owner, d.controller[b]) || !d.battles.some((x) => x.province === b && x.line >= PUSH_ON_HOLD && x.attackers.some((c) => c === u.owner || !!allies?.has(c)))) {
+      } else if (!atWar(d, u.owner, d.controller[b]) || !d.battles.some((x) => x.province === b && stillHolding(x) && x.attackers.some((c) => c === u.owner || !!allies?.has(c)))) {
         // The fight behind it was lost (or peace was made): back to the line it set out from.
         u.via = undefined;
         u.path = [];

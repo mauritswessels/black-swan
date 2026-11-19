@@ -524,9 +524,15 @@ export function MapView() {
   const arrows: { key: string; from: number; to: number; own: boolean; attack: boolean; progress: number }[] = [];
   const fighting = new Set(world.battles.map((b) => b.province));
   for (const s of stacks) {
-    const next = new Map<number, number>();
-    for (const u of s.units) if (u.path.length) next.set(u.path[0], Math.max(next.get(u.path[0]) ?? 0, u.progress));
-    for (const [to, progress] of next) arrows.push({ key: `${s.province}|${s.owner}|${to}`, from: s.province, to, own: s.owner === me, attack: fighting.has(to) && world.units.some((u) => u.at === to && atWar(world, u.owner, s.owner)), progress });
+    // A division that pushed on (a deep attack) goes on from the province it pushed through.
+    const next = new Map<string, { from: number; to: number; progress: number }>();
+    for (const u of s.units) {
+      if (!u.path.length) continue;
+      const from = u.via ?? s.province;
+      const k = `${from}>${u.path[0]}`;
+      next.set(k, { from, to: u.path[0], progress: Math.max(next.get(k)?.progress ?? 0, u.progress) });
+    }
+    for (const { from, to, progress } of next.values()) arrows.push({ key: `${s.province}|${s.owner}|${from}|${to}`, from, to, own: s.owner === me, attack: fighting.has(to) && world.units.some((u) => u.at === to && atWar(world, u.owner, s.owner)), progress });
   }
   // The full routes of the selected divisions.
   const routes: string[] = [];
@@ -535,10 +541,11 @@ export function MapView() {
     const done = new Set<string>();
     for (const u of world.units) {
       if (!selected.has(u.id) || !u.path.length) continue;
-      const key = `${u.at}>${u.path.join('>')}`;
+      const start = u.via === undefined ? [u.at] : [u.at, u.via];
+      const key = `${start.join('>')}>${u.path.join('>')}`;
       if (done.has(key)) continue;
       done.add(key);
-      routes.push([u.at, ...u.path].map((p) => POINTS[p].join(',')).join(' '));
+      routes.push([...start, ...u.path].map((p) => POINTS[p].join(',')).join(' '));
       ends.add(u.path[u.path.length - 1]);
     }
   }

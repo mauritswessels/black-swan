@@ -16,7 +16,7 @@
  *   supply = min(1, capacity / divisions there) otherwise
  */
 import { PROVINCES } from './map';
-import { PUSH_ON_LINE } from './combat';
+import { goingWell } from './combat';
 import { COAST, type SeaPicture } from './sea';
 import type { Battle, Province, Terrain, World } from './types';
 
@@ -90,8 +90,8 @@ export function supplyLevels(w: Pick<World, 'units' | 'controller'> & { battles?
   const count = new Array<number>(PROVINCES.length).fill(0);
   for (const u of w.units) count[u.at]++;
   const links = new Map<string, boolean[]>();
-  // Supply follows a deep attack (combat.ts) through a province whose front line its side has pushed past halfway.
-  const pushed = (w.battles ?? []).filter((b) => b.line >= PUSH_ON_LINE);
+  // Supply follows a deep attack (combat.ts) through a province where its side's attack is going well.
+  const pushed = (w.battles ?? []).filter(goingWell);
   return w.units.map((u) => {
     let linked = links.get(u.owner);
     if (!linked) {

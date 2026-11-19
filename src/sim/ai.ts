@@ -493,6 +493,8 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
       .sort((a, b) => b.priority - a.priority || a.t - b.t);
     // In the phoney war (story.ts) France and Britain wait for Germany to attack in the West, and Germany waits for its plan.
     const waiting = phoney && (country === 'Germany' ? f.foe === 'France' || f.foe === 'United Kingdom' : f.foe === 'Germany');
+    // Divisions sent in before the waiting began (on the day war was declared) are called back.
+    if (waiting) for (const u of list) if (u.path.length && w.controller[u.path[0]] === f.foe && !used.has(u.id)) (used.add(u.id), orders.push({ type: 'halt', unit: u.id }));
     for (const { t, defence, cut, ongoing, winning } of scored) {
       if (waiting) break;
       const around = PROVINCES[t].neighbours.filter(friendly);

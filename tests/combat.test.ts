@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { quiet } from '../src/sim/agenda';
 import { aiOrders } from '../src/sim/ai';
-import { attackPower, defencePower, STATS } from '../src/sim/combat';
+import { attackPower, defencePower, outlook, STATS } from '../src/sim/combat';
+import { noCapitalShare, SURRENDER_SHARE, SURRENDER_SHARE_NO_CAPITAL } from '../src/sim/diplomacy';
+import { FORTRESS_ATTACK, fortressAt } from '../src/sim/fortresses';
+import { riverBetween } from '../src/sim/rivers';
 import { PROVINCES, provinceByName } from '../src/sim/map';
 import { DEPOTS, linkedProvinces, supplyCapacity, supplyLevels } from '../src/sim/supply';
 import { runWar, SCENARIOS } from '../src/sim/testwar';
@@ -180,6 +183,38 @@ describe('surrender', () => {
     expect(w.wars).toEqual([]);
     expect(of(w, 'Belgium')).toHaveLength(0);
     expect(w.controller[id('Wallonia')]).toBe('Germany');
+  });
+});
+
+describe('Poland in 1939 (version 1.4.1)', () => {
+  it('Warsaw is a fortress city: attackers hit at 70% there, as they would going up into hills', () => {
+    expect(fortressAt(id('Warsaw'))?.city).toBe('Warsaw');
+    expect(fortressAt(id('Kraków'))).toBeNull();
+    // Upper Silesia borders both Warsaw and Kraków with no river; all three are plains.
+    const g = div('Germany', 'Upper Silesia');
+    expect(PROVINCES[id('Warsaw')].terrain).toBe('plains');
+    expect(attackPower(g, id('Warsaw'))).toBeCloseTo(attackPower(g, id('Kraków')) * FORTRESS_ATTACK, 9);
+    const o = outlook([div('Germany', 'Upper Silesia')], [div('Poland', 'Warsaw')], id('Warsaw'))!;
+    expect(o.fortress).toBe(true);
+    expect(o.terrain).toBeCloseTo(FORTRESS_ATTACK, 9);
+  });
+
+  it('the Narew, the Warta and the Bzura guard Warsaw from the north, south-west and west', () => {
+    expect(riverBetween(id('East Prussia'), id('Warsaw'))).toBe('Narew');
+    expect(riverBetween(id('Silesia'), id('Warsaw'))).toBe('Warta');
+    expect(riverBetween(id('Poznań'), id('Warsaw'))).toBe('Bzura');
+  });
+
+  it('with its capital gone a country gives up at 40%, or at the capital and 10% more, never above 60%', () => {
+    const vp = (c: string) => PROVINCES.filter((p) => p.owner === c).reduce((a, p) => a + p.victoryPoints, 0);
+    // Warsaw is 20 of Poland's 40 points: Poland fights on until it has lost 60%.
+    expect(noCapitalShare('Poland', vp('Poland'))).toBeCloseTo(0.6, 9);
+    // Paris is 20 of France's 59: 34% + 10% = 44%.
+    expect(noCapitalShare('France', vp('France'))).toBeCloseTo(20 / 59 + 0.1, 9);
+    // Germany's capital is a smaller share, so the old 40% stands; Greece's is most of it, so it still gives up with Athens.
+    expect(noCapitalShare('Germany', vp('Germany'))).toBe(SURRENDER_SHARE_NO_CAPITAL);
+    expect(noCapitalShare('Greece', vp('Greece'))).toBe(SURRENDER_SHARE);
+    expect(20 / vp('Greece')).toBeGreaterThan(SURRENDER_SHARE);
   });
 });
 

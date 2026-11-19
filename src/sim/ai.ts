@@ -135,6 +135,7 @@ export function frontsOf(w: World, country: string, planned: string[] = []): Fro
   const hostile = (owner: string) => enemies.has(owner);
   const at = unitsByProvince(w);
   const foes = [...new Set([...enemies, ...planned.filter((x) => !enemies.has(x) && x !== country && !allies?.has(x))])].sort();
+  const waiting = country === 'Germany' && w.story.effects.some((x) => x.id === 'phoney' && x.country === country && x.until >= w.day);
   const fronts: Front[] = [];
   for (const foe of foes) {
     const isPlanned = !enemies.has(foe);
@@ -170,7 +171,9 @@ export function frontsOf(w: World, country: string, planned: string[] = []): Fro
     const near = counts(ring);
     const guard = Math.min(room, isPlanned ? line.length : line.length + Math.ceil(touching / 2));
     // A great power's front takes as many as the line and the provinces behind it can feed, and half as many again in reserve further back.
-    const want = Math.max(guard, isMajor(foe) ? Math.round(MAJOR_FRONT_ROOM * room) - helpers : Math.min(room - helpers, Math.ceil(MINOR_FRONT_RATIO * near) + 2 - helpers));
+    // In the phoney war (story.ts) Germany keeps only a screen in the West while it beats Poland, as it did: about 30 divisions.
+    const screen = waiting && (foe === 'France' || foe === 'United Kingdom');
+    const want = screen ? guard : Math.max(guard, isMajor(foe) ? Math.round(MAJOR_FRONT_ROOM * room) - helpers : Math.min(room - helpers, Math.ceil(MINOR_FRONT_RATIO * near) + 2 - helpers));
     fronts.push({ foe, planned: isPlanned, provinces: line, targets: [...targets].sort((a, b) => a - b), depth, near, touching, helpers, room, guard, want, share: 0 });
   }
   share(fronts, w.units.filter((u) => u.owner === country && !u.sea && !u.landing && !u.drop).length);
@@ -238,6 +241,7 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
   const enemyAt = (p: number) => unitsAt(p).filter((u) => enemies.has(u.owner));
   const mineAt = (p: number) => unitsAt(p).filter((u) => u.owner === country && (!army || army.units.has(u.id)));
   const friendly = (p: number) => w.controller[p] === country || !!allies?.has(w.controller[p]);
+  const phoney = w.story.effects.some((x) => x.id === 'phoney' && x.country === country && x.until >= w.day);
 
   let seaToday = opts.sea;
   const sea = () => (seaToday ??= navalPicture(w, friends));
@@ -487,7 +491,10 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
         return { t, defence, cut, ongoing: w.battles.some((b) => b.province === t), winning, priority: (value(t) + 2 * cut + 1) / (defence + 1) + (winning ? 1 : 0) };
       })
       .sort((a, b) => b.priority - a.priority || a.t - b.t);
+    // In the phoney war (story.ts) France and Britain wait for Germany to attack in the West, and Germany waits for its plan.
+    const waiting = phoney && (country === 'Germany' ? f.foe === 'France' || f.foe === 'United Kingdom' : f.foe === 'Germany');
     for (const { t, defence, cut, ongoing, winning } of scored) {
+      if (waiting) break;
       const around = PROVINCES[t].neighbours.filter(friendly);
       if (defence === 0) {
         // Undefended: one fast division is enough, unless someone is already on the way.
@@ -630,7 +637,9 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
     if (p < 0 || p === u.at) return;
     crowd.set(p, (crowd.get(p) ?? 0) + 1);
     crowd.set(u.at, (crowd.get(u.at) ?? 1) - 1);
-    orders.push({ type: 'move', unit: u.id, to: p });
+    // In the phoney war a division changing places keeps to friendly land, so as not to start the
+    // fighting on its way (one walked from Italy to Baden through France).
+    orders.push(phoney ? { type: 'move', unit: u.id, to: p, friendly: true } : { type: 'move', unit: u.id, to: p });
   }
 
   /** The nearest friendly province, through friendly land, that can feed one more division. A big army keeps its reserves in depth. */

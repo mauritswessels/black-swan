@@ -438,7 +438,7 @@ const fout = ffeats.map((f, i) => {
     const inside = [...NEW_PLACES, ...PLACES].filter(([n, lon, lat]) => !used.has(n) && geoContains(f, [lon, lat])).sort((a, b) => Number(NEW_PLACES.includes(b)) - Number(NEW_PLACES.includes(a)) || geoDistance(centre, [a[1], a[2]]) - geoDistance(centre, [b[1], b[2]]));
     const region = provinces[parentOf[i]].members.map((m) => kept[m].properties).filter((r) => !used.has(r.name) && geoContains(f, r.c)).sort((a, b) => b.area - a.area)[0];
     name = inside.length ? inside[0][0] : region ? region.name : null;
-    if (!name) { name = `?${i}`; console.log(`NO NAME: part of ${out[parentOf[i]].name} around ${centre}`); }
+    if (!name) throw new Error(`Part of ${out[parentOf[i]].name} around ${centre} has no name: add one to NEW_PLACES`);
     used.add(name);
   }
   return { id: i, name, owner: ownerOf(i), terrain: TERRAIN_FIX[name] ?? terrainAt(centre), centre, areaKm2: Math.round(geoArea(f) * 6371 ** 2), neighbours: [...fnb[i]].sort((a, b) => a - b), victoryPoints: i < out.length ? 1 : 0, city: null, capital: false };

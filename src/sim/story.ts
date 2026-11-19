@@ -23,7 +23,7 @@
  * Pure TypeScript with no UI. runStory changes the draft of the world that step() made.
  */
 import { CARDS, type HistoryCard } from '../content/history';
-import { AGENDA, dayOf, surpriseLanding } from './agenda';
+import { AGENDA, aimDay, dayOf, surpriseLanding } from './agenda';
 import { CHAPTERS } from './chapters';
 import { COUNTRIES } from './countries';
 import { addPact, alive, allied, ask, between, dropPacts, endWar, governmentOf, hasPact, isMajor, note, raiseTension, relation, restore, setEventHook, shift, startWar, type DipDraft } from './diplomacy';
@@ -280,7 +280,8 @@ export function signArmistice(d: DipDraft): void {
   const zone = new Set(withParts(VICHY));
   let any = false;
   for (const p of PROVINCES) {
-    if (!zone.has(p.id) || d.owner[p.id] !== 'France' || d.controller[p.id] !== 'Germany') continue;
+    // Italy signed its own armistice two days later and kept only a few villages on the coast.
+    if (!zone.has(p.id) || d.owner[p.id] !== 'France' || (d.controller[p.id] !== 'Germany' && d.controller[p.id] !== 'Italy')) continue;
     d.controller[p.id] = 'France';
     any = true;
   }
@@ -548,9 +549,22 @@ export function runStory(d: DipDraft, monthEnd: boolean, seed: number): void {
     d.diplomacy.pacts = d.diplomacy.pacts.filter((p) => !(p.kind === 'nonAggression' && ((p.a === 'Germany' && p.b === 'Poland') || (p.a === 'Poland' && p.b === 'Germany'))));
     note(d, 'pact', 'Germany renounces its non-aggression pact with Poland', ['Germany', 'Poland']);
   }
+  // September 1939 to May 1940, the "phoney war": an AI France and Britain sit behind the Maginot
+  // line and wait, as the real ones did, and an AI Germany waits for its planned attack in the West.
+  if (!s.fired.includes('sickle-cut') && alive(d, 'Germany')) {
+    const west = AGENDA.find((a) => a.id === 'west-belgium');
+    const until = west ? aimDay(d, west) + 30 : dayOf(d.startDate, '1940-06-10');
+    for (const name of ['France', 'United Kingdom', 'Germany']) {
+      if (name === me || !alive(d, name) || d.day > until) continue;
+      if (!(name === 'Germany' ? ['France', 'United Kingdom'].some((x) => fighting(d, 'Germany', x)) : fighting(d, name, 'Germany'))) continue;
+      const why = name === 'Germany' ? 'its generals want the army back from Poland, and the winter past, before they attack in the West' : 'its generals plan to wait behind the Maginot line, as in 1939, until the blockade has worn Germany down';
+      if (!s.effects.some((x) => x.id === 'phoney' && x.country === name)) effect(d, { id: 'phoney', country: name, until, attack: 1, defence: 1, why });
+    }
+  }
   // May 1940: the attack through the Low Countries finds the French command expecting 1914 again.
   if (!s.fired.includes('sickle-cut') && fighting(d, 'Germany', 'France') && alive(d, 'France') && ['Belgium', 'Netherlands'].some((x) => fighting(d, 'Germany', x))) {
     s.fired = [...s.fired, 'sickle-cut'];
+    s.effects = s.effects.filter((x) => x.id !== 'phoney');
     for (const name of ['France', 'Belgium']) if (alive(d, name)) effect(d, { id: 'shock', country: name, until: d.day + SHOCK.days, attack: SHOCK.power, defence: SHOCK.power, why: 'its generals expected the war of 1914 again, and the armour came through the Ardennes' });
   }
   // April 1941: the Greek army is in Albania facing Italy, and the German armour comes through Yugoslavia behind it.

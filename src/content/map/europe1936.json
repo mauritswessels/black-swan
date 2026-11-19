@@ -741,10 +741,6 @@
     [
      "Bessarabia",
      "Moldavia"
-    ],
-    [
-     "Rzeszów",
-     "Lwów"
     ]
    ]
   },
@@ -868,10 +864,6 @@
     [
      "Kirovograd",
      "Kherson"
-    ],
-    [
-     "Kiev",
-     "Chernigov"
     ]
    ]
   },
@@ -5913,7 +5905,7 @@
   },
   {
    "id": 243,
-   "name": "Sør-Trøndelag",
+   "name": "Møre",
    "owner": "Norway",
    "terrain": "mountains",
    "centre": [

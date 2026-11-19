@@ -47,7 +47,7 @@ const NEAR_KM = 25;
 const ALONG_SHARE = 1 / 3;
 const CROSS_NEAR_KM = 20;
 /** Corrections by hand: borders the rules get wrong, by province name. */
-const DROP = [['Upper Silesia', 'Moravia'], ['Slovakia', 'Moravia'], ['Lorraine', 'Burgundy']]; // the Vistula's and the Seine's springs
+const DROP = [['Upper Silesia', 'Moravia'], ['Slovakia', 'Moravia'], ['Lorraine', 'Burgundy'], ['Rzeszów', 'Lwów']]; // the springs of the Vistula, the Seine and the Dniester
 const EXTRA = [['Dnieper', 'Kiev', 'Chernigov'], ['Narew', 'Masuria', 'Warsaw']]; // the Dnieper and the Desna north of Kiev; the Narew line north of Warsaw
 
 export async function riverBorders(topo, provinces) {
@@ -139,7 +139,8 @@ export async function riverBorders(topo, provinces) {
   for (const r of out) r.borders = r.borders.filter(([a, b]) => !drop.has(`${a},${b}`));
   for (const [river, a, b] of EXTRA) {
     if (!provinces[id(a)].neighbours.includes(id(b))) throw new Error(`Rivers: ${a} and ${b} do not touch`);
-    out.find((r) => r.name === river).borders.push([id(a), id(b)].sort((x, y) => x - y));
+    const pair = [id(a), id(b)].sort((x, y) => x - y);
+    if (!out.some((r) => r.borders.some(([x, y]) => x === pair[0] && y === pair[1]))) out.find((r) => r.name === river).borders.push(pair);
   }
   return out.filter((r) => r.borders.length);
 }

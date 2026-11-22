@@ -26,7 +26,7 @@ import { CARDS, type HistoryCard } from '../content/history';
 import { AGENDA, aimDay, dayOf, surpriseLanding } from './agenda';
 import { CHAPTERS } from './chapters';
 import { COUNTRIES } from './countries';
-import { addPact, alive, allied, ask, between, dropPacts, endWar, governmentOf, hasPact, isMajor, note, raiseTension, relation, restore, setEventHook, shift, startWar, type DipDraft } from './diplomacy';
+import { addPact, alive, allied, ask, between, capitulate, dropPacts, endWar, governmentOf, hasPact, isMajor, note, raiseTension, relation, restore, setEventHook, shift, startWar, type DipDraft } from './diplomacy';
 import { partsOf, PROVINCES } from './map';
 import { Rng, seedFrom } from './rng';
 import type { ArmyEffect, Decision, LineKind, StartId, StoryState } from './types';
@@ -608,7 +608,9 @@ export function runStory(d: DipDraft, monthEnd: boolean, seed: number): void {
   }
 
   if (monthEnd) farEast(d);
+  totalWar(d);
   allies(d);
+  greeceGivesUp(d);
   italyChangesSides(d);
 
   // Lend-Lease, once a month.
@@ -667,6 +669,51 @@ function allies(d: DipDraft): void {
   }
 }
 
+/**
+ * Total war. After Stalingrad, on 18 February 1943, Goebbels called for "total war": shops and
+ * offices closed, women were sent to the factories, and the men they freed went to the army. A
+ * fascist Germany fighting the Soviet Union on that day calls up TOTAL_WAR.men thousand more men
+ * (they report over the months that follow, like any call-up) and its people rally a little.
+ */
+export const TOTAL_WAR = { date: '1943-02-18', men: 1000, warSupport: 5 };
+function totalWar(d: DipDraft): void {
+  const de = 'Germany';
+  if (d.story.fired.includes('total-war') || d.day < dayOf(d.startDate, TOTAL_WAR.date) || !alive(d, de) || governmentOf(d, de) !== 'fascist' || !fighting(d, de, 'Soviet Union')) return;
+  d.story.fired = [...d.story.fired, 'total-war'];
+  const e = d.economies[de];
+  if (!e) return;
+  e.callUp = (e.callUp ?? 0) + TOTAL_WAR.men;
+  e.warSupport = Math.min(100, e.warSupport + TOTAL_WAR.warSupport);
+  note(d, 'government', 'Germany declares "total war": shops and offices close, women go to the factories, and the men they free are called up', [de]);
+}
+
+/**
+ * Greece, April 1941. The German armour came round through Yugoslavia behind the Greek armies in
+ * Epirus and Macedonia, which surrendered on 20 to 23 April; the King and the government left
+ * Athens for Crete and then Egypt, and the British sailed away. An AI Greece at war with Germany
+ * gives up once its enemies hold all of northern Greece (GREEK_NORTH): without this its army made
+ * a last stand in the one mountain pass into Central Greece and held it for years. Allied troops
+ * left on Greek soil are taken off by sea.
+ */
+export const GREEK_NORTH = ['Epirus', 'Salonika'];
+function greeceGivesUp(d: DipDraft): void {
+  const gr = 'Greece';
+  const de = 'Germany';
+  if (d.player === gr || !alive(d, gr) || !alive(d, de) || !fighting(d, de, gr)) return;
+  if (!withParts(GREEK_NORTH).every((p) => d.controller[p] !== gr && fighting(d, gr, d.controller[p]))) return;
+  note(d, 'info', 'The Greek army in the north is cut off and surrenders. The King and the government leave Athens for Crete and Egypt', [gr, de]);
+  capitulate(d, gr, de);
+  for (const u of d.units) {
+    if (d.owner[u.at] !== gr || !fighting(d, u.owner, d.controller[u.at])) continue;
+    const home = musterOf(d, u.owner);
+    if (home === null) continue;
+    u.at = home;
+    u.path = [];
+    u.progress = 0;
+    u.dugIn = 0;
+  }
+}
+
 /** Italy dismisses Mussolini, and six weeks later changes sides (see ITALY_FALL). */
 function italyChangesSides(d: DipDraft): void {
   const s = d.story;
@@ -699,14 +746,30 @@ function italyChangesSides(d: DipDraft): void {
   }
   note(d, 'peace', 'Italy signs an armistice with the Allies and changes sides', [it, uk]);
   if (alive(d, de) && governmentOf(d, de) === 'fascist' && d.player !== de) {
-    // Germany seizes every Italian-held province where its divisions stand, and disarms the Italian divisions in its reach.
+    // Operation Achse: Germany seizes every Italian-held province where its divisions stand, and
+    // every one it can reach by land from its own side of the line that is not next to the Allies:
+    // northern and central Italy, Albania and the Italian zones in the Balkans. The Italian
+    // divisions there are disarmed. Only the south, where the Allies have landed, stays Italian.
+    // (Before 1.6 the Italian army stayed whole and marched into an empty Austria and Bavaria.)
     const reach = new Set<string>([de, ...d.diplomacy.pacts.filter((p) => p.kind === 'alliance' && (p.a === de || p.b === de) && p.a !== it && p.b !== it).map((p) => (p.a === de ? p.b : p.a))]);
     for (const p of PROVINCES) if (d.controller[p.id] === it && d.units.some((u) => u.at === p.id && u.owner === de)) d.controller[p.id] = de;
+    const allies = (c: string) => c !== it && fighting(d, c, de);
+    // (The peace with Britain has just handed back the Italian land it held, so its troops there stand on Italian ground.)
+    const alliedTroops = new Set(d.units.filter((u) => allies(u.owner)).map((u) => u.at));
+    const nearAllies = (id: number) => alliedTroops.has(id) || PROVINCES[id].neighbours.some((n) => alliedTroops.has(n) || allies(d.controller[n]));
+    const queue = PROVINCES.filter((p) => reach.has(d.controller[p.id])).map((p) => p.id);
+    for (let i = 0; i < queue.length; i++) {
+      for (const n of PROVINCES[queue[i]].neighbours) {
+        if (d.controller[n] !== it || nearAllies(n)) continue;
+        d.controller[n] = de;
+        queue.push(n);
+      }
+    }
     const disarmed = d.units.filter((u) => u.owner === it && reach.has(d.controller[u.at])).length;
     d.units = d.units.filter((u) => !(u.owner === it && reach.has(d.controller[u.at])));
     dropPacts(d, (p) => p.kind === 'alliance' && (p.a === it || p.b === it) && (p.a !== uk && p.b !== uk));
     startWar(d, de, it, 'attack');
-    note(d, 'war', `German troops occupy the Italian provinces they stand in and disarm ${disarmed} Italian divisions`, [de, it]);
+    note(d, 'war', `German troops occupy northern and central Italy and disarm ${disarmed} Italian divisions`, [de, it]);
   } else dropPacts(d, (p) => p.kind === 'alliance' && (p.a === it || p.b === it) && (p.a !== uk && p.b !== uk));
   for (const key of [...d.wars]) {
     const [a, b] = key.split('|');

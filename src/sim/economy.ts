@@ -239,6 +239,9 @@ const INDUSTRIAL: Record<string, number> = {
   'Upper Silesia': 5, Wallonia: 8, Moravia: 5, Catalonia: 4,
 };
 
+/** How much new industry a province draws (factorySite): the great industrial regions, and cities, though a capital's victory points count for less than in WEIGHT. */
+const SITE_WEIGHT: number[] = PROVINCES.map((p) => 1 + p.victoryPoints / 4 + (INDUSTRIAL[p.name] ?? 0));
+
 /** How much of its country's industry and people a province holds, before scaling. */
 const WEIGHT: number[] = PROVINCES.map((p) => (HOMELAND[p.id] ? p.victoryPoints + 1 + (INDUSTRIAL[p.name] ?? 0) : 0.3));
 
@@ -659,6 +662,46 @@ export function musterPoint(controller: string[], country: string, owner?: strin
 }
 
 /**
+ * Where a country puts its next new factory (an AI's construction, and the factories a national
+ * plan hands over): the home province furthest below its fair share of the country's industry,
+ * by the same weights as the 1936 industry (WEIGHT), and away from the borders and the front. Real industry was
+ * spread over many regions (the Ruhr, Saxony, Silesia, Berlin; the Urals after 1941), so losing
+ * one city never stopped a country's whole war production. `planned` are sites already chosen.
+ */
+export function factorySite(d: Pick<World, 'controller' | 'factories' | 'wars'> & { owner?: string[] }, country: string, planned: number[] = []): number | null {
+  // How many steps from land held by anyone else (a border, or the front): 1 next to it, 2 or more behind it.
+  // Planners built away from the borders even in peacetime: the Soviet Union in the Urals and on the Volga in the 1930s.
+  const danger = (id: number): number => {
+    let ring = [id];
+    const seen = new Set(ring);
+    for (let step = 1; step <= 1; step++) {
+      const next: number[] = [];
+      for (const q of ring) for (const n of PROVINCES[q].neighbours) {
+        if (seen.has(n)) continue;
+        if (d.controller[n] !== country) return step;
+        seen.add(n);
+        next.push(n);
+      }
+      ring = next;
+    }
+    return 2;
+  };
+  const home = PROVINCES.filter((p) => HOMELAND[p.id] && p.owner === country && (d.owner ? d.owner[p.id] : p.owner) === country && d.controller[p.id] === country);
+  if (!home.length) return musterPoint(d.controller, country, d.owner);
+  const safety = new Map(home.map((p) => [p.id, danger(p.id)]));
+  const safest = Math.max(...safety.values());
+  let best: number | null = null;
+  let bestScore = Infinity;
+  for (const p of home) {
+    if (safety.get(p.id)! < safest) continue;
+    const there = d.factories.civ[p.id] + d.factories.mil[p.id] + planned.filter((x) => x === p.id).length;
+    const score = there / SITE_WEIGHT[p.id];
+    if (score < bestScore - 1e-9) (best = p.id), (bestScore = score);
+  }
+  return best;
+}
+
+/**
  * Where a newly trained division joins the army: the capital while it has room (fewer divisions
  * than half of what it can supply), otherwise the least crowded home province that has a supply
  * link. This keeps a growing army from piling up in one place.
@@ -800,10 +843,9 @@ export function onBattleEnded(economies: Record<string, Economy>, winners: strin
 function completePlan(d: EconomyDraft, name: string, e: Economy, plan: Plan, v: EconomyView): boolean {
   const g = plan.grant ?? {};
   if (g.mil || g.civ) {
-    const at = musterPoint(d.controller, name, d.owner);
-    if (at === null) return false;
-    d.factories.mil[at] += g.mil ?? 0;
-    d.factories.civ[at] += g.civ ?? 0;
+    if (factorySite(d, name) === null) return false;
+    // One at a time, each where it is most needed (factorySite).
+    for (const kind of ['mil', 'civ'] as const) for (let n = 0; n < (g[kind] ?? 0); n++) d.factories[kind][factorySite(d, name)!] += 1;
   }
   for (const k of UNIT_TYPES) e.stock[k] += g.stock?.[k] ?? 0;
   if (g.treasury) e.treasury += g.treasury * v.nominalGDP;

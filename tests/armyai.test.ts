@@ -145,6 +145,45 @@ describe('Italy changes sides (Story mode)', () => {
     expect(w.capitulated).not.toContain('Italy');
   });
 
+  it('Germany occupies northern and central Italy at the armistice and disarms the Italian divisions there (Operation Achse)', () => {
+    let w = storyOn('1943-09-08', ['Italy|United Kingdom', 'Germany|United Kingdom']);
+    w.diplomacy = { ...w.diplomacy, agenda: Object.fromEntries(Object.keys(w.diplomacy.agenda).map((k) => [k, 'dropped'])), pacts: [...w.diplomacy.pacts] };
+    addPact(w as unknown as DipDraft, 'alliance', 'Germany', 'Italy');
+    // Mussolini fell six weeks ago; the Allies hold Sicily; Austria is German by now, so Germany borders Italy.
+    w.story = { ...w.story, fired: [...w.story.fired, 'italy-fall'], effects: w.story.effects.filter((x) => x.id !== 'italy-fall') };
+    w.economies = { ...w.economies, Italy: { ...w.economies.Italy, government: 'authoritarian' } };
+    w.controller = [...w.controller];
+    w.controller[id('Sicily')] = 'United Kingdom';
+    for (const p of PROVINCES) if (p.owner === 'Austria') w.controller[p.id] = 'Germany';
+    w.units = [...w.units.filter((u) => u.at !== id('Sicily') && !(u.owner === 'United Kingdom' && PROVINCES[u.at].owner !== 'United Kingdom')), div('United Kingdom', 'Sicily')];
+    const italians = w.units.filter((u) => u.owner === 'Italy').length;
+    w = advance(w);
+    expect(w.story.fired).toContain('italy-armistice');
+    for (const name of ['Lombardy', 'Veneto', 'Emilia', 'Lazio', 'Campania']) expect(w.controller[id(name)], name).toBe('Germany');
+    // The toe of Italy, next to the Allies in Sicily, stays Italian.
+    expect(w.controller[id('Calabria')]).toBe('Italy');
+    expect(w.units.some((u) => u.owner === 'Italy' && w.controller[u.at] === 'Germany')).toBe(false);
+    expect(w.units.filter((u) => u.owner === 'Italy').length).toBeLessThan(italians / 2);
+    expect(news(w).some((t) => /German troops occupy northern and central Italy and disarm \d+ Italian divisions/.test(t))).toBe(true);
+  });
+
+  it('Greece gives up once Germany has attacked it and the Axis holds the north (April 1941)', () => {
+    let w = storyOn('1941-04-20', ['Greece|Italy', 'Germany|Greece']);
+    w.controller = [...w.controller];
+    w.controller[id('Epirus')] = 'Italy';
+    w = advance(w);
+    // The south still fights while Salonika holds.
+    expect(w.capitulated).not.toContain('Greece');
+    w.controller = [...w.controller];
+    for (const name of ['Salonika', 'Western Thrace']) w.controller[id(name)] = 'Germany';
+    w.units = [...w.units, div('United Kingdom', 'Attica')];
+    w = advance(w);
+    expect(w.capitulated).toContain('Greece');
+    expect(news(w).some((t) => /Greek army in the north is cut off and surrenders/.test(t))).toBe(true);
+    // The British troops in Greece were taken off by sea.
+    expect(w.units.some((u) => u.owner === 'United Kingdom' && PROVINCES[u.at].owner === 'Greece')).toBe(false);
+  });
+
   it('never happens to an Italy a player leads', () => {
     let w = storyOn('1943-07-26', ['Italy|United Kingdom'], 'Italy');
     w.controller = [...w.controller];

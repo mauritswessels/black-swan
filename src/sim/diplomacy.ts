@@ -120,9 +120,11 @@ export const SURRENDER_SHARE_NO_CAPITAL = 0.4;
 /**
  * In Story mode the Soviet Union, fighting a fascist Germany's war of annihilation, does not give
  * up when Moscow falls: in October 1941 the government left for Kuibyshev, ready to fight on from
- * the Volga. It surrenders only when enemies hold this share of its victory points.
+ * the Volga. It surrenders only when enemies hold this share of its victory points: Moscow,
+ * Leningrad, Kiev, Minsk, Stalingrad, Baku and most of the land between them.
+ * (0.75 before 1.6: in about one run in eight the Soviet Union gave up the day Moscow fell, in the winter of 1941.)
  */
-export const LAST_STAND_SHARE = 0.75;
+export const LAST_STAND_SHARE = 0.85;
 
 /** A standing claim: a cause for war that never runs out, and (when it names a demand) the right to send an ultimatum. */
 export interface Claim {

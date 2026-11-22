@@ -12,7 +12,7 @@
  * game: until world tension reaches 50).
  */
 import { cannotRaiseWing } from './air';
-import { BUILDERS_PER_PROJECT, cannotRaise, conscriptionBlocked, CONSCRIPTION, economyView, FORCE_UPKEEP, LINE_KINDS, MEN_PER_DIVISION, monthEnds, musterPoint, payLevel, PLANE_KINDS, tallies, TAX_MIN, UNIT_TYPES, UPKEEP, WAR_UPKEEP, type Tally } from './economy';
+import { BUILDERS_PER_PROJECT, cannotRaise, conscriptionBlocked, CONSCRIPTION, economyView, factorySite, FORCE_UPKEEP, LINE_KINDS, MEN_PER_DIVISION, monthEnds, payLevel, PLANE_KINDS, tallies, TAX_MIN, UNIT_TYPES, UPKEEP, WAR_UPKEEP, type Tally } from './economy';
 import { isMajor, MAJORS } from './diplomacy';
 import { PROVINCES } from './map';
 import { HOME_ZONES } from './sea';
@@ -55,6 +55,10 @@ const TOTAL_WAR_LOST = 0.05;
 const CAREFUL_INFLATION = 15;
 const RECKLESS_INFLATION = 50;
 const PEACE_TAX_MAX = 0.35;
+/** Share of the men it would take to bring its divisions back to full strength that a country keeps for refits before it raises new divisions. */
+export const REFIT_FIRST = 0.5;
+/** Average strength of the army, per cent, at which refits start to come first, and at which they fully do. */
+export const REFIT_FROM: [number, number] = [85, 75];
 /** The conscription law a country at peace moves to once the great powers are at war with each other. */
 export const ARMED_NEUTRALITY = 2;
 /** Days a war must last before the AI widens conscription for it (unless the enemy is on its soil). */
@@ -97,6 +101,9 @@ const PLAN_ORDER: Record<'arming' | 'civil' | 'war', string[]> = {
   war: ['war-economy', 'rearmament', 'reserve', 'forts', 'training', 'staff', 'civil-defence', 'tax-reform', 'industry'],
 };
 
+/** Divisions Italy keeps after it changes sides (the Italian Co-Belligerent Army: about six division-sized combat groups). */
+export const CO_BELLIGERENT_ARMY = 8;
+
 export function aiEconomyOrders(w: World, country: string, tally?: Tally): Order[] {
   const e = w.economies[country];
   if (!e || w.capitulated.includes(country)) return [];
@@ -114,11 +121,27 @@ export function aiEconomyOrders(w: World, country: string, tally?: Tally): Order
   const total = v.atWar && totalWar(w, country, t);
   const prudence = Math.max(0, Math.min(1, 1 - (e.inflation - CAREFUL_INFLATION) / (RECKLESS_INFLATION - CAREFUL_INFLATION)));
   const armyLimit = (total ? TOTAL_WAR_DEFICIT : v.atWar ? WAR_ARMY_DEFICIT : peaceDeficit) * v.nominalGDP * prudence;
-  let manpower = e.manpower;
+  // The divisions already in the field come first: new ones are raised only from men their refits
+  // do not need (REFIT_FIRST of what it would take to bring every division back to full strength).
+  // Without this a country at war put every recruit into new divisions while the old ones bled
+  // away: Germany went from 320 divisions at 97% in 1941 to 380 at 40% in 1943.
+  // It starts once the army's average strength falls below REFIT_FROM[0] and is in full force at REFIT_FROM[1],
+  // and only while no enemy holds any of its home victory points.
+  let refit = 0;
+  let strength = 0;
+  let count = 0;
+  for (const u of w.units) if (u.owner === country) (refit += ((100 - u.strength) / 100) * MEN_PER_DIVISION), (strength += u.strength), count++;
+  // A country fighting for its own soil raises every division it can instead, as the Soviet Union did in 1941.
+  const worn = count && t.homeLost === 0 ? Math.max(0, Math.min(1, (REFIT_FROM[0] - strength / count) / (REFIT_FROM[0] - REFIT_FROM[1]))) : 0;
+  let manpower = e.manpower - REFIT_FIRST * worn * refit;
   let balance = v.budget.balance;
+  // Italy after the armistice (story.ts) fights on with a small army beside the Allies, as the real
+  // co-belligerent army did. Before 1.6 it raised 100 to 150 new divisions within months and marched
+  // them into Austria, and Germany fell months early.
+  let room = country === 'Italy' && w.story.fired.includes('italy-armistice') ? CO_BELLIGERENT_ARMY - count : Infinity;
   // Paratroopers first: there are only ever a few, and their equipment would wait for men otherwise.
   for (const k of [...UNIT_TYPES].sort((a, b) => Number(b === 'airborne') - Number(a === 'airborne'))) {
-    for (let stock = e.stock[k]; stock >= 1 && manpower >= MEN_PER_DIVISION && !cannotRaise(e, k); stock--) {
+    for (let stock = e.stock[k]; stock >= 1 && room >= 1 && manpower >= MEN_PER_DIVISION && !cannotRaise(e, k); stock--, room--) {
       const upkeep = UPKEEP[k] * (v.atWar ? WAR_UPKEEP : 1) * payLevel(country) * (e.priceLevel / 100);
       if (balance - upkeep < -armyLimit) break;
       orders.push({ type: 'raise', country, unit: k });
@@ -195,8 +218,14 @@ export function aiEconomyOrders(w: World, country: string, tally?: Tally): Order
   // Enough projects for every builder (five work on each).
   // At war new arms factories are part of the war effort, so they go ahead within the army's deficit limit.
   if (builders > 0 && e.construction.length < Math.ceil(builders / BUILDERS_PER_PROJECT) && v.budget.balance > -(v.atWar ? armyLimit : limit)) {
-    const at = musterPoint(w.controller, country, w.owner);
-    if (at !== null) for (let n = e.construction.length; n < Math.ceil(builders / BUILDERS_PER_PROJECT); n++) orders.push({ type: 'build', country, kind: arming ? 'mil' : 'civ', province: at });
+    // Spread over the home provinces, away from the front (factorySite), as real industry was.
+    const planned = e.construction.map((c) => c.province);
+    for (let n = e.construction.length; n < Math.ceil(builders / BUILDERS_PER_PROJECT); n++) {
+      const at = factorySite(w, country, planned);
+      if (at === null) break;
+      planned.push(at);
+      orders.push({ type: 'build', country, kind: arming ? 'mil' : 'civ', province: at });
+    }
   }
 
   // Research: idle teams take the technology that is most due, weapons first for arming countries.

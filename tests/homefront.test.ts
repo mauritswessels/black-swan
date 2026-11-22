@@ -170,9 +170,12 @@ describe('national plans', () => {
     // A second plan has to wait.
     expect(give(now, { type: 'startPlan', country: 'United Kingdom', plan: 'industry' }).economies['United Kingdom'].plan.active).toBe(plan.id);
     now = days(now, plan.days - 1);
-    expect(now.factories.mil[london]).toBe(w.factories.mil[london]);
+    // The new factories are spread over the home provinces with least industry for their size (factorySite), not piled in London.
+    const mil = (x: typeof w) => PROVINCES.filter((p) => p.owner === 'United Kingdom').reduce((a, p) => a + x.factories.mil[p.id], 0);
+    expect(mil(now)).toBe(mil(w));
     now = step(now);
-    expect(now.factories.mil[london]).toBe(w.factories.mil[london] + 3);
+    expect(mil(now)).toBe(mil(w) + 3);
+    expect(now.factories.mil[london]).toBeLessThan(w.factories.mil[london] + 3);
     expect(now.economies['United Kingdom'].plan).toEqual({ active: null, daysDone: 0, done: [plan.id] });
     expect(economyView(now, 'United Kingdom').budget.plan).toBe(0);
     // Each plan can be carried out once.

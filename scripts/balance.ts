@@ -4,7 +4,7 @@
  * years of AI peace, to check research, national plans and the home front; and three runs of
  * the whole story with every country led by the AI, to check that it follows real history (three from 1936 and three from September 1939).
  *
- *   npm run balance            200 wars, 24 finance runs, a peace run and six history runs, armies run by a bot, writes docs/balance-stage-k4.md
+ *   npm run balance            200 wars, 24 finance runs, a peace run and six history runs, armies run by a bot, writes docs/balance-stage-l.md
  *   npm run balance -- 40      a quicker run with fewer wars
  *
  * Every war uses the real 1936 map and starting armies, with both sides led by the simple AI
@@ -334,7 +334,7 @@ console.log(economyRows.join('\n'));
 console.log(strikeRows.join('\n'));
 console.log(mapRows.join('\n'));
 
-const report = `# Balance report, Stage K4: ${all.length} AI against AI wars, ${financeRows.length} finance playtests, four years of peace, six runs of history, three free-for-alls and three games played with armies
+const report = `# Balance report, Stage L: ${all.length} AI against AI wars, ${financeRows.length} finance playtests, four years of peace, six runs of history, three free-for-alls and three games played with armies
 
 Made by \`npm run balance\`. Do not edit the tables by hand; run the command again instead.
 
@@ -519,7 +519,7 @@ Over the nine years of each run:
 ${seaRows.join('\n')}
 `;
 fs.mkdirSync('docs', { recursive: true });
-const file = 'docs/balance-stage-k4.md';
+const file = 'docs/balance-stage-l.md';
 // Keep the hand-written notes below the tables when the numbers are refreshed.
 const marker = '\n## What the results say';
 const old = fs.existsSync(file) ? fs.readFileSync(file, 'utf8') : '';

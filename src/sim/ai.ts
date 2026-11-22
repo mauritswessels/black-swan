@@ -76,6 +76,8 @@ const READY_ORG = 60;
 const PULL_OUT_ORG = 25;
 /** A small enemy gets this many divisions for each of its own near the front. */
 export const MINOR_FRONT_RATIO = 2;
+/** A front where a great power has invaded the homeland gets this many divisions for each of the enemy's near it, before any other front. */
+export const INVADED_RATIO = 2;
 /** A front against a great power may take this many times what its line and the provinces behind it can feed. */
 export const MAJOR_FRONT_ROOM = 1.5;
 /** Share of a big army (30 divisions or more) kept at home, away from every front. */
@@ -123,6 +125,10 @@ export interface Front {
   /** The guard it always gets, and how many it would like. */
   guard: number;
   want: number;
+  /** The foe stands on this country's own 1936 land along this front, and it is not the main front (a landing behind the lines). */
+  invaded: boolean;
+  /** The main front, and it runs across this country's own 1936 land: the whole country is the front line, and no home reserve is kept. */
+  homeFront?: boolean;
   /** How many it gets today. */
   share: number;
 }
@@ -174,8 +180,13 @@ export function frontsOf(w: World, country: string, planned: string[] = []): Fro
     // In the phoney war (story.ts) Germany keeps only a screen in the West while it beats Poland, as it did: about 30 divisions.
     const screen = waiting && (foe === 'France' || foe === 'United Kingdom');
     const want = screen ? guard : Math.max(guard, isMajor(foe) ? Math.round(MAJOR_FRONT_ROOM * room) - helpers : Math.min(room - helpers, Math.ceil(MINOR_FRONT_RATIO * near) + 2 - helpers));
-    fronts.push({ foe, planned: isPlanned, provinces: line, targets: [...targets].sort((a, b) => a - b), depth, near, touching, helpers, room, guard, want, share: 0 });
+    const invaded = [...targets].some((t) => PROVINCES[t].owner === country && w.owner[t] === country);
+    fronts.push({ foe, planned: isPlanned, provinces: line, targets: [...targets].sort((a, b) => a - b), depth, near, touching, helpers, room, guard, want, invaded, share: 0 });
   }
+  // The main front is shared out as before even when it has been pushed back onto home soil: the rule is for a second front
+  // behind it. Giving the main Soviet front first call made it starve the southern fronts in 1941 and the Caucasus fell.
+  const main = fronts.filter((f) => isMajor(f.foe)).sort((a, b) => b.near - a.near)[0];
+  if (main) (main.homeFront = main.invaded), (main.invaded = false);
   share(fronts, w.units.filter((u) => u.owner === country && !u.sea && !u.landing && !u.drop).length);
   return fronts;
 }
@@ -189,6 +200,13 @@ function share(fronts: Front[], army: number): void {
   for (const f of fronts) {
     f.share = Math.floor(f.guard * scale);
     left -= f.share;
+  }
+  // An enemy standing on the homeland is met first, with twice his numbers (INVADED_RATIO), whoever he is:
+  // before 1.6 a British landing in Jutland walked into Berlin while the whole German army was in Russia.
+  for (const f of fronts.filter((x) => x.invaded && isMajor(x.foe))) {
+    const extra = Math.max(0, Math.min(left, Math.min(f.want, Math.ceil(INVADED_RATIO * f.near) + 2) - f.share));
+    f.share += extra;
+    left -= extra;
   }
   for (const f of fronts.filter((x) => !isMajor(x.foe))) {
     const extra = Math.max(0, Math.min(left, f.want - f.share));
@@ -372,10 +390,19 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
     else pool.push(u);
   }
   // Fronts with more than their share give up divisions from the rear, never their guard or those fighting.
+  // A little over is kept, so the line does not shuffle every day, unless the homeland has been invaded somewhere and that front is short.
+  const homeShort = fronts.some((f) => f.invaded && isMajor(f.foe) && members.get(f)!.length < f.share);
+  // The tenth of a big army kept at home (HOME_SHARE) really stays at home while a great power is
+  // an enemy: before 1.6 it was simply whatever no front wanted, wherever it stood, and in 1943
+  // Germany had 2 of its 300 divisions inside Germany.
+  const atHome = (p: number) => PROVINCES[p].owner === country && w.owner[p] === country && w.controller[p] === country;
+  // Not when the main front itself runs across the homeland, as the Soviet one did from June 1941: every division is needed there.
+  const homeWant = !army && mine.length >= 30 && [...enemies].some(isMajor) && !fronts.some((f) => f.homeFront) ? Math.floor(HOME_SHARE * mine.length) : 0;
+  let homeMissing = homeWant - pool.filter((u) => atHome(station(u))).length;
   for (const f of fronts) {
     const list = members.get(f)!;
     const spare = list.length - f.share;
-    if (spare <= Math.max(2, Math.ceil(0.15 * f.share))) continue;
+    if (spare <= ((homeShort || homeMissing > 0) && !f.invaded ? 0 : Math.max(2, Math.ceil(0.15 * f.share)))) continue;
     const behind = (u: Unit) => (lineOf.get(station(u)) === f ? 1 : 0);
     const movable = list
       .filter((u) => !used.has(u.id) && !attacking(u) && !w.battles.some((b) => b.province === u.at))
@@ -398,7 +425,9 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
   const assigned = new Map<number, Front>();
   for (const [f, list] of members) for (const u of list) assigned.set(u.id, f);
   const short = fronts.filter((f) => members.get(f)!.length < f.share).sort((a, b) => b.share - members.get(b)!.length - (a.share - members.get(a)!.length) || (a.foe < b.foe ? -1 : 1));
-  const free = pool.filter((u) => !used.has(u.id)).sort((a, b) => a.id - b.id);
+  // The home reserve is not handed out to the other fronts (the lowest ids at home, so it does not change from day to day).
+  const reserve = new Set(pool.filter((u) => atHome(station(u))).sort((a, b) => a.id - b.id).slice(0, homeWant).map((u) => u.id));
+  const free = pool.filter((u) => !used.has(u.id) && !reserve.has(u.id)).sort((a, b) => a.id - b.id);
   const centre = (f: Front): [number, number] => {
     const xs = f.provinces.map((p) => PROVINCES[p].centre);
     return [xs.reduce((a, c) => a + c[0], 0) / xs.length, xs.reduce((a, c) => a + c[1], 0) / xs.length];
@@ -409,7 +438,8 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
     const pieces = new Set(f.provinces.map((p) => piece[p]));
     const c = centre(f);
     const need = f.share - members.get(f)!.length;
-    const byLand = free.filter((u) => !taken.has(u.id) && pieces.has(piece[u.at])).sort((a, b) => distanceKm(PROVINCES[a.at].centre, c) - distanceKm(PROVINCES[b.at].centre, c) || a.id - b.id);
+    // The home reserve is there for an enemy on home soil: an invaded front may take it.
+    const byLand = (f.invaded && isMajor(f.foe) ? [...free, ...pool.filter((u) => reserve.has(u.id))] : free).filter((u) => !taken.has(u.id) && pieces.has(piece[u.at])).sort((a, b) => distanceKm(PROVINCES[a.at].centre, c) - distanceKm(PROVINCES[b.at].centre, c) || a.id - b.id);
     for (const u of byLand.slice(0, need)) {
       taken.add(u.id);
       assigned.set(u.id, f);
@@ -578,7 +608,16 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
     const here = u.at;
     const crowded = overcrowded(here);
     if (!f) {
-      // Not needed at any front: it stays where it is, unless the province cannot feed it.
+      // Not needed at any front: it goes home if the home reserve is short (and home can be reached on foot),
+      // otherwise it stays where it is, unless the province cannot feed it.
+      if (homeMissing > 0 && !atHome(here) && capital !== null && piece[capital] === piece[here]) {
+        const to = homeRoom();
+        if (to >= 0) {
+          homeMissing--;
+          moveTo(u, to);
+          continue;
+        }
+      }
       if (crowded) moveTo(u, nearestRoom(here));
       continue;
     }
@@ -642,6 +681,13 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
     // In the phoney war a division changing places keeps to friendly land, so as not to start the
     // fighting on its way (one walked from Italy to Baden through France).
     orders.push(phoney ? { type: 'move', unit: u.id, to: p, friendly: true } : { type: 'move', unit: u.id, to: p });
+  }
+
+  /** The capital, or the home province nearest to it through home land, that can feed one more division. */
+  function homeRoom(): number {
+    if (capital === null) return -1;
+    if (roomAt(capital) > 0) return capital;
+    return nearestRoom(capital, atHome);
   }
 
   /** The nearest friendly province, through friendly land, that can feed one more division. A big army keeps its reserves in depth. */

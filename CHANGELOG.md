@@ -3,6 +3,50 @@
 Versions from 1.0.0 on are numbered. Each one starts with a heading like `## 1.0.1: What it brings`;
 that section becomes the notes on the GitHub release and on the update card in the app.
 
+## 1.6.0: The war lasts longer (2026-11-22)
+
+A balance pass. Led by the AI, Germany used to fall between July 1943 and April 1944, usually
+in November 1943, a year and a half too early. Now it falls between November 1943 and April
+1945, usually in the late summer of 1944, and Greece falls between May and November 1941 (really
+April). These are the reasons, and the fixes:
+
+- **Factories spread out.** New factories, built or given by a plan, go to the home provinces
+  with the least industry for their size, away from the borders. Before, nearly all of them went
+  to the capital: by 1943 Berlin had 106 of Germany's 132 military factories, so one battle for
+  Berlin decided the war.
+- **Refits before new divisions.** Once an AI army is worn down (average strength under 85%), it
+  keeps men back to refill its divisions before it raises new ones. Before, Germany put every
+  recruit into new divisions and went from 320 divisions at 97% strength in 1941 to 380 at 40%
+  in 1943. A country fighting on its own soil still raises every division it can.
+- **A real home reserve.** A big AI army facing a great power keeps a tenth of its divisions
+  inside its own country, and a landing behind the lines is met first, with twice the enemy's
+  numbers. In 1943 Germany used to have 2 of its 300 divisions at home, and a British landing in
+  Jutland once walked into an empty Berlin. Britain also makes no landing in Denmark before
+  Normandy now, as it makes none on Germany's own coast.
+- **Total war.** In February 1943, after Stalingrad, an AI Germany at war with the Soviet Union
+  calls up a million more men, as Goebbels' "total war" speech announced.
+- **Operation Achse.** When Italy changes sides, Germany now occupies northern and central Italy
+  and disarms the Italian divisions there, as it did in September 1943; only the south, where
+  the Allies have landed, stays Italian. Italy then keeps a small army of at most 8 divisions
+  (the real Co-Belligerent Army). Before, the whole Italian army changed sides, grew by another
+  100 divisions within months and marched into an empty Austria, and Germany fell within weeks.
+- **Greece gives up** once the Axis holds Epirus and Salonika: the army in the north is cut off
+  and the King and the government leave for Crete and Egypt, as in April 1941. Before, the Greek
+  army held the one pass into Attica for ever.
+- **The Soviet Union fights on longer.** In Story mode it now gives up only when the enemy holds
+  85% of its victory points (it was 75%). Moscow can still fall, but that alone no longer ends
+  the war in the east.
+- **Balance** (docs/balance-stage-l.md, docs/balance-stage-l-poland.md, and 16 whole wars
+  compared with 1.5): Germany falls in 15 of 16 runs, the middle one on 31 August 1944 (1.5:
+  25 November 1943), two of them in the spring of 1945; Greece falls in 16 of 16 (1.5: 5 of 20);
+  the Soviet Union never surrenders; Moscow fell in none of the 16 (1.5: one in 20). Led by the
+  AI, Poland now holds out as long as a player who gives no orders. Still open: Germany usually
+  falls about eight months too early; in one run (Italy never changed sides) it was still
+  fighting in August 1945; and in one balance run Barbarossa went very deep and the Soviet
+  economy sank into runaway inflation, though the Soviet Union fought on.
+- New tools for balance work: `node scripts/sweep.mjs` plays many whole wars side by side and
+  prints when each country fell (scripts/track.ts plays one).
+
 ## 1.5.0: A finer map and deep attacks (2026-11-19)
 
 The map has 280 provinces instead of 183, and an attack no longer has to stop at every

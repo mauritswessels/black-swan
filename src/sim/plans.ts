@@ -14,7 +14,7 @@ import type { PlanState, UnitType } from './types';
 
 /** What a plan hands over on the day it finishes. */
 export interface Grant {
-  /** New factories, built in the capital. */
+  /** New factories, put where the country has least industry for its size, away from the front (economy.ts factorySite). */
   mil?: number;
   civ?: number;
   /** Finished equipment, in division-sets. */
@@ -46,8 +46,8 @@ export interface Plan {
 
 export const PLANS: Plan[] = [
   // Open to everyone.
-  { id: 'rearmament', name: 'Rearmament programme', days: 180, cost: 0.04, grant: { mil: 2 }, what: 'State orders and loans to the arms makers. Two new military factories in the capital.' },
-  { id: 'industry', name: 'Industrial expansion', days: 180, cost: 0.04, grant: { civ: 2 }, what: 'Power stations, steelworks and machine shops. Two new civilian factories in the capital.' },
+  { id: 'rearmament', name: 'Rearmament programme', days: 180, cost: 0.04, grant: { mil: 2 }, what: 'State orders and loans to the arms makers. Two new military factories.' },
+  { id: 'industry', name: 'Industrial expansion', days: 180, cost: 0.04, grant: { civ: 2 }, what: 'Power stations, steelworks and machine shops. Two new civilian factories.' },
   { id: 'forts', name: 'Border fortifications', days: 180, cost: 0.03, effects: { homeDefence: 0.1 }, what: 'Bunkers, tank traps and prepared positions. Your divisions defend better anywhere on home soil.' },
   { id: 'export-drive', name: 'Export drive', days: 120, cost: 0.01, effects: { exportShare: 0.25 }, what: 'Trade offices and credit for exporters. Steel and oil you do not use sell for 75% of the world price instead of 50%.' },
   { id: 'staff', name: 'Army staff reform', days: 150, cost: 0.015, effects: { orgRecovery: 0.15, newDivisionOrg: 20 }, what: 'A staff college, exercises and a proper reserve of officers. Divisions recover faster and new ones arrive better prepared.' },
@@ -91,7 +91,7 @@ export const PLANS: Plan[] = [
 /** What a plan hands over, as lines of plain text. */
 export function describeGrant(g: Grant | undefined): string[] {
   if (!g) return [];
-  const n = (count: number, word: string) => `${count} new ${word} ${count === 1 ? 'factory' : 'factories'} in the capital`;
+  const n = (count: number, word: string) => `${count} new ${word} ${count === 1 ? 'factory' : 'factories'}, in the home provinces with least industry, away from the front`;
   const out: string[] = [];
   if (g.mil) out.push(n(g.mil, 'military'));
   if (g.civ) out.push(n(g.civ, 'civilian'));

@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { quiet } from '../src/sim/agenda';
 import { aiOrders } from '../src/sim/ai';
+import { aiEconomyOrders, CO_BELLIGERENT_ARMY } from '../src/sim/aiEconomy';
 import { COUNTRIES } from '../src/sim/countries';
-import { BUILD_COST, CONSCRIPTION, economyView, RESERVISTS, KIT_COST, LINE_START, MEN_PER_DIVISION, NEW_DIVISION_ORGANISATION, tallies, TRAINING_DAYS, WAR_UPKEEP } from '../src/sim/economy';
+import { BUILD_COST, CONSCRIPTION, economyView, factorySite, RESERVISTS, KIT_COST, LINE_START, MEN_PER_DIVISION, NEW_DIVISION_ORGANISATION, tallies, TRAINING_DAYS, WAR_UPKEEP } from '../src/sim/economy';
 import { advance } from '../src/sim/game';
 import { PROVINCES, provinceByName } from '../src/sim/map';
 import { POLICIES, runFinance } from '../src/sim/testeconomy';
@@ -209,6 +210,23 @@ describe('guns or butter', () => {
     expect(economyView(w, 'France').budget.construction).toBe(0);
   });
 
+  it('puts new factories where the country has least industry for its size, away from its borders and the front (factorySite)', () => {
+    const w = newWorld('story', 'sites');
+    // Twenty German factories in a row: spread over several provinces, never all in Berlin, none on a border.
+    const picks: number[] = [];
+    for (let i = 0; i < 20; i++) picks.push(factorySite(w, 'Germany', picks)!);
+    expect(new Set(picks).size).toBeGreaterThan(3);
+    expect(picks.filter((p) => p === provinceByName('Berlin').id).length).toBeLessThan(10);
+    for (const p of picks) {
+      expect(PROVINCES[p].owner).toBe('Germany');
+      expect(PROVINCES[p].neighbours.every((n) => w.controller[n] === 'Germany'), PROVINCES[p].name).toBe(true);
+    }
+    // The Soviet Union builds in its interior, not on the western border.
+    const soviet: number[] = [];
+    for (let i = 0; i < 20; i++) soviet.push(factorySite(w, 'Soviet Union', soviet)!);
+    for (const p of soviet) expect(PROVINCES[p].neighbours.every((n) => w.controller[n] === 'Soviet Union'), PROVINCES[p].name).toBe(true);
+  });
+
   it('builds a military factory in 72 days with five builders', () => {
     let w = give(france(), { type: 'setConstruction', country: 'France', factories: 5 }, { type: 'build', country: 'France', kind: 'mil', province: paris });
     const before = w.factories.mil[paris];
@@ -375,5 +393,23 @@ describe('AI countries at peace (bot playtest)', () => {
     // New divisions are spread out, not piled on the capital beyond what it can feed.
     const berlin = provinceByName('Berlin').id;
     expect(w.units.filter((u) => u.at === berlin).length).toBeLessThanOrEqual(19);
+  });
+});
+
+describe('Italy after it changes sides', () => {
+  it('raises no more than a small co-belligerent army (CO_BELLIGERENT_ARMY), however many men and rifles it has', () => {
+    const base = newWorld('freeForAll', 'co-belligerent', '1936-01-01', 'France');
+    const before = base.economies.Italy;
+    const rich = (fired: string[]): World => {
+      const w = { ...base, units: base.units.filter((u) => u.owner !== 'Italy' || u.id % 30 === 0), story: { ...base.story, fired } };
+      w.economies = { ...w.economies, Italy: { ...before, manpower: 5000, stock: { ...before.stock, infantry: 200 } } };
+      return w;
+    };
+    const raised = (w: World) => aiEconomyOrders(w, 'Italy').filter((o) => o.type === 'raise').length;
+    const w = rich(['italy-armistice']);
+    const have = w.units.filter((u) => u.owner === 'Italy').length;
+    expect(have).toBeLessThan(CO_BELLIGERENT_ARMY);
+    expect(raised(w)).toBe(CO_BELLIGERENT_ARMY - have);
+    expect(raised(rich([]))).toBeGreaterThan(CO_BELLIGERENT_ARMY);
   });
 });

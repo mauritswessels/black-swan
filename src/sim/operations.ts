@@ -137,9 +137,9 @@ export function laterLandings(w: World, country: string): Set<number> {
   const out = new Set<number>();
   if (w.mode !== 'story' || country === w.player || w.story.lesson) return out;
   for (const o of OPERATIONS) if (o.by === country && o.kind === 'landing' && w.day < dayOf(w.startDate, o.date)) for (const p of [...o.targets, ...o.area]) out.add(p);
-  // Nor on Germany's own coast before Normandy: the real Allies never tried it, and a lucky landing
-  // that walked into an empty Berlin in 1941 ended the war in a week.
+  // Nor on Germany's own coast, or in Denmark next door, before Normandy: the real Allies never tried
+  // it, and a lucky landing that walked into an empty Berlin in 1941 (or from Jutland in 1943) ended the war in weeks.
   const overlord = OPERATIONS.find((o) => o.id === 'op-overlord')!;
-  if (country === overlord.by && w.day < dayOf(w.startDate, overlord.date)) for (const p of PROVINCES) if (p.owner === 'Germany') out.add(p.id);
+  if (country === overlord.by && w.day < dayOf(w.startDate, overlord.date)) for (const p of PROVINCES) if (p.owner === 'Germany' || p.owner === 'Denmark') out.add(p.id);
   return out;
 }

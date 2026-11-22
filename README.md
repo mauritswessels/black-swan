@@ -159,13 +159,16 @@ You need [Node.js](https://nodejs.org) 20 or newer. Then, in this folder:
 npm install          # once
 npm run dev          # opens the game in your browser
 npm test             # run the unit tests
-npm run balance      # run the bot playtests (wars, finance, history to 1945) and write docs/balance-stage-j.md
+npm run balance      # run the bot playtests (wars, finance, history to 1945) and write docs/balance-stage-l.md
 npm run typecheck    # check the types
 npm run build:map    # rebuild the 1936 map from Natural Earth data (rarely needed)
 ```
 
 The rules and every number behind them are in [MODEL.md](MODEL.md). The latest balance report
-is [docs/balance-stage-j.md](docs/balance-stage-j.md).
+is [docs/balance-stage-l.md](docs/balance-stage-l.md). For balance work, `node scripts/sweep.mjs <label> <1936|1939> <runs>`
+plays many whole Story-mode wars side by side (scripts/track.ts, one run each) and prints when
+Poland, France, Greece, Moscow, Italy and Germany fell in each; runs differ a lot from seed to
+seed, so compare at least eight seeds before and after a change.
 
 ## Running it as a Mac app from the code
 
@@ -365,8 +368,9 @@ are therefore approximate:
 
 Version 1.0 completes the plan, 1.1 fixes the war economy, 1.2 makes the front move inside
 each province, 1.3 adds armies with Hold and Push orders, 1.4 the right-click attack menu
-for land, sea and air, 1.4.1 makes Poland hold out about as long as it really did, and 1.5
-brings the finer map of 280 provinces and deep attacks (see CHANGELOG.md). Ideas for later versions: playing against
+for land, sea and air, 1.4.1 makes Poland hold out about as long as it really did, 1.5
+brings the finer map of 280 provinces and deep attacks, and 1.6 is a balance pass so that the
+war in Europe lasts about as long as it really did (see CHANGELOG.md). Ideas for later versions: playing against
 friends over the internet (the engine is already deterministic, with a fingerprint check for
 it), and the Pacific and the Americas.
 

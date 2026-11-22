@@ -263,6 +263,12 @@ Yorkshire, Lombardy, the Donbass and others). Whoever controls a province uses i
 fully if it is their own home province, at 30% if they are occupying it. Occupiers also take
 half of its steel and oil.
 
+New factories, built or given by a plan, go where the country has least industry for its size
+(since 1.6): among its home provinces furthest from foreign land (not touching it, if it has any
+such province), the one with the fewest factories for 1 + victory points / 4 + its industrial
+weight. Before 1.6 nearly all of them went to the capital: by 1943 Berlin had 106 of Germany's
+132 military factories, and one battle for Berlin decided the war.
+
 - **Civilian factories** make consumer goods, unless you set them to build.
 - **Military factories** make equipment for divisions, on production lines.
 
@@ -431,6 +437,13 @@ reports each month; narrowing it takes from the queue first. Each step up costs 
 day, and the two widest laws cost 3 and 6 for as long as they last. Each year 6% of the law's
 total comes of age.
 
+**Refits first** (since 1.6). An AI country at war keeps back men for its worn divisions
+before it raises new ones: once the army's average strength falls below 85%, half of what it
+would take to bring every division back to full strength is kept for refits, all of it below
+75%. Not while an enemy holds any of its home victory points: a country fighting on its own soil
+raises every division it can. Before 1.6 Germany put every recruit into new divisions and went
+from 320 divisions at 97% in 1941 to 380 at 40% in 1943.
+
 **Wounded.** 40% of the strength a division loses, in battle or at the front, comes back to the
 call-up queue as wounded men who recover. Britain starts
 on volunteers, everyone else on limited conscription.
@@ -500,7 +513,7 @@ the real history, is in the file and in the Research panel.
 
 One plan runs at a time, for 60 to 180 days, and each can be carried out once. While it runs it
 costs a share of a month's output every month (0% to 6%), as a line in the budget. When it ends
-it gives new factories in the capital, equipment, money, or a lasting effect such as +10%
+it gives new factories (see Factories), equipment, money, or a lasting effect such as +10%
 defence on home soil. Twelve plans are open to every country; each major power also has two
 real programmes of the 1930s (for example Britain's shadow factories, France extending the
 Maginot Line and Poland's Central Industrial Region), some only from the year they began.
@@ -668,9 +681,23 @@ Britain loses Mussolini once an enemy stands on Italian soil in Europe, or once 
 and war support is under 35. The new government is authoritarian, war support drops to 20, and
 for 45 days the army fights at x 0.8 and the country does not surrender. Then it signs an
 armistice: peace with every enemy, an alliance with Britain, and the end of its alliance with
-Germany. An AI Germany then takes every Italian province its divisions stand in, disarms the
-Italian divisions in its own or its allies' land, and declares war. After the armistice Italy
-fights on like a small country (see Surrender).
+Germany. An AI Germany then carries out Operation Achse: it takes every Italian province its
+divisions stand in, and every Italian province it can reach by land from its own side that is
+not next to Allied troops or Allied land (northern and central Italy, Albania and the Italian
+zones in the Balkans), disarms the Italian divisions there, and declares war. Only the south,
+where the Allies have landed, stays Italian. After the armistice Italy fights on like a small
+country (see Surrender), and an AI Italy keeps at most 8 divisions (the Co-Belligerent Army,
+about six division-sized combat groups). Before 1.6 the Italian army stayed whole, raised 100
+more divisions within months and marched into Austria.
+
+**Total war.** On 18 February 1943 (Goebbels' speech after Stalingrad) a fascist Germany at war
+with the Soviet Union calls up 1,000,000 more men, who report over the following months like any
+call-up, and gains 5 war support.
+
+**Greece gives up** once an AI Greece at war with Germany has lost all of Epirus and Salonika:
+the army in the north is cut off and surrenders, and the King and the government leave for
+Crete and Egypt (April 1941). Allied divisions in Greece are taken home. Before 1.6 the Greek
+army held the one pass into Attica for ever.
 
 **Fuel.** From 1 November 1942 an AI Italy keeps its fleets in port: it had no oil for them.
 
@@ -729,8 +756,9 @@ Land it has annexed since 1936 counts for a quarter of its victory points. Three
 a small country fights on while it holds some of its homeland and a great power fighting the
 same enemy has divisions on its soil (Norway in 1940); in Story mode, a government negotiating
 an armistice does not surrender (Italy, 1943); and in Story mode the Soviet Union, fighting a
-fascist Germany, gives up only when the enemy holds 75% of its victory points, capital or not
-(the government was ready to fight on from Kuibyshev).
+fascist Germany, gives up only when the enemy holds 85% of its victory points, capital or not
+(the government was ready to fight on from Kuibyshev): Moscow, Leningrad, Kiev, Minsk,
+Stalingrad, Baku and most of the land between them. It was 75% before 1.6.
 
 In Story mode no AI country makes a negotiated peace with a fascist Germany or Italy (or their
 allies beside them): the real war in Europe ended only in surrender, an armistice or a change
@@ -950,7 +978,13 @@ division per line province. A front against a small country wants enough to beat
 enemy divisions near it, plus two, at most its room. A front against a great power wants 1.5
 times its room (the extra waits behind). The army is shared out in that order: every guard
 first, then the small fronts, then the great ones in proportion to the enemy divisions facing
-them. A big army (30 divisions or more) keeps a tenth at home. A front overseas gets what its
+them. A big army (30 divisions or more) keeps a tenth at home while a great power is an enemy:
+since 1.6 those divisions really stand inside the homeland, and divisions no front needs go home
+until the reserve is full. It is not kept while the main front itself runs across the homeland
+(the Soviet Union from June 1941). An enemy standing on the homeland along any other front (a
+landing behind the lines) is met first, before the small fronts, with twice the enemy divisions
+there plus two, and that front may also take the home reserve. Before 1.6 Germany had 2 of its
+300 divisions inside Germany in 1943, and a British landing in Jutland walked into Berlin. A front overseas gets what its
 operation calls for (see Story mode), or at most an eighth of the army, and nothing once its
 expedition has been called home.
 
@@ -983,7 +1017,7 @@ nearest friendly port, sail on the expeditions and landings of the timetable, an
 make a landing of their own only when most of the army has no front on land: on a coast whose
 sea the country controls, with at least 4 rested divisions, where the enemy cannot answer with
 twice as many, and (since 1.3) never on a stretch of coast the timetable keeps for a later
-landing of the same country, so Britain does not land in northern France years before Normandy. A communist country and the others fight the same enemy on separate fronts:
+landing of the same country, so Britain does not land in northern France years before Normandy, nor (since 1.5 for Germany, 1.6 for Denmark) on the German or Danish coast before it. A communist country and the others fight the same enemy on separate fronts:
 neither ships divisions to a front in the other's land.
 
 **Total war** (`src/sim/aiEconomy.ts`). An AI country with a communist government fighting

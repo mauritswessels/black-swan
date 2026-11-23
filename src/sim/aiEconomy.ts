@@ -101,6 +101,8 @@ const PLAN_ORDER: Record<'arming' | 'civil' | 'war', string[]> = {
   war: ['war-economy', 'rearmament', 'reserve', 'forts', 'training', 'staff', 'civil-defence', 'tax-reform', 'industry'],
 };
 
+/** Inflation, in % a year, at which a desperate government (CUSTOMS_STATE) starts to raise fewer divisions, and stops. */
+export const DESPERATE_INFLATION: [number, number] = [150, 400];
 /** Divisions Italy keeps after it changes sides (the Italian Co-Belligerent Army: about six division-sized combat groups). */
 export const CO_BELLIGERENT_ARMY = 8;
 
@@ -121,8 +123,10 @@ export function aiEconomyOrders(w: World, country: string, tally?: Tally): Order
   const total = v.atWar && totalWar(w, country, t);
   // A government that has lost its ports and its taxes with them (economy.ts CUSTOMS_STATE) keeps raising divisions whatever
   // it does to prices, as China's did: it had nothing else to fight with.
+  // Even then there is a limit: once prices rise faster than DESPERATE_INFLATION[0]% a year it raises fewer, and none past [1].
   const desperate = !!CUSTOMS_STATE[country] && v.atWar && t.homeLost > 0;
-  const prudence = desperate ? 1 : Math.max(0, Math.min(1, 1 - (e.inflation - CAREFUL_INFLATION) / (RECKLESS_INFLATION - CAREFUL_INFLATION)));
+  const [careful, reckless] = desperate ? DESPERATE_INFLATION : [CAREFUL_INFLATION, RECKLESS_INFLATION];
+  const prudence = Math.max(0, Math.min(1, 1 - (e.inflation - careful) / (reckless - careful)));
   const armyLimit = (total ? TOTAL_WAR_DEFICIT : v.atWar ? WAR_ARMY_DEFICIT : peaceDeficit) * v.nominalGDP * prudence;
   // The divisions already in the field come first: new ones are raised only from men their refits
   // do not need (REFIT_FIRST of what it would take to bring every division back to full strength).

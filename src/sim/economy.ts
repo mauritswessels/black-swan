@@ -56,11 +56,16 @@ export const WAR_UPKEEP = 3;
  *
  * PAY_REFERENCE is about the level of France and Germany in 1936, so they pay the full figure,
  * Britain about a tenth more, Italy about four fifths and the Soviet Union about two thirds.
+ *
+ * The armies of China (1.8) are the exception (POOR_ARMIES): a Chinese division had a fraction of
+ * a European division's guns and ammunition, its soldiers were paid a pittance, and it was fed
+ * from the land it stood on, so it cost far less to keep.
  */
 export const PAY_FIXED = 0.4;
 export const PAY_REFERENCE = 0.7;
+export const POOR_ARMIES: Readonly<Record<string, number>> = { China: 0.3, 'Chinese Communists': 0.3 };
 export const PAY_LEVEL: Readonly<Record<string, number>> = Object.fromEntries(
-  COUNTRIES.map((c) => [c.name, Math.round(100 * Math.max(0.5, Math.min(1.2, PAY_FIXED + ((1 - PAY_FIXED) * ((c.industry.civ + c.industry.mil) / c.industry.population)) / PAY_REFERENCE))) / 100]),
+  COUNTRIES.map((c) => [c.name, POOR_ARMIES[c.name] ?? Math.round(100 * Math.max(0.5, Math.min(1.2, PAY_FIXED + ((1 - PAY_FIXED) * ((c.industry.civ + c.industry.mil) / c.industry.population)) / PAY_REFERENCE))) / 100]),
 );
 export const payLevel = (country: string): number => PAY_LEVEL[country] ?? 1;
 
@@ -334,10 +339,18 @@ export interface Tally {
  * country produced: the land tax went to the provinces, and most of its own income was customs
  * duty and the salt tax, collected in the ports, while its bond market was the banks of Shanghai.
  * Once Japan held the coast, taxes fell by up to `share` and lenders by up to `bonds`, and the
- * government paid for the war with the printing press: prices rose about 1,500 times between 1937
- * and 1945, the worst inflation of the war.
+ * government paid for the war with the printing press: prices rose about 2,000 times between 1937
+ * and 1945, one of the worst inflations of the war.
  */
-export const CUSTOMS_STATE: Record<string, { share: number; bonds: number }> = { China: { share: 0.7, bonds: 0.9 } };
+export const CUSTOMS_STATE: Record<string, { share: number; bonds: number; grain?: { from: string; share: number } }> = {
+  // From July 1941 China collected the land tax in grain instead of money, to feed the army without printing: taxes then fall by only `grain.share`.
+  China: { share: 0.7, bonds: 0.9, grain: { from: '1941-07-01', share: 0.6 } },
+};
+/** The share of its taxes a customs state loses with all its ports gone, on this day. */
+function customsShare(w: { day?: number; startDate?: string }, c: (typeof CUSTOMS_STATE)[string]): number {
+  if (!c.grain || w.day === undefined || !w.startDate) return c.share;
+  return w.day >= Math.round((Date.parse(`${c.grain.from}T00:00:00Z`) - Date.parse(`${w.startDate}T00:00:00Z`)) / 86400000) ? c.grain.share : c.share;
+}
 const PORT_CACHE = new Map<string, Province[]>();
 const PORTS_OF = (name: string): Province[] => {
   let out = PORT_CACHE.get(name);
@@ -345,7 +358,7 @@ const PORTS_OF = (name: string): Province[] => {
   return out;
 };
 
-type Holdings = Pick<World, 'controller' | 'factories' | 'units' | 'wars'> & { declaredBy?: World['declaredBy']; owner?: string[]; diplomacy?: { tension: number; aims?: Record<string, { incident?: number }> }; fleets?: World['fleets']; wings?: World['wings']; bombed?: World['bombed']; story?: { farEast?: number } };
+type Holdings = Pick<World, 'controller' | 'factories' | 'units' | 'wars'> & { day?: number; startDate?: string; declaredBy?: World['declaredBy']; owner?: string[]; diplomacy?: { tension: number; aims?: Record<string, { incident?: number }> }; fleets?: World['fleets']; wings?: World['wings']; bombed?: World['bombed']; story?: { farEast?: number } };
 
 export function tallies(w: Holdings): Map<string, Tally> {
   const out = new Map<string, Tally>();
@@ -511,7 +524,7 @@ export function economyView(w: Holdings & Pick<World, 'economies'>, country: str
 
   const customs = CUSTOMS_STATE[country];
   const portsLost = customs ? t.portsLost ?? 0 : 0;
-  const taxes = e.taxRate * nominalGDP * (e.rationing ? 1 - BLACK_MARKET_TAX_LOSS * (1 + m.rationingCost) : 1) * (1 + m.taxRevenue) * (1 - (customs?.share ?? 0) * portsLost);
+  const taxes = e.taxRate * nominalGDP * (e.rationing ? 1 - BLACK_MARKET_TAX_LOSS * (1 + m.rationingCost) : 1) * (1 + m.taxRevenue) * (1 - (customs ? customsShare(w, customs) : 0) * portsLost);
   const government = GOVERNMENT_SHARE * nominalGDP;
   const upkeep = (UNIT_TYPES.reduce((a, k) => a + t.divisions[k] * UPKEEP[k], 0) + PLANE_KINDS.reduce((a, k) => a + t.wings[k] * FORCE_UPKEEP[k], 0) + SHIP_KINDS.reduce((a, k) => a + t.ships[k] * FORCE_UPKEEP[k], 0)) * (atWar ? WAR_UPKEEP : 1) * payLevel(country) * p;
   const military = FACTORY_COST * milUsed * p;

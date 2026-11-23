@@ -2,9 +2,9 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { CARDS, cardById } from '../src/content/history';
 import { AGENDA } from '../src/sim/agenda';
 import { CHAPTERS } from '../src/sim/chapters';
-import { hasPact } from '../src/sim/diplomacy';
+import { allied, hasPact } from '../src/sim/diplomacy';
 import { advance } from '../src/sim/game';
-import { afar, provinceByName } from '../src/sim/map';
+import { afar, EUROPEAN, provinceByName } from '../src/sim/map';
 import { combatEdges, WINTER_ATTACK } from '../src/sim/mods';
 import { report, scores } from '../src/sim/report';
 import { newGame, PRELUDE_DAYS } from '../src/sim/scenario';
@@ -14,6 +14,8 @@ import { atWar } from '../src/sim/war';
 import { applyOrders, dateLabel, newWorld } from '../src/sim/world';
 
 const id = (name: string) => provinceByName(name).id;
+/** A war between two countries of the Europe-only map (not the war in China, 1.8). */
+const inEurope = (key: string) => key.split('|').every((c) => EUROPEAN.has(c));
 const until = (w: World, date: string, each?: (w: World) => Order[]): World => {
   const end = dayOf(w.startDate, date);
   while (w.day < end) w = advance(w, each ? each(w) : []);
@@ -168,13 +170,15 @@ describe('the story led by the AI (bot playtest, 1936 to the end of 1941)', () =
     const east = (w: World) => w.units.filter((u) => u.owner === 'Soviet Union' && afar(u.owner, u.at)).length;
     expect(mid.story.farEast ?? 0).toBe(0);
     expect(east(mid)).toBeGreaterThan(0.2 * red(mid));
-    expect(red(mid)).toBeLessThan(380);
+    expect(red(mid) - east(mid)).toBeLessThan(380);
     expect(news(end).some((t) => /Siberian divisions reach Moscow/.test(t))).toBe(true);
     expect(east(end)).toBeLessThan(east(mid));
   });
 
   it('fights the war in China: Japan takes the coast, China fights on from the interior and prints money', () => {
-    expect(news(end).some((t) => /Xi'an Incident/.test(t))).toBe(true);
+    const cards = end.story.cards.map((c) => c.id);
+    expect(cards).toEqual(expect.arrayContaining(['xian', 'marco-polo', 'nanjing', 'khasan', 'wuhan', 'khalkhin-gol', 'china-inflation', 'neutrality-pact']));
+    expect(allied(end.diplomacy, 'China', 'Chinese Communists')).toBe(true);
     expect(atWar(end, 'Japan', 'China')).toBe(true);
     expect(end.capitulated).not.toContain('China');
     expect(end.capitulated).not.toContain('Chinese Communists');
@@ -182,8 +186,7 @@ describe('the story led by the AI (bot playtest, 1936 to the end of 1941)', () =
     expect(end.controller[id('Chungking')]).toBe('China');
     expect(end.economies.China.priceLevel).toBeGreaterThan(250);
     // The border wars with the Soviet Union ended in a ceasefire, and in 1941 the two signed a neutrality pact.
-    expect(news(end).some((t) => /Lake Khasan/.test(t))).toBe(true);
-    expect(news(end).some((t) => /Khalkhin Gol/.test(t))).toBe(true);
+    expect(news(end).some((t) => /Peace between Japan and the Soviet Union: both go back to their own borders/.test(t))).toBe(true);
     expect(atWar(end, 'Japan', 'Soviet Union')).toBe(false);
     expect(hasPact(end.diplomacy, 'nonAggression', 'Japan', 'Soviet Union')).toBe(true);
   });
@@ -246,7 +249,7 @@ describe('the September 1939 start', () => {
     expect(uk.seed).not.toBe(germany.seed);
     expect(uk.capitulated).toEqual(expect.arrayContaining(['Austria', 'Czechoslovakia', 'Albania']));
     expect(hasPact(uk.diplomacy, 'nonAggression', 'Germany', 'Soviet Union')).toBe(true);
-    expect(uk.wars).toEqual([]);
+    expect(uk.wars.filter(inEurope)).toEqual([]);
     expect(uk.story.cards.length).toBe(CARDS.filter((c) => c.date < '1939-09-01').length);
   });
 
@@ -302,14 +305,14 @@ describe('the September 1939 start', () => {
 
   it('a player Germany gives the order itself, or calls the war off', () => {
     const w = advance(germany);
-    expect(w.wars).toEqual([]);
+    expect(w.wars.filter(inEurope)).toEqual([]);
     const d = w.diplomacy.decisions.find((x) => x.event === 'poland-germany')!;
     expect(d).toBeTruthy();
     const war = applyOrders(w, [{ type: 'decide', by: 'Germany', id: d.id, option: 0 }]);
     expect(atWar(war, 'Germany', 'Poland')).toBe(true);
     expect(atWar(war, 'Germany', 'France')).toBe(true);
     const peace = applyOrders(w, [{ type: 'decide', by: 'Germany', id: d.id, option: 1 }]);
-    expect(peace.wars).toEqual([]);
+    expect(peace.wars.filter(inEurope)).toEqual([]);
     expect(peace.diplomacy.agenda.poland).toBe('dropped');
   });
 

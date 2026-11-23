@@ -18,7 +18,7 @@
 import { ATTACK_WIDTH, attackPower, defencePower, DEFENCE_WIDTH } from './combat';
 import { bombTarget, km, RANGE_KM, wingRange } from './air';
 import { musterPoint } from './economy';
-import { PROVINCES } from './map';
+import { beyond, PROVINCES } from './map';
 import { AMPHIBIOUS, modsOf, type Edges } from './mods';
 import { arrived, LANDING_BASE } from './navy';
 import { COAST, fleetPower, HOME_ZONES, seaDependence, seaRoute, TRADE_ROUTE, ZONE_INDEX, zonePath, ZONES, type SeaPicture } from './sea';
@@ -149,7 +149,7 @@ function wingOrders(w: World, country: string, enemies: string[], mates?: Set<st
   const wings = w.wings.filter((x) => x.owner === country);
   if (!wings.length || w.day % 2) return orders;
   const friendly = (p: number) => w.controller[p] === country || !!mates?.has(w.controller[p]);
-  const foe = (p: number) => enemies.includes(w.controller[p]);
+  const foe = (p: number) => enemies.includes(w.controller[p]) && !beyond(p, country, w.controller[p]);
   // The busiest part of the front: the friendly province next to the enemy with most of our divisions.
   const count = new Map<number, number>();
   for (const u of w.units) if (u.owner === country) count.set(u.at, (count.get(u.at) ?? 0) + 1);

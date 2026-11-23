@@ -37,7 +37,7 @@ export const CARDS: HistoryCard[] = [
     id: 'ethiopia', date: '1936-05-05', kind: 'atrocity', title: 'Italy conquers Ethiopia',
     text: 'Italian troops entered Addis Ababa, ending a seven-month invasion of Ethiopia, a member of the League of Nations. Italy bombed villages and used mustard gas, which it had promised by treaty never to use. The League voted for weak sanctions that left out oil, then dropped them.',
     why: 'The League of Nations was shown to be powerless, and Italy, shunned by Britain and France, moved towards Germany.',
-    note: 'Ethiopia lies off this game\'s map. Estimates of Ethiopian dead vary widely, from tens of thousands to several hundred thousand.',
+    note: 'Ethiopia is on the map since version 1.7, but in Story mode it sits out the war with the rest of the world for now, so the conquest itself is not played out. Estimates of Ethiopian dead vary widely, from tens of thousands to several hundred thousand.',
   },
   {
     id: 'matignon', date: '1936-06-07', kind: 'economy', title: 'France: the Matignon agreements',

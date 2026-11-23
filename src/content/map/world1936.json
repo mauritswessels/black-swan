@@ -1,0 +1,13155 @@
+{
+ "source": "Natural Earth (public domain), regrouped to 1936 borders by scripts/build-map.mjs",
+ "knownGaps": [
+  "The Free City of Danzig is shown as part of Poland.",
+  "The Polish-Soviet and Polish-German borders follow modern regional lines, so they are a few dozen kilometres off in places.",
+  "Finnish Karelia (around Viipuri) is shown as Soviet, because it lies inside a modern Russian region.",
+  "The Italian territories around Trieste, Zara and the Dodecanese islands are shown as Yugoslav or Greek, except Istria.",
+  "Spanish Morocco is shown as part of French Morocco.",
+  "Southern Bessarabia and Transnistria follow the modern Moldovan border.",
+  "Tibet, Sinkiang and the provinces run by regional warlords are shown as part of Nationalist China.",
+  "The Kwantung Leased Territory (Port Arthur and Dairen), held by Japan, is shown as part of Manchukuo; the line between Manchukuo and China follows modern regions.",
+  "Tannu Tuva, a Soviet satellite, is shown as part of the Soviet Union; Bhutan and the Indian princely states as part of British India.",
+  "The British parts of Cameroon and Togo are shown as French, the New Hebrides (ruled jointly by Britain and France) as British, and Ifni and Tarfaya as French Morocco.",
+  "Iceland is shown as an independent country; it shared its king with Denmark, which ran its foreign affairs.",
+  "The smallest islands (most of the West Indies and of the Indian Ocean) are left off the map."
+ ],
+ "europe": 280,
+ "splitFrom": [
+  [
+   183,
+   75
+  ],
+  [
+   184,
+   75
+  ],
+  [
+   185,
+   74
+  ],
+  [
+   186,
+   73
+  ],
+  [
+   187,
+   66
+  ],
+  [
+   188,
+   67
+  ],
+  [
+   189,
+   68
+  ],
+  [
+   190,
+   69
+  ],
+  [
+   191,
+   70
+  ],
+  [
+   192,
+   72
+  ],
+  [
+   193,
+   71
+  ],
+  [
+   194,
+   83
+  ],
+  [
+   195,
+   85
+  ],
+  [
+   196,
+   89
+  ],
+  [
+   197,
+   90
+  ],
+  [
+   198,
+   65
+  ],
+  [
+   199,
+   100
+  ],
+  [
+   200,
+   96
+  ],
+  [
+   201,
+   98
+  ],
+  [
+   202,
+   91
+  ],
+  [
+   203,
+   0
+  ],
+  [
+   204,
+   9
+  ],
+  [
+   205,
+   5
+  ],
+  [
+   206,
+   163
+  ],
+  [
+   207,
+   23
+  ],
+  [
+   208,
+   23
+  ],
+  [
+   209,
+   24
+  ],
+  [
+   210,
+   26
+  ],
+  [
+   211,
+   33
+  ],
+  [
+   212,
+   35
+  ],
+  [
+   213,
+   32
+  ],
+  [
+   214,
+   25
+  ],
+  [
+   215,
+   30
+  ],
+  [
+   216,
+   34
+  ],
+  [
+   217,
+   56
+  ],
+  [
+   218,
+   58
+  ],
+  [
+   219,
+   57
+  ],
+  [
+   220,
+   59
+  ],
+  [
+   221,
+   53
+  ],
+  [
+   222,
+   51
+  ],
+  [
+   223,
+   18
+  ],
+  [
+   224,
+   17
+  ],
+  [
+   225,
+   16
+  ],
+  [
+   226,
+   19
+  ],
+  [
+   227,
+   127
+  ],
+  [
+   228,
+   126
+  ],
+  [
+   229,
+   156
+  ],
+  [
+   230,
+   155
+  ],
+  [
+   231,
+   123
+  ],
+  [
+   232,
+   120
+  ],
+  [
+   233,
+   122
+  ],
+  [
+   234,
+   134
+  ],
+  [
+   235,
+   131
+  ],
+  [
+   236,
+   176
+  ],
+  [
+   237,
+   177
+  ],
+  [
+   238,
+   179
+  ],
+  [
+   239,
+   180
+  ],
+  [
+   240,
+   181
+  ],
+  [
+   241,
+   151
+  ],
+  [
+   242,
+   148
+  ],
+  [
+   243,
+   147
+  ],
+  [
+   244,
+   141
+  ],
+  [
+   245,
+   107
+  ],
+  [
+   246,
+   102
+  ],
+  [
+   247,
+   109
+  ],
+  [
+   248,
+   103
+  ],
+  [
+   249,
+   115
+  ],
+  [
+   250,
+   117
+  ],
+  [
+   251,
+   114
+  ],
+  [
+   252,
+   116
+  ],
+  [
+   253,
+   111
+  ],
+  [
+   254,
+   110
+  ],
+  [
+   255,
+   80
+  ],
+  [
+   256,
+   80
+  ],
+  [
+   257,
+   81
+  ],
+  [
+   258,
+   82
+  ],
+  [
+   259,
+   84
+  ],
+  [
+   260,
+   76
+  ],
+  [
+   261,
+   88
+  ],
+  [
+   262,
+   87
+  ],
+  [
+   263,
+   79
+  ],
+  [
+   264,
+   78
+  ],
+  [
+   265,
+   77
+  ],
+  [
+   266,
+   99
+  ],
+  [
+   267,
+   2
+  ],
+  [
+   268,
+   8
+  ],
+  [
+   269,
+   7
+  ],
+  [
+   270,
+   6
+  ],
+  [
+   271,
+   166
+  ],
+  [
+   272,
+   50
+  ],
+  [
+   273,
+   50
+  ],
+  [
+   274,
+   174
+  ],
+  [
+   275,
+   130
+  ],
+  [
+   276,
+   21
+  ],
+  [
+   277,
+   152
+  ],
+  [
+   278,
+   149
+  ],
+  [
+   279,
+   140
+  ]
+ ],
+ "rivers": [
+  {
+   "name": "Rhine",
+   "borders": [
+    [
+     "Palatinate",
+     "Rhineland"
+    ],
+    [
+     "Palatinate",
+     "Hesse"
+    ],
+    [
+     "Palatinate",
+     "Württemberg"
+    ],
+    [
+     "Palatinate",
+     "Alsace"
+    ],
+    [
+     "Rhineland",
+     "Brabant"
+    ],
+    [
+     "Württemberg",
+     "Alsace"
+    ],
+    [
+     "Württemberg",
+     "Hesse"
+    ],
+    [
+     "Brabant",
+     "South Holland"
+    ],
+    [
+     "Bern",
+     "Alsace"
+    ],
+    [
+     "Bern",
+     "Baden"
+    ],
+    [
+     "Graubünden",
+     "Baden"
+    ],
+    [
+     "Alsace",
+     "Baden"
+    ]
+   ]
+  },
+  {
+   "name": "Meuse",
+   "borders": [
+    [
+     "Lorraine",
+     "Champagne"
+    ],
+    [
+     "Lorraine",
+     "Wallonia"
+    ],
+    [
+     "Brussels",
+     "Wallonia"
+    ],
+    [
+     "Brussels",
+     "Champagne"
+    ],
+    [
+     "Wallonia",
+     "Champagne"
+    ],
+    [
+     "Wallonia",
+     "Brabant"
+    ]
+   ]
+  },
+  {
+   "name": "Seine",
+   "borders": [
+    [
+     "Île-de-France",
+     "Gâtinais"
+    ],
+    [
+     "Île-de-France",
+     "Upper Normandy"
+    ],
+    [
+     "Burgundy",
+     "Gâtinais"
+    ],
+    [
+     "Champagne",
+     "Gâtinais"
+    ]
+   ]
+  },
+  {
+   "name": "Loire",
+   "borders": [
+    [
+     "Poitou",
+     "Upper Brittany"
+    ],
+    [
+     "Orléanais",
+     "Gâtinais"
+    ]
+   ]
+  },
+  {
+   "name": "Elbe",
+   "borders": [
+    [
+     "Saxony",
+     "Brandenburg"
+    ],
+    [
+     "Schleswig-Holstein",
+     "Mecklenburg"
+    ],
+    [
+     "Schleswig-Holstein",
+     "Hanover"
+    ],
+    [
+     "Schleswig-Holstein",
+     "Oldenburg"
+    ],
+    [
+     "Hanover",
+     "Mecklenburg"
+    ],
+    [
+     "Hanover",
+     "Brandenburg"
+    ],
+    [
+     "Brandenburg",
+     "Magdeburg"
+    ]
+   ]
+  },
+  {
+   "name": "Oder",
+   "borders": [
+    [
+     "Silesia",
+     "Neumark"
+    ],
+    [
+     "Silesia",
+     "Oppeln"
+    ],
+    [
+     "Pomerania",
+     "Brandenburg"
+    ],
+    [
+     "Pomerania",
+     "Mecklenburg"
+    ],
+    [
+     "Brandenburg",
+     "Neumark"
+    ],
+    [
+     "Poznań",
+     "Neumark"
+    ]
+   ]
+  },
+  {
+   "name": "Vistula",
+   "borders": [
+    [
+     "Upper Silesia",
+     "Kraków"
+    ],
+    [
+     "Kraków",
+     "Lublin"
+    ],
+    [
+     "Kraków",
+     "Rzeszów"
+    ],
+    [
+     "Lublin",
+     "Warsaw"
+    ],
+    [
+     "Poznań",
+     "Warsaw"
+    ],
+    [
+     "Poznań",
+     "Pomerelia"
+    ]
+   ]
+  },
+  {
+   "name": "Narew",
+   "borders": [
+    [
+     "Warsaw",
+     "Masuria"
+    ]
+   ]
+  },
+  {
+   "name": "Warta",
+   "borders": [
+    [
+     "Pomerania",
+     "Neumark"
+    ],
+    [
+     "Upper Silesia",
+     "Łódź"
+    ],
+    [
+     "Poznań",
+     "Łódź"
+    ],
+    [
+     "Łódź",
+     "Oppeln"
+    ]
+   ]
+  },
+  {
+   "name": "Bug",
+   "borders": [
+    [
+     "Volhynia",
+     "Lwów"
+    ],
+    [
+     "Volhynia",
+     "Lublin"
+    ],
+    [
+     "Volhynia",
+     "Polesie"
+    ],
+    [
+     "Polesie",
+     "Lublin"
+    ],
+    [
+     "Polesie",
+     "Białystok"
+    ],
+    [
+     "Lublin",
+     "Lwów"
+    ],
+    [
+     "Lublin",
+     "Białystok"
+    ],
+    [
+     "Białystok",
+     "Warsaw"
+    ]
+   ]
+  },
+  {
+   "name": "Neman",
+   "borders": [
+    [
+     "East Prussia",
+     "Lithuania"
+    ],
+    [
+     "East Prussia",
+     "Samogitia"
+    ],
+    [
+     "Lithuania",
+     "Samogitia"
+    ]
+   ]
+  },
+  {
+   "name": "Western Dvina",
+   "borders": [
+    [
+     "Lithuania",
+     "Latgale"
+    ],
+    [
+     "Pskov",
+     "Kalinin"
+    ],
+    [
+     "Pskov",
+     "Smolensk"
+    ],
+    [
+     "Vitebsk",
+     "Latgale"
+    ],
+    [
+     "Kalinin",
+     "Smolensk"
+    ]
+   ]
+  },
+  {
+   "name": "Dniester",
+   "borders": [
+    [
+     "Vinnitsa",
+     "Bessarabia"
+    ],
+    [
+     "Vinnitsa",
+     "Bukovina"
+    ],
+    [
+     "Odessa",
+     "Bessarabia"
+    ],
+    [
+     "Stanisławów",
+     "Bukovina"
+    ],
+    [
+     "Bukovina",
+     "Zhitomir"
+    ],
+    [
+     "Bessarabia",
+     "Moldavia"
+    ]
+   ]
+  },
+  {
+   "name": "Prut",
+   "borders": [
+    [
+     "Odessa",
+     "Moldavia"
+    ],
+    [
+     "Stanisławów",
+     "Ruthenia"
+    ],
+    [
+     "Bukovina",
+     "Bessarabia"
+    ]
+   ]
+  },
+  {
+   "name": "Danube",
+   "borders": [
+    [
+     "Odessa",
+     "Dobruja"
+    ],
+    [
+     "Banat",
+     "Sofia"
+    ],
+    [
+     "Banat",
+     "South Serbia"
+    ],
+    [
+     "Wallachia",
+     "Varna"
+    ],
+    [
+     "Wallachia",
+     "Sofia"
+    ],
+    [
+     "South Serbia",
+     "Serbia"
+    ],
+    [
+     "Serbia",
+     "Syrmia"
+    ],
+    [
+     "Budapest",
+     "Western Slovakia"
+    ],
+    [
+     "Budapest",
+     "Northern Hungary"
+    ],
+    [
+     "Transdanubia",
+     "Western Slovakia"
+    ],
+    [
+     "Vienna",
+     "Western Slovakia"
+    ],
+    [
+     "Varna",
+     "Sofia"
+    ]
+   ]
+  },
+  {
+   "name": "Dnieper",
+   "borders": [
+    [
+     "Kiev",
+     "Chernigov"
+    ],
+    [
+     "Kiev",
+     "Poltava"
+    ],
+    [
+     "Kiev",
+     "Gomel"
+    ],
+    [
+     "Poltava",
+     "Dnepropetrovsk"
+    ],
+    [
+     "Poltava",
+     "Kirovograd"
+    ],
+    [
+     "Dnepropetrovsk",
+     "Zaporozhye"
+    ],
+    [
+     "Dnepropetrovsk",
+     "Kherson"
+    ],
+    [
+     "Gomel",
+     "Mogilev"
+    ],
+    [
+     "Gomel",
+     "Chernigov"
+    ],
+    [
+     "Vitebsk",
+     "Smolensk"
+    ],
+    [
+     "Vitebsk",
+     "Mogilev"
+    ],
+    [
+     "Kirovograd",
+     "Kherson"
+    ]
+   ]
+  },
+  {
+   "name": "Don",
+   "borders": [
+    [
+     "Voronezh",
+     "Oryol"
+    ],
+    [
+     "Rostov",
+     "Upper Don"
+    ]
+   ]
+  },
+  {
+   "name": "Volga",
+   "borders": [
+    [
+     "Stalingrad",
+     "Kalmykia"
+    ]
+   ]
+  },
+  {
+   "name": "Svir",
+   "borders": [
+    [
+     "Karelia",
+     "Leningrad"
+    ]
+   ]
+  },
+  {
+   "name": "Po",
+   "borders": [
+    [
+     "Piedmont",
+     "Lombardy"
+    ],
+    [
+     "Lombardy",
+     "Parma"
+    ],
+    [
+     "Veneto",
+     "Emilia"
+    ],
+    [
+     "Emilia",
+     "South Tyrol"
+    ],
+    [
+     "South Tyrol",
+     "Parma"
+    ]
+   ]
+  },
+  {
+   "name": "Ebro",
+   "borders": [
+    [
+     "Catalonia",
+     "Valencia"
+    ],
+    [
+     "Catalonia",
+     "Aragon"
+    ]
+   ]
+  },
+  {
+   "name": "Suez Canal",
+   "borders": [
+    [
+     "Sinai",
+     "Cairo"
+    ]
+   ]
+  }
+ ],
+ "provinces": [
+  {
+   "id": 0,
+   "name": "East Prussia",
+   "owner": "Germany",
+   "terrain": "plains",
+   "centre": [
+    21.385,
+    54.724
+   ],
+   "areaKm2": 13264,
+   "neighbours": [
+    179,
+    203,
+    238,
+    266
+   ],
+   "victoryPoints": 6,
+   "city": "Königsberg",
+   "capital": false
+  },
+  {
+   "id": 1,
+   "name": "Saxony",
+   "owner": "Germany",
+   "terrain": "plains",
+   "centre": [
+    13.341,
+    51.047
+   ],
+   "areaKm2": 18077,
+   "neighbours": [
+    5,
+    10,
+    13,
+    14,
+    130,
+    204,
+    267
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 2,
+   "name": "Bavaria",
+   "owner": "Germany",
+   "terrain": "plains",
+   "centre": [
+    11.781,
+    48.243
+   ],
+   "areaKm2": 34999,
+   "neighbours": [
+    8,
+    138,
+    139,
+    267,
+    268,
+    275
+   ],
+   "victoryPoints": 9,
+   "city": "Munich",
+   "capital": false
+  },
+  {
+   "id": 3,
+   "name": "Palatinate",
+   "owner": "Germany",
+   "terrain": "plains",
+   "centre": [
+    7.385,
+    49.843
+   ],
+   "areaKm2": 22584,
+   "neighbours": [
+    7,
+    8,
+    12,
+    24,
+    164,
+    182,
+    209
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 4,
+   "name": "Schleswig-Holstein",
+   "owner": "Germany",
+   "terrain": "plains",
+   "centre": [
+    9.856,
+    54.147
+   ],
+   "areaKm2": 15949,
+   "neighbours": [
+    6,
+    11,
+    169,
+    270
+   ],
+   "victoryPoints": 9,
+   "city": "Hamburg",
+   "capital": false
+  },
+  {
+   "id": 5,
+   "name": "Silesia",
+   "owner": "Germany",
+   "terrain": "plains",
+   "centre": [
+    16.371,
+    51.075
+   ],
+   "areaKm2": 19625,
+   "neighbours": [
+    1,
+    99,
+    130,
+    133,
+    204,
+    205
+   ],
+   "victoryPoints": 6,
+   "city": "Breslau",
+   "capital": false
+  },
+  {
+   "id": 6,
+   "name": "Hanover",
+   "owner": "Germany",
+   "terrain": "plains",
+   "centre": [
+    10.072,
+    52.485
+   ],
+   "areaKm2": 24305,
+   "neighbours": [
+    4,
+    10,
+    11,
+    12,
+    13,
+    14,
+    269,
+    270
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 7,
+   "name": "Rhineland",
+   "owner": "Germany",
+   "terrain": "plains",
+   "centre": [
+    6.921,
+    51.156
+   ],
+   "areaKm2": 17754,
+   "neighbours": [
+    3,
+    12,
+    164,
+    165,
+    166,
+    269
+   ],
+   "victoryPoints": 9,
+   "city": "Cologne",
+   "capital": false
+  },
+  {
+   "id": 8,
+   "name": "Württemberg",
+   "owner": "Germany",
+   "terrain": "plains",
+   "centre": [
+    9.412,
+    48.981
+   ],
+   "areaKm2": 17942,
+   "neighbours": [
+    2,
+    3,
+    12,
+    209,
+    267,
+    268
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 9,
+   "name": "Pomerania",
+   "owner": "Germany",
+   "terrain": "plains",
+   "centre": [
+    15.606,
+    53.585
+   ],
+   "areaKm2": 23590,
+   "neighbours": [
+    10,
+    11,
+    99,
+    204,
+    266
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 10,
+   "name": "Brandenburg",
+   "owner": "Germany",
+   "terrain": "plains",
+   "centre": [
+    13.401,
+    52.463
+   ],
+   "areaKm2": 30738,
+   "neighbours": [
+    1,
+    6,
+    9,
+    11,
+    14,
+    204
+   ],
+   "victoryPoints": 20,
+   "city": "Berlin",
+   "capital": true
+  },
+  {
+   "id": 11,
+   "name": "Mecklenburg",
+   "owner": "Germany",
+   "terrain": "plains",
+   "centre": [
+    12.507,
+    53.747
+   ],
+   "areaKm2": 23078,
+   "neighbours": [
+    4,
+    6,
+    9,
+    10
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 12,
+   "name": "Hesse",
+   "owner": "Germany",
+   "terrain": "plains",
+   "centre": [
+    9.03,
+    50.596
+   ],
+   "areaKm2": 21004,
+   "neighbours": [
+    3,
+    6,
+    7,
+    8,
+    13,
+    267,
+    269
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 13,
+   "name": "Thuringia",
+   "owner": "Germany",
+   "terrain": "plains",
+   "centre": [
+    11.023,
+    50.894
+   ],
+   "areaKm2": 16006,
+   "neighbours": [
+    1,
+    6,
+    12,
+    14,
+    267
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 14,
+   "name": "Magdeburg",
+   "owner": "Germany",
+   "terrain": "plains",
+   "centre": [
+    11.698,
+    51.993
+   ],
+   "areaKm2": 20559,
+   "neighbours": [
+    1,
+    6,
+    10,
+    13
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 15,
+   "name": "Corsica",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    9.103,
+    42.149
+   ],
+   "areaKm2": 8731,
+   "neighbours": [],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 16,
+   "name": "Oran",
+   "owner": "France",
+   "terrain": "desert",
+   "centre": [
+    0.185,
+    33.485
+   ],
+   "areaKm2": 143078,
+   "neighbours": [
+    17,
+    19,
+    224,
+    225,
+    419
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 17,
+   "name": "Constantine",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    4.427,
+    35.169
+   ],
+   "areaKm2": 234431,
+   "neighbours": [
+    16,
+    18,
+    224
+   ],
+   "victoryPoints": 6,
+   "city": "Algiers",
+   "capital": false
+  },
+  {
+   "id": 18,
+   "name": "Tunisia",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    9.397,
+    35.491
+   ],
+   "areaKm2": 79069,
+   "neighbours": [
+    17,
+    223,
+    224
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 19,
+   "name": "Fez",
+   "owner": "France",
+   "terrain": "desert",
+   "centre": [
+    -3.632,
+    33.876
+   ],
+   "areaKm2": 120816,
+   "neighbours": [
+    16,
+    102,
+    225,
+    226,
+    248
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 20,
+   "name": "Marrakech",
+   "owner": "France",
+   "terrain": "desert",
+   "centre": [
+    -7.575,
+    31.396
+   ],
+   "areaKm2": 152109,
+   "neighbours": [
+    225,
+    226,
+    419,
+    421
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 21,
+   "name": "Damascus",
+   "owner": "France",
+   "terrain": "desert",
+   "centre": [
+    37.606,
+    33.604
+   ],
+   "areaKm2": 61249,
+   "neighbours": [
+    22,
+    40,
+    41,
+    176,
+    276
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 22,
+   "name": "Syrian Desert",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    39.573,
+    35.925
+   ],
+   "areaKm2": 86287,
+   "neighbours": [
+    21,
+    111,
+    113,
+    176,
+    236,
+    253,
+    276
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 23,
+   "name": "Île-de-France",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    2.751,
+    49.577
+   ],
+   "areaKm2": 21721,
+   "neighbours": [
+    163,
+    207,
+    208,
+    211,
+    212
+   ],
+   "victoryPoints": 20,
+   "city": "Paris",
+   "capital": true
+  },
+  {
+   "id": 24,
+   "name": "Lorraine",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    5.976,
+    48.469
+   ],
+   "areaKm2": 35121,
+   "neighbours": [
+    3,
+    26,
+    164,
+    182,
+    208,
+    209,
+    212
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 25,
+   "name": "Provence",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    6.455,
+    43.835
+   ],
+   "areaKm2": 17142,
+   "neighbours": [
+    30,
+    54,
+    214,
+    215
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 26,
+   "name": "Burgundy",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    5.169,
+    47.007
+   ],
+   "areaKm2": 27584,
+   "neighbours": [
+    24,
+    35,
+    167,
+    209,
+    210,
+    212,
+    216
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 27,
+   "name": "Gascony",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    -0.303,
+    43.953
+   ],
+   "areaKm2": 43762,
+   "neighbours": [
+    28,
+    31,
+    34,
+    104,
+    105
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 28,
+   "name": "Guyenne",
+   "owner": "France",
+   "terrain": "hills",
+   "centre": [
+    1.896,
+    44.023
+   ],
+   "areaKm2": 29841,
+   "neighbours": [
+    27,
+    29,
+    30,
+    34,
+    105,
+    215,
+    216
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 29,
+   "name": "Roussillon",
+   "owner": "France",
+   "terrain": "mountains",
+   "centre": [
+    2.155,
+    42.904
+   ],
+   "areaKm2": 15525,
+   "neighbours": [
+    28,
+    30,
+    105
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 30,
+   "name": "Languedoc",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    4.332,
+    43.762
+   ],
+   "areaKm2": 20583,
+   "neighbours": [
+    25,
+    28,
+    29,
+    215
+   ],
+   "victoryPoints": 9,
+   "city": "Marseille",
+   "capital": false
+  },
+  {
+   "id": 31,
+   "name": "Poitou",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    -0.225,
+    46.581
+   ],
+   "areaKm2": 45798,
+   "neighbours": [
+    27,
+    33,
+    34,
+    35,
+    213
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 32,
+   "name": "Brittany",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    -3.229,
+    48.195
+   ],
+   "areaKm2": 20354,
+   "neighbours": [
+    213
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 33,
+   "name": "Normandy",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    0.015,
+    48.554
+   ],
+   "areaKm2": 17987,
+   "neighbours": [
+    31,
+    35,
+    211,
+    213
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 34,
+   "name": "Limousin",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    1.196,
+    45.391
+   ],
+   "areaKm2": 20599,
+   "neighbours": [
+    27,
+    28,
+    31,
+    35,
+    216
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 35,
+   "name": "Orléanais",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    2.272,
+    47.135
+   ],
+   "areaKm2": 27387,
+   "neighbours": [
+    26,
+    31,
+    33,
+    34,
+    211,
+    212,
+    216
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 36,
+   "name": "Northern Ireland",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    -6.693,
+    54.606
+   ],
+   "areaKm2": 14321,
+   "neighbours": [
+    171
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 37,
+   "name": "Malta",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    14.417,
+    35.911
+   ],
+   "areaKm2": 250,
+   "neighbours": [],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 38,
+   "name": "Gibraltar",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    -5.348,
+    36.141
+   ],
+   "areaKm2": 0,
+   "neighbours": [
+    102
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 39,
+   "name": "Cyprus",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    33.227,
+    35.051
+   ],
+   "areaKm2": 9412,
+   "neighbours": [],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 40,
+   "name": "Palestine",
+   "owner": "United Kingdom",
+   "terrain": "desert",
+   "centre": [
+    35.038,
+    31.541
+   ],
+   "areaKm2": 28262,
+   "neighbours": [
+    21,
+    41,
+    173
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 41,
+   "name": "Transjordan",
+   "owner": "United Kingdom",
+   "terrain": "desert",
+   "centre": [
+    36.758,
+    31.239
+   ],
+   "areaKm2": 88803,
+   "neighbours": [
+    21,
+    40,
+    176,
+    548
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 42,
+   "name": "Wales",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    -3.556,
+    52.41
+   ],
+   "areaKm2": 24989,
+   "neighbours": [
+    43,
+    44
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 43,
+   "name": "Yorkshire",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    -1.382,
+    53.493
+   ],
+   "areaKm2": 38259,
+   "neighbours": [
+    42,
+    44,
+    45,
+    47
+   ],
+   "victoryPoints": 9,
+   "city": "Manchester",
+   "capital": false
+  },
+  {
+   "id": 44,
+   "name": "Southern England",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    -2.022,
+    51.476
+   ],
+   "areaKm2": 27043,
+   "neighbours": [
+    42,
+    43,
+    47,
+    48
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 45,
+   "name": "Northern England",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    -2.5,
+    54.977
+   ],
+   "areaKm2": 20765,
+   "neighbours": [
+    43,
+    46
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 46,
+   "name": "Scottish Lowlands",
+   "owner": "United Kingdom",
+   "terrain": "hills",
+   "centre": [
+    -4.274,
+    55.879
+   ],
+   "areaKm2": 31366,
+   "neighbours": [
+    45,
+    49
+   ],
+   "victoryPoints": 7,
+   "city": "Glasgow",
+   "capital": false
+  },
+  {
+   "id": 47,
+   "name": "London",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    0.219,
+    51.892
+   ],
+   "areaKm2": 34627,
+   "neighbours": [
+    43,
+    44
+   ],
+   "victoryPoints": 20,
+   "city": "London",
+   "capital": true
+  },
+  {
+   "id": 48,
+   "name": "South West England",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    -4.138,
+    50.62
+   ],
+   "areaKm2": 10433,
+   "neighbours": [
+    44
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 49,
+   "name": "Scottish Highlands",
+   "owner": "United Kingdom",
+   "terrain": "hills",
+   "centre": [
+    -4.261,
+    57.619
+   ],
+   "areaKm2": 41599,
+   "neighbours": [
+    46
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 50,
+   "name": "Tripolitania",
+   "owner": "Italy",
+   "terrain": "desert",
+   "centre": [
+    13.398,
+    30.899
+   ],
+   "areaKm2": 95414,
+   "neighbours": [
+    272,
+    273,
+    473
+   ],
+   "victoryPoints": 4,
+   "city": "Tripoli",
+   "capital": false
+  },
+  {
+   "id": 51,
+   "name": "Cyrenaica",
+   "owner": "Italy",
+   "terrain": "desert",
+   "centre": [
+    21.651,
+    31.896
+   ],
+   "areaKm2": 54254,
+   "neighbours": [
+    222,
+    273,
+    472
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 52,
+   "name": "Sardinia",
+   "owner": "Italy",
+   "terrain": "plains",
+   "centre": [
+    9.031,
+    40.084
+   ],
+   "areaKm2": 23960,
+   "neighbours": [],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 53,
+   "name": "Sicily",
+   "owner": "Italy",
+   "terrain": "plains",
+   "centre": [
+    14.696,
+    37.484
+   ],
+   "areaKm2": 15269,
+   "neighbours": [
+    62,
+    221
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 54,
+   "name": "Piedmont",
+   "owner": "Italy",
+   "terrain": "plains",
+   "centre": [
+    7.881,
+    44.911
+   ],
+   "areaKm2": 29776,
+   "neighbours": [
+    25,
+    55,
+    167,
+    210,
+    214,
+    218
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 55,
+   "name": "Lombardy",
+   "owner": "Italy",
+   "terrain": "plains",
+   "centre": [
+    9.502,
+    45.628
+   ],
+   "areaKm2": 27748,
+   "neighbours": [
+    54,
+    167,
+    168,
+    217,
+    218
+   ],
+   "victoryPoints": 11,
+   "city": "Milan",
+   "capital": false
+  },
+  {
+   "id": 56,
+   "name": "Veneto",
+   "owner": "Italy",
+   "terrain": "plains",
+   "centre": [
+    12.846,
+    45.772
+   ],
+   "areaKm2": 16764,
+   "neighbours": [
+    58,
+    138,
+    217,
+    227
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 57,
+   "name": "Umbria",
+   "owner": "Italy",
+   "terrain": "hills",
+   "centre": [
+    12.761,
+    43.231
+   ],
+   "areaKm2": 17521,
+   "neighbours": [
+    58,
+    59,
+    219
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 58,
+   "name": "Emilia",
+   "owner": "Italy",
+   "terrain": "hills",
+   "centre": [
+    11.483,
+    44.225
+   ],
+   "areaKm2": 19734,
+   "neighbours": [
+    56,
+    57,
+    217,
+    218,
+    219
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 59,
+   "name": "Lazio",
+   "owner": "Italy",
+   "terrain": "hills",
+   "centre": [
+    13.221,
+    42.222
+   ],
+   "areaKm2": 17620,
+   "neighbours": [
+    57,
+    219,
+    220
+   ],
+   "victoryPoints": 20,
+   "city": "Rome",
+   "capital": true
+  },
+  {
+   "id": 60,
+   "name": "Campania",
+   "owner": "Italy",
+   "terrain": "hills",
+   "centre": [
+    15.448,
+    40.936
+   ],
+   "areaKm2": 25989,
+   "neighbours": [
+    61,
+    62,
+    220
+   ],
+   "victoryPoints": 7,
+   "city": "Naples",
+   "capital": false
+  },
+  {
+   "id": 61,
+   "name": "Apulia",
+   "owner": "Italy",
+   "terrain": "hills",
+   "centre": [
+    17.159,
+    40.569
+   ],
+   "areaKm2": 14378,
+   "neighbours": [
+    60,
+    62
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 62,
+   "name": "Calabria",
+   "owner": "Italy",
+   "terrain": "plains",
+   "centre": [
+    16.348,
+    39.071
+   ],
+   "areaKm2": 15212,
+   "neighbours": [
+    53,
+    60,
+    61
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 63,
+   "name": "Abkhazia",
+   "owner": "Soviet Union",
+   "terrain": "mountains",
+   "centre": [
+    42.901,
+    42.344
+   ],
+   "areaKm2": 51438,
+   "neighbours": [
+    64,
+    110,
+    260,
+    265
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 64,
+   "name": "Georgia",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    45.311,
+    40.952
+   ],
+   "areaKm2": 60565,
+   "neighbours": [
+    63,
+    65,
+    77,
+    110,
+    111,
+    265,
+    540
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 65,
+   "name": "Azerbaijan",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    47.224,
+    40.222
+   ],
+   "areaKm2": 48135,
+   "neighbours": [
+    64,
+    77,
+    198,
+    540
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 66,
+   "name": "Kiev",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    30.453,
+    50.284
+   ],
+   "areaKm2": 28521,
+   "neighbours": [
+    67,
+    69,
+    73,
+    187,
+    188
+   ],
+   "victoryPoints": 11,
+   "city": "Kiev",
+   "capital": false
+  },
+  {
+   "id": 67,
+   "name": "Vinnitsa",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    28.69,
+    48.908
+   ],
+   "areaKm2": 26656,
+   "neighbours": [
+    66,
+    68,
+    69,
+    122,
+    123,
+    188,
+    189
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 68,
+   "name": "Odessa",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    29.851,
+    46.724
+   ],
+   "areaKm2": 33213,
+   "neighbours": [
+    67,
+    121,
+    123,
+    189,
+    231
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 69,
+   "name": "Poltava",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    32.742,
+    49.536
+   ],
+   "areaKm2": 49379,
+   "neighbours": [
+    66,
+    67,
+    70,
+    187,
+    189,
+    190,
+    191
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 70,
+   "name": "Dnepropetrovsk",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    34.839,
+    48.303
+   ],
+   "areaKm2": 31648,
+   "neighbours": [
+    69,
+    71,
+    72,
+    189,
+    191,
+    192
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 71,
+   "name": "Donbass",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    37.67,
+    48.041
+   ],
+   "areaKm2": 26562,
+   "neighbours": [
+    70,
+    72,
+    191,
+    193,
+    194
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 72,
+   "name": "Zaporozhye",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    35.692,
+    47.266
+   ],
+   "areaKm2": 27078,
+   "neighbours": [
+    70,
+    71,
+    192
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 73,
+   "name": "Gomel",
+   "owner": "Soviet Union",
+   "terrain": "marsh",
+   "centre": [
+    29.64,
+    52.29
+   ],
+   "areaKm2": 40588,
+   "neighbours": [
+    66,
+    74,
+    92,
+    186,
+    187,
+    188,
+    202,
+    256
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 74,
+   "name": "Minsk",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    27.673,
+    53.758
+   ],
+   "areaKm2": 39714,
+   "neighbours": [
+    73,
+    92,
+    93,
+    185,
+    186
+   ],
+   "victoryPoints": 6,
+   "city": "Minsk",
+   "capital": false
+  },
+  {
+   "id": 75,
+   "name": "Novgorod",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    32.467,
+    58.307
+   ],
+   "areaKm2": 54801,
+   "neighbours": [
+    90,
+    183,
+    184,
+    197
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 76,
+   "name": "Kuban",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    38.902,
+    45.679
+   ],
+   "areaKm2": 46195,
+   "neighbours": [
+    194,
+    260
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 77,
+   "name": "Dagestan",
+   "owner": "Soviet Union",
+   "terrain": "mountains",
+   "centre": [
+    46.936,
+    42.69
+   ],
+   "areaKm2": 46873,
+   "neighbours": [
+    64,
+    65,
+    265
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 78,
+   "name": "Murmansk",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    32.156,
+    68.185
+   ],
+   "areaKm2": 78603,
+   "neighbours": [
+    145,
+    149,
+    263,
+    264,
+    278
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 79,
+   "name": "Karelia",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    33.735,
+    62.203
+   ],
+   "areaKm2": 92916,
+   "neighbours": [
+    87,
+    90,
+    151,
+    183,
+    241,
+    263
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 80,
+   "name": "Moscow",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    38.001,
+    55.077
+   ],
+   "areaKm2": 56774,
+   "neighbours": [
+    196,
+    197,
+    255,
+    257,
+    261
+   ],
+   "victoryPoints": 20,
+   "city": "Moscow",
+   "capital": true
+  },
+  {
+   "id": 81,
+   "name": "Kursk",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    36.604,
+    51.166
+   ],
+   "areaKm2": 52552,
+   "neighbours": [
+    82,
+    190,
+    191,
+    193,
+    256,
+    257,
+    258
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 82,
+   "name": "Voronezh",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    39.844,
+    51.432
+   ],
+   "areaKm2": 26490,
+   "neighbours": [
+    81,
+    257,
+    258,
+    261
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 83,
+   "name": "Stalingrad",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    44.15,
+    49.608
+   ],
+   "areaKm2": 112697,
+   "neighbours": [
+    84,
+    85,
+    194,
+    258,
+    358
+   ],
+   "victoryPoints": 9,
+   "city": "Stalingrad",
+   "capital": false
+  },
+  {
+   "id": 84,
+   "name": "Saratov",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    46.071,
+    51.431
+   ],
+   "areaKm2": 74175,
+   "neighbours": [
+    83,
+    88,
+    258,
+    259,
+    261,
+    358
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 85,
+   "name": "Kalmykia",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    46.08,
+    46.717
+   ],
+   "areaKm2": 119077,
+   "neighbours": [
+    83,
+    194,
+    195,
+    265,
+    358
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 86,
+   "name": "Crimea",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    34.349,
+    45.309
+   ],
+   "areaKm2": 27051,
+   "neighbours": [
+    192
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 87,
+   "name": "Arkhangelsk",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    41.006,
+    62.49
+   ],
+   "areaKm2": 153070,
+   "neighbours": [
+    79,
+    90,
+    262,
+    263,
+    341,
+    342
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 88,
+   "name": "Penza",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    45.21,
+    54.095
+   ],
+   "areaKm2": 82511,
+   "neighbours": [
+    84,
+    89,
+    259,
+    261,
+    340
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 89,
+   "name": "Gorky",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    45.395,
+    56.357
+   ],
+   "areaKm2": 98012,
+   "neighbours": [
+    88,
+    196,
+    261,
+    340,
+    341
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 90,
+   "name": "Vologda",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    40.486,
+    59.999
+   ],
+   "areaKm2": 145011,
+   "neighbours": [
+    75,
+    79,
+    87,
+    183,
+    196,
+    197,
+    341
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 91,
+   "name": "Volhynia",
+   "owner": "Poland",
+   "terrain": "plains",
+   "centre": [
+    24.852,
+    51.18
+   ],
+   "areaKm2": 19683,
+   "neighbours": [
+    92,
+    96,
+    201,
+    202
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 92,
+   "name": "Polesie",
+   "owner": "Poland",
+   "terrain": "marsh",
+   "centre": [
+    25.48,
+    52.378
+   ],
+   "areaKm2": 32846,
+   "neighbours": [
+    73,
+    74,
+    91,
+    93,
+    96,
+    97,
+    202
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 93,
+   "name": "Nowogródek",
+   "owner": "Poland",
+   "terrain": "forest",
+   "centre": [
+    25.181,
+    54.023
+   ],
+   "areaKm2": 34849,
+   "neighbours": [
+    74,
+    92,
+    97,
+    179,
+    185
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 94,
+   "name": "Upper Silesia",
+   "owner": "Poland",
+   "terrain": "plains",
+   "centre": [
+    18.994,
+    50.304
+   ],
+   "areaKm2": 12262,
+   "neighbours": [
+    95,
+    131,
+    133,
+    199,
+    205
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 95,
+   "name": "Kraków",
+   "owner": "Poland",
+   "terrain": "plains",
+   "centre": [
+    20.499,
+    50.217
+   ],
+   "areaKm2": 26674,
+   "neighbours": [
+    94,
+    96,
+    100,
+    131,
+    132,
+    199,
+    200
+   ],
+   "victoryPoints": 7,
+   "city": "Kraków",
+   "capital": false
+  },
+  {
+   "id": 96,
+   "name": "Lublin",
+   "owner": "Poland",
+   "terrain": "plains",
+   "centre": [
+    22.905,
+    51.24
+   ],
+   "areaKm2": 24545,
+   "neighbours": [
+    91,
+    92,
+    95,
+    97,
+    100,
+    200,
+    201
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 97,
+   "name": "Białystok",
+   "owner": "Poland",
+   "terrain": "plains",
+   "centre": [
+    22.884,
+    53.277
+   ],
+   "areaKm2": 21018,
+   "neighbours": [
+    92,
+    93,
+    96,
+    100,
+    179,
+    203
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 98,
+   "name": "Stanisławów",
+   "owner": "Poland",
+   "terrain": "hills",
+   "centre": [
+    25.131,
+    49.046
+   ],
+   "areaKm2": 27827,
+   "neighbours": [
+    118,
+    122,
+    132,
+    188,
+    201,
+    202
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 99,
+   "name": "Poznań",
+   "owner": "Poland",
+   "terrain": "plains",
+   "centre": [
+    17.509,
+    52.267
+   ],
+   "areaKm2": 32870,
+   "neighbours": [
+    5,
+    9,
+    100,
+    199,
+    204,
+    205,
+    266
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 100,
+   "name": "Warsaw",
+   "owner": "Poland",
+   "terrain": "plains",
+   "centre": [
+    21.086,
+    52.307
+   ],
+   "areaKm2": 34885,
+   "neighbours": [
+    95,
+    96,
+    97,
+    99,
+    199,
+    203,
+    266
+   ],
+   "victoryPoints": 20,
+   "city": "Warsaw",
+   "capital": true
+  },
+  {
+   "id": 101,
+   "name": "Balearic Islands",
+   "owner": "Spain",
+   "terrain": "plains",
+   "centre": [
+    2.914,
+    39.583
+   ],
+   "areaKm2": 5055,
+   "neighbours": [],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 102,
+   "name": "Andalusia",
+   "owner": "Spain",
+   "terrain": "plains",
+   "centre": [
+    -5.252,
+    37.35
+   ],
+   "areaKm2": 42529,
+   "neighbours": [
+    19,
+    38,
+    246,
+    248
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 103,
+   "name": "Murcia",
+   "owner": "Spain",
+   "terrain": "plains",
+   "centre": [
+    -1.546,
+    38.47
+   ],
+   "areaKm2": 31975,
+   "neighbours": [
+    247,
+    248
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 104,
+   "name": "Basque Country",
+   "owner": "Spain",
+   "terrain": "plains",
+   "centre": [
+    -2.823,
+    42.452
+   ],
+   "areaKm2": 52416,
+   "neighbours": [
+    27,
+    105,
+    107,
+    108,
+    109
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 105,
+   "name": "Catalonia",
+   "owner": "Spain",
+   "terrain": "plains",
+   "centre": [
+    1.01,
+    41.928
+   ],
+   "areaKm2": 47461,
+   "neighbours": [
+    27,
+    28,
+    29,
+    104,
+    109,
+    247
+   ],
+   "victoryPoints": 9,
+   "city": "Barcelona",
+   "capital": false
+  },
+  {
+   "id": 106,
+   "name": "Galicia",
+   "owner": "Spain",
+   "terrain": "plains",
+   "centre": [
+    -7.909,
+    42.758
+   ],
+   "areaKm2": 29675,
+   "neighbours": [
+    108,
+    162
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 107,
+   "name": "Madrid",
+   "owner": "Spain",
+   "terrain": "plains",
+   "centre": [
+    -4.211,
+    40.353
+   ],
+   "areaKm2": 38215,
+   "neighbours": [
+    104,
+    108,
+    109,
+    245,
+    246,
+    247,
+    248
+   ],
+   "victoryPoints": 20,
+   "city": "Madrid",
+   "capital": true
+  },
+  {
+   "id": 108,
+   "name": "León",
+   "owner": "Spain",
+   "terrain": "plains",
+   "centre": [
+    -5.548,
+    42.39
+   ],
+   "areaKm2": 53094,
+   "neighbours": [
+    104,
+    106,
+    107,
+    162,
+    245
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 109,
+   "name": "Aragon",
+   "owner": "Spain",
+   "terrain": "plains",
+   "centre": [
+    -1.412,
+    41.08
+   ],
+   "areaKm2": 44472,
+   "neighbours": [
+    104,
+    105,
+    107,
+    247
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 110,
+   "name": "Erzurum",
+   "owner": "Turkey",
+   "terrain": "mountains",
+   "centre": [
+    41.848,
+    40.222
+   ],
+   "areaKm2": 55786,
+   "neighbours": [
+    63,
+    64,
+    111,
+    113,
+    253,
+    254
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 111,
+   "name": "Van",
+   "owner": "Turkey",
+   "terrain": "mountains",
+   "centre": [
+    43.201,
+    38.482
+   ],
+   "areaKm2": 62800,
+   "neighbours": [
+    22,
+    64,
+    110,
+    236,
+    253,
+    540
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 112,
+   "name": "Bursa",
+   "owner": "Turkey",
+   "terrain": "hills",
+   "centre": [
+    28.219,
+    40.491
+   ],
+   "areaKm2": 73112,
+   "neighbours": [
+    115,
+    116,
+    158,
+    159,
+    230
+   ],
+   "victoryPoints": 11,
+   "city": "Istanbul",
+   "capital": false
+  },
+  {
+   "id": 113,
+   "name": "Adana",
+   "owner": "Turkey",
+   "terrain": "hills",
+   "centre": [
+    37.742,
+    37.738
+   ],
+   "areaKm2": 89614,
+   "neighbours": [
+    22,
+    110,
+    114,
+    250,
+    253,
+    254,
+    276
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 114,
+   "name": "Sivas",
+   "owner": "Turkey",
+   "terrain": "hills",
+   "centre": [
+    37.049,
+    39.544
+   ],
+   "areaKm2": 58221,
+   "neighbours": [
+    113,
+    250,
+    251,
+    254
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 115,
+   "name": "Ankara",
+   "owner": "Turkey",
+   "terrain": "hills",
+   "centre": [
+    31.963,
+    40.011
+   ],
+   "areaKm2": 53929,
+   "neighbours": [
+    112,
+    116,
+    117,
+    249,
+    250,
+    251,
+    252
+   ],
+   "victoryPoints": 20,
+   "city": "Ankara",
+   "capital": true
+  },
+  {
+   "id": 116,
+   "name": "Smyrna",
+   "owner": "Turkey",
+   "terrain": "hills",
+   "centre": [
+    28.274,
+    38.641
+   ],
+   "areaKm2": 45772,
+   "neighbours": [
+    112,
+    115,
+    252
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 117,
+   "name": "Konya",
+   "owner": "Turkey",
+   "terrain": "hills",
+   "centre": [
+    31.894,
+    37.656
+   ],
+   "areaKm2": 70257,
+   "neighbours": [
+    115,
+    250,
+    252
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 118,
+   "name": "Crișana",
+   "owner": "Romania",
+   "terrain": "hills",
+   "centre": [
+    23.131,
+    47.214
+   ],
+   "areaKm2": 29169,
+   "neighbours": [
+    98,
+    119,
+    122,
+    132,
+    134,
+    233
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 119,
+   "name": "Banat",
+   "owner": "Romania",
+   "terrain": "hills",
+   "centre": [
+    22.596,
+    45.607
+   ],
+   "areaKm2": 54313,
+   "neighbours": [
+    118,
+    120,
+    125,
+    126,
+    134,
+    135,
+    160,
+    228,
+    232,
+    233
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 120,
+   "name": "Wallachia",
+   "owner": "Romania",
+   "terrain": "plains",
+   "centre": [
+    24.744,
+    44.198
+   ],
+   "areaKm2": 23191,
+   "neighbours": [
+    119,
+    121,
+    158,
+    160,
+    232
+   ],
+   "victoryPoints": 20,
+   "city": "Bucharest",
+   "capital": true
+  },
+  {
+   "id": 121,
+   "name": "Dobruja",
+   "owner": "Romania",
+   "terrain": "plains",
+   "centre": [
+    27.716,
+    44.6
+   ],
+   "areaKm2": 42715,
+   "neighbours": [
+    68,
+    120,
+    158,
+    231,
+    232
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 122,
+   "name": "Bukovina",
+   "owner": "Romania",
+   "terrain": "hills",
+   "centre": [
+    26.363,
+    47.919
+   ],
+   "areaKm2": 28160,
+   "neighbours": [
+    67,
+    98,
+    118,
+    123,
+    188,
+    233
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 123,
+   "name": "Bessarabia",
+   "owner": "Romania",
+   "terrain": "plains",
+   "centre": [
+    28.162,
+    47.418
+   ],
+   "areaKm2": 19861,
+   "neighbours": [
+    67,
+    68,
+    122,
+    231,
+    233
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 124,
+   "name": "Macedonia",
+   "owner": "Yugoslavia",
+   "terrain": "hills",
+   "centre": [
+    21.609,
+    41.809
+   ],
+   "areaKm2": 34250,
+   "neighbours": [
+    125,
+    154,
+    155,
+    159,
+    160,
+    178
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 125,
+   "name": "South Serbia",
+   "owner": "Yugoslavia",
+   "terrain": "hills",
+   "centre": [
+    21.365,
+    43.6
+   ],
+   "areaKm2": 43615,
+   "neighbours": [
+    119,
+    124,
+    126,
+    129,
+    160,
+    178
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 126,
+   "name": "Serbia",
+   "owner": "Yugoslavia",
+   "terrain": "hills",
+   "centre": [
+    20.098,
+    44.782
+   ],
+   "areaKm2": 21850,
+   "neighbours": [
+    119,
+    125,
+    128,
+    129,
+    228
+   ],
+   "victoryPoints": 20,
+   "city": "Belgrade",
+   "capital": true
+  },
+  {
+   "id": 127,
+   "name": "Croatia",
+   "owner": "Yugoslavia",
+   "terrain": "plains",
+   "centre": [
+    16.062,
+    45.624
+   ],
+   "areaKm2": 25924,
+   "neighbours": [
+    128,
+    136,
+    137,
+    227
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 128,
+   "name": "Bosnia",
+   "owner": "Yugoslavia",
+   "terrain": "hills",
+   "centre": [
+    16.993,
+    44.483
+   ],
+   "areaKm2": 46141,
+   "neighbours": [
+    126,
+    127,
+    129,
+    135,
+    136,
+    228
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 129,
+   "name": "Montenegro",
+   "owner": "Yugoslavia",
+   "terrain": "hills",
+   "centre": [
+    18.836,
+    43.216
+   ],
+   "areaKm2": 37191,
+   "neighbours": [
+    125,
+    126,
+    128,
+    178
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 130,
+   "name": "Bohemia",
+   "owner": "Czechoslovakia",
+   "terrain": "hills",
+   "centre": [
+    14.109,
+    50.317
+   ],
+   "areaKm2": 20495,
+   "neighbours": [
+    1,
+    5,
+    133,
+    267,
+    275
+   ],
+   "victoryPoints": 20,
+   "city": "Prague",
+   "capital": true
+  },
+  {
+   "id": 131,
+   "name": "Slovakia",
+   "owner": "Czechoslovakia",
+   "terrain": "plains",
+   "centre": [
+    19.372,
+    48.785
+   ],
+   "areaKm2": 16011,
+   "neighbours": [
+    94,
+    95,
+    132,
+    133,
+    234,
+    235
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 132,
+   "name": "Ruthenia",
+   "owner": "Czechoslovakia",
+   "terrain": "hills",
+   "centre": [
+    22.169,
+    48.695
+   ],
+   "areaKm2": 28321,
+   "neighbours": [
+    95,
+    98,
+    118,
+    131,
+    134,
+    200,
+    201,
+    234
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 133,
+   "name": "Moravia",
+   "owner": "Czechoslovakia",
+   "terrain": "hills",
+   "centre": [
+    16.565,
+    49.661
+   ],
+   "areaKm2": 33791,
+   "neighbours": [
+    5,
+    94,
+    130,
+    131,
+    137,
+    205,
+    235,
+    275
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 134,
+   "name": "Great Hungarian Plain",
+   "owner": "Hungary",
+   "terrain": "plains",
+   "centre": [
+    21.252,
+    47.375
+   ],
+   "areaKm2": 23083,
+   "neighbours": [
+    118,
+    119,
+    132,
+    135,
+    234
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 135,
+   "name": "Budapest",
+   "owner": "Hungary",
+   "terrain": "plains",
+   "centre": [
+    19.114,
+    46.728
+   ],
+   "areaKm2": 32166,
+   "neighbours": [
+    119,
+    128,
+    134,
+    136,
+    228,
+    234,
+    235
+   ],
+   "victoryPoints": 20,
+   "city": "Budapest",
+   "capital": true
+  },
+  {
+   "id": 136,
+   "name": "Transdanubia",
+   "owner": "Hungary",
+   "terrain": "plains",
+   "centre": [
+    17.391,
+    47.031
+   ],
+   "areaKm2": 24421,
+   "neighbours": [
+    127,
+    128,
+    135,
+    137,
+    227,
+    235
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 137,
+   "name": "Vienna",
+   "owner": "Austria",
+   "terrain": "plains",
+   "centre": [
+    15.522,
+    47.792
+   ],
+   "areaKm2": 39812,
+   "neighbours": [
+    127,
+    133,
+    136,
+    138,
+    227,
+    235,
+    275
+   ],
+   "victoryPoints": 20,
+   "city": "Vienna",
+   "capital": true
+  },
+  {
+   "id": 138,
+   "name": "Upper Austria",
+   "owner": "Austria",
+   "terrain": "mountains",
+   "centre": [
+    13.723,
+    47.494
+   ],
+   "areaKm2": 28624,
+   "neighbours": [
+    2,
+    56,
+    137,
+    139,
+    217,
+    227,
+    275
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 139,
+   "name": "Tyrol",
+   "owner": "Austria",
+   "terrain": "mountains",
+   "centre": [
+    11.226,
+    47.202
+   ],
+   "areaKm2": 15280,
+   "neighbours": [
+    2,
+    138,
+    168,
+    217,
+    268
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 140,
+   "name": "Norrbotten",
+   "owner": "Sweden",
+   "terrain": "forest",
+   "centre": [
+    19.774,
+    66.26
+   ],
+   "areaKm2": 56007,
+   "neighbours": [
+    141,
+    146,
+    149,
+    279
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 141,
+   "name": "Västerbotten",
+   "owner": "Sweden",
+   "terrain": "forest",
+   "centre": [
+    17.878,
+    64.868
+   ],
+   "areaKm2": 58328,
+   "neighbours": [
+    140,
+    146,
+    244
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 142,
+   "name": "Dalarna",
+   "owner": "Sweden",
+   "terrain": "mountains",
+   "centre": [
+    14.507,
+    60.737
+   ],
+   "areaKm2": 71665,
+   "neighbours": [
+    143,
+    147,
+    148,
+    244
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 143,
+   "name": "Stockholm",
+   "owner": "Sweden",
+   "terrain": "plains",
+   "centre": [
+    15.034,
+    58.918
+   ],
+   "areaKm2": 77640,
+   "neighbours": [
+    142,
+    144,
+    148
+   ],
+   "victoryPoints": 24,
+   "city": "Stockholm",
+   "capital": true
+  },
+  {
+   "id": 144,
+   "name": "Scania",
+   "owner": "Sweden",
+   "terrain": "plains",
+   "centre": [
+    14.71,
+    56.886
+   ],
+   "areaKm2": 54774,
+   "neighbours": [
+    143
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 145,
+   "name": "Finnmark",
+   "owner": "Norway",
+   "terrain": "forest",
+   "centre": [
+    23.631,
+    69.732
+   ],
+   "areaKm2": 73547,
+   "neighbours": [
+    78,
+    146,
+    278,
+    279
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 146,
+   "name": "Nordland",
+   "owner": "Norway",
+   "terrain": "mountains",
+   "centre": [
+    13.62,
+    65.96
+   ],
+   "areaKm2": 58552,
+   "neighbours": [
+    140,
+    141,
+    145,
+    243,
+    244,
+    279
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 147,
+   "name": "Hedmark",
+   "owner": "Norway",
+   "terrain": "mountains",
+   "centre": [
+    10.449,
+    61.445
+   ],
+   "areaKm2": 52023,
+   "neighbours": [
+    142,
+    148,
+    243,
+    244
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 148,
+   "name": "Oslo",
+   "owner": "Norway",
+   "terrain": "plains",
+   "centre": [
+    9.424,
+    59.859
+   ],
+   "areaKm2": 41822,
+   "neighbours": [
+    142,
+    143,
+    147,
+    242,
+    243
+   ],
+   "victoryPoints": 20,
+   "city": "Oslo",
+   "capital": true
+  },
+  {
+   "id": 149,
+   "name": "Lapland",
+   "owner": "Finland",
+   "terrain": "forest",
+   "centre": [
+    26.487,
+    66.763
+   ],
+   "areaKm2": 49309,
+   "neighbours": [
+    78,
+    140,
+    150,
+    263,
+    278,
+    279
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 150,
+   "name": "Ostrobothnia",
+   "owner": "Finland",
+   "terrain": "forest",
+   "centre": [
+    27.107,
+    64.692
+   ],
+   "areaKm2": 66143,
+   "neighbours": [
+    149,
+    151,
+    263,
+    277
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 151,
+   "name": "Savonia",
+   "owner": "Finland",
+   "terrain": "forest",
+   "centre": [
+    28.754,
+    63.042
+   ],
+   "areaKm2": 41069,
+   "neighbours": [
+    79,
+    150,
+    241,
+    263,
+    277
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 152,
+   "name": "Helsinki",
+   "owner": "Finland",
+   "terrain": "forest",
+   "centre": [
+    23.564,
+    61.015
+   ],
+   "areaKm2": 44652,
+   "neighbours": [
+    241,
+    277
+   ],
+   "victoryPoints": 20,
+   "city": "Helsinki",
+   "capital": true
+  },
+  {
+   "id": 153,
+   "name": "Crete",
+   "owner": "Greece",
+   "terrain": "plains",
+   "centre": [
+    24.858,
+    35.234
+   ],
+   "areaKm2": 8302,
+   "neighbours": [],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 154,
+   "name": "Epirus",
+   "owner": "Greece",
+   "terrain": "hills",
+   "centre": [
+    21.511,
+    39.718
+   ],
+   "areaKm2": 34474,
+   "neighbours": [
+    124,
+    155,
+    178,
+    229
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 155,
+   "name": "Salonika",
+   "owner": "Greece",
+   "terrain": "hills",
+   "centre": [
+    22.935,
+    40.733
+   ],
+   "areaKm2": 19301,
+   "neighbours": [
+    124,
+    154,
+    159,
+    230
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 156,
+   "name": "Attica",
+   "owner": "Greece",
+   "terrain": "hills",
+   "centre": [
+    22.673,
+    37.448
+   ],
+   "areaKm2": 19126,
+   "neighbours": [
+    229
+   ],
+   "victoryPoints": 20,
+   "city": "Athens",
+   "capital": true
+  },
+  {
+   "id": 157,
+   "name": "Aegean Islands",
+   "owner": "Greece",
+   "terrain": "plains",
+   "centre": [
+    26.312,
+    37.707
+   ],
+   "areaKm2": 7768,
+   "neighbours": [],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 158,
+   "name": "Varna",
+   "owner": "Bulgaria",
+   "terrain": "plains",
+   "centre": [
+    26.655,
+    42.96
+   ],
+   "areaKm2": 35801,
+   "neighbours": [
+    112,
+    120,
+    121,
+    159,
+    160
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 159,
+   "name": "Plovdiv",
+   "owner": "Bulgaria",
+   "terrain": "plains",
+   "centre": [
+    24.776,
+    42.025
+   ],
+   "areaKm2": 35269,
+   "neighbours": [
+    112,
+    124,
+    155,
+    158,
+    160,
+    230
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 160,
+   "name": "Sofia",
+   "owner": "Bulgaria",
+   "terrain": "plains",
+   "centre": [
+    23.62,
+    43.091
+   ],
+   "areaKm2": 33880,
+   "neighbours": [
+    119,
+    120,
+    124,
+    125,
+    158,
+    159
+   ],
+   "victoryPoints": 20,
+   "city": "Sofia",
+   "capital": true
+  },
+  {
+   "id": 161,
+   "name": "Lisbon",
+   "owner": "Portugal",
+   "terrain": "plains",
+   "centre": [
+    -8.204,
+    38.542
+   ],
+   "areaKm2": 46599,
+   "neighbours": [
+    162,
+    245,
+    246
+   ],
+   "victoryPoints": 20,
+   "city": "Lisbon",
+   "capital": true
+  },
+  {
+   "id": 162,
+   "name": "Beira",
+   "owner": "Portugal",
+   "terrain": "plains",
+   "centre": [
+    -7.729,
+    40.906
+   ],
+   "areaKm2": 41503,
+   "neighbours": [
+    106,
+    108,
+    161,
+    245
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 163,
+   "name": "Brussels",
+   "owner": "Belgium",
+   "terrain": "plains",
+   "centre": [
+    4.372,
+    50.789
+   ],
+   "areaKm2": 10101,
+   "neighbours": [
+    23,
+    164,
+    206,
+    207,
+    208,
+    271
+   ],
+   "victoryPoints": 20,
+   "city": "Brussels",
+   "capital": true
+  },
+  {
+   "id": 164,
+   "name": "Wallonia",
+   "owner": "Belgium",
+   "terrain": "plains",
+   "centre": [
+    5.38,
+    50.353
+   ],
+   "areaKm2": 14271,
+   "neighbours": [
+    3,
+    7,
+    24,
+    163,
+    166,
+    182,
+    208,
+    271
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 165,
+   "name": "Holland",
+   "owner": "Netherlands",
+   "terrain": "plains",
+   "centre": [
+    5.956,
+    52.789
+   ],
+   "areaKm2": 17958,
+   "neighbours": [
+    7,
+    166,
+    269,
+    270,
+    271
+   ],
+   "victoryPoints": 20,
+   "city": "Amsterdam",
+   "capital": true
+  },
+  {
+   "id": 166,
+   "name": "Brabant",
+   "owner": "Netherlands",
+   "terrain": "plains",
+   "centre": [
+    5.768,
+    51.775
+   ],
+   "areaKm2": 11113,
+   "neighbours": [
+    7,
+    164,
+    165,
+    271
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 167,
+   "name": "Bern",
+   "owner": "Switzerland",
+   "terrain": "mountains",
+   "centre": [
+    7.446,
+    46.743
+   ],
+   "areaKm2": 22798,
+   "neighbours": [
+    26,
+    54,
+    55,
+    168,
+    209,
+    210,
+    268
+   ],
+   "victoryPoints": 20,
+   "city": "Bern",
+   "capital": true
+  },
+  {
+   "id": 168,
+   "name": "Graubünden",
+   "owner": "Switzerland",
+   "terrain": "mountains",
+   "centre": [
+    9.154,
+    46.865
+   ],
+   "areaKm2": 18602,
+   "neighbours": [
+    55,
+    139,
+    167,
+    217,
+    268
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 169,
+   "name": "Jutland",
+   "owner": "Denmark",
+   "terrain": "plains",
+   "centre": [
+    9.477,
+    56.123
+   ],
+   "areaKm2": 32805,
+   "neighbours": [
+    4,
+    170
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 170,
+   "name": "Zealand",
+   "owner": "Denmark",
+   "terrain": "plains",
+   "centre": [
+    12.019,
+    55.393
+   ],
+   "areaKm2": 9682,
+   "neighbours": [
+    169
+   ],
+   "victoryPoints": 20,
+   "city": "Copenhagen",
+   "capital": true
+  },
+  {
+   "id": 171,
+   "name": "Leinster",
+   "owner": "Ireland",
+   "terrain": "plains",
+   "centre": [
+    -7.933,
+    53.771
+   ],
+   "areaKm2": 39847,
+   "neighbours": [
+    36,
+    172
+   ],
+   "victoryPoints": 20,
+   "city": "Dublin",
+   "capital": true
+  },
+  {
+   "id": 172,
+   "name": "Munster",
+   "owner": "Ireland",
+   "terrain": "plains",
+   "centre": [
+    -8.432,
+    52.344
+   ],
+   "areaKm2": 29422,
+   "neighbours": [
+    171
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 173,
+   "name": "Sinai",
+   "owner": "Egypt",
+   "terrain": "desert",
+   "centre": [
+    33.218,
+    30.281
+   ],
+   "areaKm2": 42134,
+   "neighbours": [
+    40,
+    175,
+    474,
+    476
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 174,
+   "name": "Western Desert",
+   "owner": "Egypt",
+   "terrain": "desert",
+   "centre": [
+    28.102,
+    30.071
+   ],
+   "areaKm2": 72869,
+   "neighbours": [
+    175,
+    274,
+    476
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 175,
+   "name": "Cairo",
+   "owner": "Egypt",
+   "terrain": "desert",
+   "centre": [
+    30.922,
+    30.721
+   ],
+   "areaKm2": 34562,
+   "neighbours": [
+    173,
+    174,
+    476
+   ],
+   "victoryPoints": 25,
+   "city": "Cairo",
+   "capital": true
+  },
+  {
+   "id": 176,
+   "name": "Baghdad",
+   "owner": "Iraq",
+   "terrain": "desert",
+   "centre": [
+    42.112,
+    33.071
+   ],
+   "areaKm2": 163649,
+   "neighbours": [
+    21,
+    22,
+    41,
+    236,
+    237,
+    540,
+    541,
+    548
+   ],
+   "victoryPoints": 20,
+   "city": "Baghdad",
+   "capital": true
+  },
+  {
+   "id": 177,
+   "name": "Basra",
+   "owner": "Iraq",
+   "terrain": "desert",
+   "centre": [
+    46.123,
+    30.639
+   ],
+   "areaKm2": 99582,
+   "neighbours": [
+    237,
+    385,
+    541,
+    547,
+    548
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 178,
+   "name": "Albania",
+   "owner": "Albania",
+   "terrain": "hills",
+   "centre": [
+    20.051,
+    41.138
+   ],
+   "areaKm2": 28238,
+   "neighbours": [
+    124,
+    125,
+    129,
+    154
+   ],
+   "victoryPoints": 20,
+   "city": "Tirana",
+   "capital": true
+  },
+  {
+   "id": 179,
+   "name": "Lithuania",
+   "owner": "Lithuania",
+   "terrain": "forest",
+   "centre": [
+    24.397,
+    55.165
+   ],
+   "areaKm2": 33173,
+   "neighbours": [
+    0,
+    93,
+    97,
+    180,
+    185,
+    203,
+    238,
+    239
+   ],
+   "victoryPoints": 20,
+   "city": "Kaunas",
+   "capital": true
+  },
+  {
+   "id": 180,
+   "name": "Latvia",
+   "owner": "Latvia",
+   "terrain": "forest",
+   "centre": [
+    23.154,
+    57.009
+   ],
+   "areaKm2": 29785,
+   "neighbours": [
+    179,
+    181,
+    238,
+    239,
+    240
+   ],
+   "victoryPoints": 20,
+   "city": "Riga",
+   "capital": true
+  },
+  {
+   "id": 181,
+   "name": "Estonia",
+   "owner": "Estonia",
+   "terrain": "forest",
+   "centre": [
+    24.317,
+    58.811
+   ],
+   "areaKm2": 21123,
+   "neighbours": [
+    180,
+    240
+   ],
+   "victoryPoints": 20,
+   "city": "Tallinn",
+   "capital": true
+  },
+  {
+   "id": 182,
+   "name": "Luxembourg",
+   "owner": "Luxembourg",
+   "terrain": "plains",
+   "centre": [
+    6.076,
+    49.766
+   ],
+   "areaKm2": 2576,
+   "neighbours": [
+    3,
+    24,
+    164
+   ],
+   "victoryPoints": 20,
+   "city": "Luxembourg",
+   "capital": true
+  },
+  {
+   "id": 183,
+   "name": "Leningrad",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    31.654,
+    60.01
+   ],
+   "areaKm2": 84583,
+   "neighbours": [
+    75,
+    79,
+    90,
+    184,
+    240,
+    241
+   ],
+   "victoryPoints": 15,
+   "city": "Leningrad",
+   "capital": false
+  },
+  {
+   "id": 184,
+   "name": "Pskov",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    29.263,
+    57.208
+   ],
+   "areaKm2": 55727,
+   "neighbours": [
+    75,
+    183,
+    185,
+    197,
+    239,
+    240,
+    256
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 185,
+   "name": "Vitebsk",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    28.907,
+    55.215
+   ],
+   "areaKm2": 39743,
+   "neighbours": [
+    74,
+    93,
+    179,
+    184,
+    186,
+    239,
+    256
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 186,
+   "name": "Mogilev",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    30.41,
+    53.608
+   ],
+   "areaKm2": 28731,
+   "neighbours": [
+    73,
+    74,
+    185,
+    256
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 187,
+   "name": "Chernigov",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    31.991,
+    51.345
+   ],
+   "areaKm2": 31655,
+   "neighbours": [
+    66,
+    69,
+    73,
+    190,
+    256
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 188,
+   "name": "Zhitomir",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    27.835,
+    50.169
+   ],
+   "areaKm2": 49942,
+   "neighbours": [
+    66,
+    67,
+    73,
+    98,
+    122,
+    202
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 189,
+   "name": "Kirovograd",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    31.929,
+    47.967
+   ],
+   "areaKm2": 47996,
+   "neighbours": [
+    67,
+    68,
+    69,
+    70,
+    192
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 190,
+   "name": "Sumy",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    34.111,
+    51.094
+   ],
+   "areaKm2": 23461,
+   "neighbours": [
+    69,
+    81,
+    187,
+    191,
+    256
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 191,
+   "name": "Kharkov",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    36.491,
+    49.606
+   ],
+   "areaKm2": 31212,
+   "neighbours": [
+    69,
+    70,
+    71,
+    81,
+    190,
+    193
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 192,
+   "name": "Kherson",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    33.609,
+    46.67
+   ],
+   "areaKm2": 25991,
+   "neighbours": [
+    70,
+    72,
+    86,
+    189
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 193,
+   "name": "Voroshilovgrad",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    39.012,
+    48.971
+   ],
+   "areaKm2": 26250,
+   "neighbours": [
+    71,
+    81,
+    191,
+    194,
+    258
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 194,
+   "name": "Rostov",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    41.316,
+    47.734
+   ],
+   "areaKm2": 101305,
+   "neighbours": [
+    71,
+    76,
+    83,
+    85,
+    193,
+    195,
+    258,
+    260
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 195,
+   "name": "Stavropol",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    43.358,
+    44.953
+   ],
+   "areaKm2": 66611,
+   "neighbours": [
+    85,
+    194,
+    260,
+    265
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 196,
+   "name": "Kostroma",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    42.488,
+    57.531
+   ],
+   "areaKm2": 112767,
+   "neighbours": [
+    80,
+    89,
+    90,
+    197,
+    261,
+    341
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 197,
+   "name": "Kalinin",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    35.983,
+    57.338
+   ],
+   "areaKm2": 120227,
+   "neighbours": [
+    75,
+    80,
+    90,
+    184,
+    196,
+    255,
+    256
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 198,
+   "name": "Lankaran",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    48.756,
+    39.722
+   ],
+   "areaKm2": 22639,
+   "neighbours": [
+    65,
+    540,
+    544
+   ],
+   "victoryPoints": 8,
+   "city": "Baku",
+   "capital": false
+  },
+  {
+   "id": 199,
+   "name": "Łódź",
+   "owner": "Poland",
+   "terrain": "plains",
+   "centre": [
+    19.407,
+    51.557
+   ],
+   "areaKm2": 18493,
+   "neighbours": [
+    94,
+    95,
+    99,
+    100,
+    205
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 200,
+   "name": "Rzeszów",
+   "owner": "Poland",
+   "terrain": "plains",
+   "centre": [
+    22.209,
+    49.967
+   ],
+   "areaKm2": 18000,
+   "neighbours": [
+    95,
+    96,
+    132,
+    201
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 201,
+   "name": "Lwów",
+   "owner": "Poland",
+   "terrain": "plains",
+   "centre": [
+    23.902,
+    49.711
+   ],
+   "areaKm2": 21802,
+   "neighbours": [
+    91,
+    96,
+    98,
+    132,
+    200,
+    202
+   ],
+   "victoryPoints": 5,
+   "city": "Lwów",
+   "capital": false
+  },
+  {
+   "id": 202,
+   "name": "Równe",
+   "owner": "Poland",
+   "terrain": "plains",
+   "centre": [
+    26.365,
+    51.034
+   ],
+   "areaKm2": 20270,
+   "neighbours": [
+    73,
+    91,
+    92,
+    98,
+    188,
+    201
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 203,
+   "name": "Masuria",
+   "owner": "Germany",
+   "terrain": "plains",
+   "centre": [
+    20.765,
+    53.853
+   ],
+   "areaKm2": 24508,
+   "neighbours": [
+    0,
+    97,
+    100,
+    179,
+    266
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 204,
+   "name": "Neumark",
+   "owner": "Germany",
+   "terrain": "plains",
+   "centre": [
+    15.338,
+    52.2
+   ],
+   "areaKm2": 13880,
+   "neighbours": [
+    1,
+    5,
+    9,
+    10,
+    99
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 205,
+   "name": "Oppeln",
+   "owner": "Germany",
+   "terrain": "hills",
+   "centre": [
+    17.877,
+    50.617
+   ],
+   "areaKm2": 9154,
+   "neighbours": [
+    5,
+    94,
+    99,
+    133,
+    199
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 206,
+   "name": "Flanders",
+   "owner": "Belgium",
+   "terrain": "plains",
+   "centre": [
+    3.41,
+    51.025
+   ],
+   "areaKm2": 6245,
+   "neighbours": [
+    163,
+    207,
+    271
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 207,
+   "name": "Flanders and Artois",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    2.703,
+    50.473
+   ],
+   "areaKm2": 12367,
+   "neighbours": [
+    23,
+    163,
+    206
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 208,
+   "name": "Champagne",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    4.394,
+    49.206
+   ],
+   "areaKm2": 13268,
+   "neighbours": [
+    23,
+    24,
+    163,
+    164,
+    212
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 209,
+   "name": "Alsace",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    7.403,
+    48.274
+   ],
+   "areaKm2": 8646,
+   "neighbours": [
+    3,
+    8,
+    24,
+    26,
+    167,
+    268
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 210,
+   "name": "Lyonnais",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    5.18,
+    45.951
+   ],
+   "areaKm2": 18574,
+   "neighbours": [
+    26,
+    54,
+    167,
+    214,
+    215,
+    216
+   ],
+   "victoryPoints": 6,
+   "city": "Lyon",
+   "capital": false
+  },
+  {
+   "id": 211,
+   "name": "Upper Normandy",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    1.205,
+    49.034
+   ],
+   "areaKm2": 20248,
+   "neighbours": [
+    23,
+    33,
+    35,
+    212
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 212,
+   "name": "Gâtinais",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    3.181,
+    48.169
+   ],
+   "areaKm2": 27958,
+   "neighbours": [
+    23,
+    24,
+    26,
+    35,
+    208,
+    211
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 213,
+   "name": "Upper Brittany",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    -1.367,
+    48.167
+   ],
+   "areaKm2": 24785,
+   "neighbours": [
+    31,
+    32,
+    33
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 214,
+   "name": "Savoy",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    6.039,
+    45.16
+   ],
+   "areaKm2": 19559,
+   "neighbours": [
+    25,
+    54,
+    210,
+    215
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 215,
+   "name": "Vivarais",
+   "owner": "France",
+   "terrain": "hills",
+   "centre": [
+    4.29,
+    44.762
+   ],
+   "areaKm2": 22382,
+   "neighbours": [
+    25,
+    28,
+    30,
+    210,
+    214,
+    216
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 216,
+   "name": "Auvergne",
+   "owner": "France",
+   "terrain": "hills",
+   "centre": [
+    2.812,
+    45.841
+   ],
+   "areaKm2": 26623,
+   "neighbours": [
+    26,
+    28,
+    34,
+    35,
+    210,
+    215
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 217,
+   "name": "South Tyrol",
+   "owner": "Italy",
+   "terrain": "mountains",
+   "centre": [
+    11.415,
+    46.194
+   ],
+   "areaKm2": 23088,
+   "neighbours": [
+    55,
+    56,
+    58,
+    138,
+    139,
+    168,
+    218
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 218,
+   "name": "Parma",
+   "owner": "Italy",
+   "terrain": "plains",
+   "centre": [
+    10.418,
+    44.568
+   ],
+   "areaKm2": 14498,
+   "neighbours": [
+    54,
+    55,
+    58,
+    217
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 219,
+   "name": "Maremma",
+   "owner": "Italy",
+   "terrain": "hills",
+   "centre": [
+    11.531,
+    42.974
+   ],
+   "areaKm2": 16306,
+   "neighbours": [
+    57,
+    58,
+    59
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 220,
+   "name": "Cassino",
+   "owner": "Italy",
+   "terrain": "hills",
+   "centre": [
+    14.047,
+    41.626
+   ],
+   "areaKm2": 15205,
+   "neighbours": [
+    59,
+    60
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 221,
+   "name": "Western Sicily",
+   "owner": "Italy",
+   "terrain": "plains",
+   "centre": [
+    13.367,
+    37.74
+   ],
+   "areaKm2": 10532,
+   "neighbours": [
+    53
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 222,
+   "name": "Marmarica",
+   "owner": "Italy",
+   "terrain": "desert",
+   "centre": [
+    23.983,
+    30.091
+   ],
+   "areaKm2": 79140,
+   "neighbours": [
+    51,
+    274,
+    472
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 223,
+   "name": "Southern Tunisia",
+   "owner": "France",
+   "terrain": "desert",
+   "centre": [
+    9.717,
+    32.666
+   ],
+   "areaKm2": 77552,
+   "neighbours": [
+    18,
+    224,
+    272
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 224,
+   "name": "Ouargla",
+   "owner": "France",
+   "terrain": "desert",
+   "centre": [
+    5.607,
+    31.131
+   ],
+   "areaKm2": 333372,
+   "neighbours": [
+    16,
+    17,
+    18,
+    223,
+    272,
+    419,
+    420
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 225,
+   "name": "Colomb-Béchar",
+   "owner": "France",
+   "terrain": "desert",
+   "centre": [
+    -2.573,
+    30.144
+   ],
+   "areaKm2": 165215,
+   "neighbours": [
+    16,
+    19,
+    20,
+    226,
+    419
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 226,
+   "name": "Rabat",
+   "owner": "France",
+   "terrain": "desert",
+   "centre": [
+    -5.009,
+    32.303
+   ],
+   "areaKm2": 68520,
+   "neighbours": [
+    19,
+    20,
+    225
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 227,
+   "name": "Slovenia",
+   "owner": "Yugoslavia",
+   "terrain": "plains",
+   "centre": [
+    14.631,
+    45.955
+   ],
+   "areaKm2": 20532,
+   "neighbours": [
+    56,
+    127,
+    136,
+    137,
+    138
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 228,
+   "name": "Syrmia",
+   "owner": "Yugoslavia",
+   "terrain": "plains",
+   "centre": [
+    19.172,
+    45.362
+   ],
+   "areaKm2": 21484,
+   "neighbours": [
+    119,
+    126,
+    128,
+    135
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 229,
+   "name": "Central Greece",
+   "owner": "Greece",
+   "terrain": "hills",
+   "centre": [
+    22.296,
+    38.498
+   ],
+   "areaKm2": 26522,
+   "neighbours": [
+    154,
+    156
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 230,
+   "name": "Western Thrace",
+   "owner": "Greece",
+   "terrain": "plains",
+   "centre": [
+    25.117,
+    41.151
+   ],
+   "areaKm2": 14281,
+   "neighbours": [
+    112,
+    155,
+    159
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 231,
+   "name": "Moldavia",
+   "owner": "Romania",
+   "terrain": "plains",
+   "centre": [
+    27.879,
+    46.277
+   ],
+   "areaKm2": 33795,
+   "neighbours": [
+    68,
+    121,
+    123,
+    232,
+    233
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 232,
+   "name": "Ploiești",
+   "owner": "Romania",
+   "terrain": "hills",
+   "centre": [
+    25.208,
+    45.277
+   ],
+   "areaKm2": 29629,
+   "neighbours": [
+    119,
+    120,
+    121,
+    231,
+    233
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 233,
+   "name": "Transylvania",
+   "owner": "Romania",
+   "terrain": "hills",
+   "centre": [
+    25.295,
+    46.792
+   ],
+   "areaKm2": 23899,
+   "neighbours": [
+    118,
+    119,
+    122,
+    123,
+    231,
+    232
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 234,
+   "name": "Northern Hungary",
+   "owner": "Hungary",
+   "terrain": "plains",
+   "centre": [
+    20.486,
+    48.047
+   ],
+   "areaKm2": 13279,
+   "neighbours": [
+    131,
+    132,
+    134,
+    135,
+    235
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 235,
+   "name": "Western Slovakia",
+   "owner": "Czechoslovakia",
+   "terrain": "hills",
+   "centre": [
+    17.919,
+    48.564
+   ],
+   "areaKm2": 20764,
+   "neighbours": [
+    131,
+    133,
+    135,
+    136,
+    137,
+    234
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 236,
+   "name": "Mosul",
+   "owner": "Iraq",
+   "terrain": "plains",
+   "centre": [
+    43.594,
+    35.648
+   ],
+   "areaKm2": 112063,
+   "neighbours": [
+    22,
+    111,
+    176,
+    540
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 237,
+   "name": "Middle Euphrates",
+   "owner": "Iraq",
+   "terrain": "desert",
+   "centre": [
+    44.593,
+    31.822
+   ],
+   "areaKm2": 62149,
+   "neighbours": [
+    176,
+    177,
+    541,
+    548
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 238,
+   "name": "Samogitia",
+   "owner": "Lithuania",
+   "terrain": "forest",
+   "centre": [
+    22.496,
+    55.782
+   ],
+   "areaKm2": 21745,
+   "neighbours": [
+    0,
+    179,
+    180
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 239,
+   "name": "Latgale",
+   "owner": "Latvia",
+   "terrain": "forest",
+   "centre": [
+    26.419,
+    56.711
+   ],
+   "areaKm2": 34504,
+   "neighbours": [
+    179,
+    180,
+    184,
+    185,
+    240
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 240,
+   "name": "Tartu",
+   "owner": "Estonia",
+   "terrain": "forest",
+   "centre": [
+    26.594,
+    58.539
+   ],
+   "areaKm2": 24376,
+   "neighbours": [
+    180,
+    181,
+    183,
+    184,
+    239
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 241,
+   "name": "Southern Savonia",
+   "owner": "Finland",
+   "terrain": "forest",
+   "centre": [
+    27.467,
+    61.509
+   ],
+   "areaKm2": 37925,
+   "neighbours": [
+    79,
+    151,
+    152,
+    183,
+    277
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 242,
+   "name": "Sørlandet",
+   "owner": "Norway",
+   "terrain": "plains",
+   "centre": [
+    6.843,
+    59.401
+   ],
+   "areaKm2": 40457,
+   "neighbours": [
+    148,
+    243
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 243,
+   "name": "Møre",
+   "owner": "Norway",
+   "terrain": "mountains",
+   "centre": [
+    8.269,
+    62.386
+   ],
+   "areaKm2": 51044,
+   "neighbours": [
+    146,
+    147,
+    148,
+    242,
+    244
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 244,
+   "name": "Norrland",
+   "owner": "Sweden",
+   "terrain": "mountains",
+   "centre": [
+    15.197,
+    63.213
+   ],
+   "areaKm2": 76404,
+   "neighbours": [
+    141,
+    142,
+    146,
+    147,
+    243
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 245,
+   "name": "Extremadura",
+   "owner": "Spain",
+   "terrain": "plains",
+   "centre": [
+    -6.135,
+    40.133
+   ],
+   "areaKm2": 32453,
+   "neighbours": [
+    107,
+    108,
+    161,
+    162,
+    246
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 246,
+   "name": "Badajoz",
+   "owner": "Spain",
+   "terrain": "plains",
+   "centre": [
+    -6.372,
+    38.353
+   ],
+   "areaKm2": 32348,
+   "neighbours": [
+    102,
+    107,
+    161,
+    245,
+    248
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 247,
+   "name": "Valencia",
+   "owner": "Spain",
+   "terrain": "plains",
+   "centre": [
+    -1.366,
+    39.799
+   ],
+   "areaKm2": 34591,
+   "neighbours": [
+    103,
+    105,
+    107,
+    109,
+    248
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 248,
+   "name": "La Mancha",
+   "owner": "Spain",
+   "terrain": "plains",
+   "centre": [
+    -3.363,
+    38.055
+   ],
+   "areaKm2": 54879,
+   "neighbours": [
+    19,
+    102,
+    103,
+    107,
+    246,
+    247
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 249,
+   "name": "Kastamonu",
+   "owner": "Turkey",
+   "terrain": "hills",
+   "centre": [
+    33.904,
+    40.984
+   ],
+   "areaKm2": 50162,
+   "neighbours": [
+    115,
+    251
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 250,
+   "name": "Mersin",
+   "owner": "Turkey",
+   "terrain": "hills",
+   "centre": [
+    33.846,
+    37.337
+   ],
+   "areaKm2": 38853,
+   "neighbours": [
+    113,
+    114,
+    115,
+    117,
+    251
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 251,
+   "name": "Samsun",
+   "owner": "Turkey",
+   "terrain": "hills",
+   "centre": [
+    35.5,
+    40.087
+   ],
+   "areaKm2": 50537,
+   "neighbours": [
+    114,
+    115,
+    249,
+    250
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 252,
+   "name": "Afyon",
+   "owner": "Turkey",
+   "terrain": "hills",
+   "centre": [
+    29.591,
+    37.843
+   ],
+   "areaKm2": 50287,
+   "neighbours": [
+    115,
+    116,
+    117
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 253,
+   "name": "Diyarbakır",
+   "owner": "Turkey",
+   "terrain": "mountains",
+   "centre": [
+    40.929,
+    38.093
+   ],
+   "areaKm2": 36959,
+   "neighbours": [
+    22,
+    110,
+    111,
+    113
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 254,
+   "name": "Trebizond",
+   "owner": "Turkey",
+   "terrain": "mountains",
+   "centre": [
+    39.661,
+    40.015
+   ],
+   "areaKm2": 37685,
+   "neighbours": [
+    110,
+    113,
+    114
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 255,
+   "name": "Kaluga",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    35.262,
+    54.755
+   ],
+   "areaKm2": 63706,
+   "neighbours": [
+    80,
+    197,
+    256,
+    257
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 256,
+   "name": "Smolensk",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    32.848,
+    53.768
+   ],
+   "areaKm2": 65761,
+   "neighbours": [
+    73,
+    81,
+    184,
+    185,
+    186,
+    187,
+    190,
+    197,
+    255,
+    257
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 257,
+   "name": "Oryol",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    37.843,
+    52.607
+   ],
+   "areaKm2": 53981,
+   "neighbours": [
+    80,
+    81,
+    82,
+    255,
+    256,
+    261
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 258,
+   "name": "Upper Don",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    40.601,
+    50.482
+   ],
+   "areaKm2": 25554,
+   "neighbours": [
+    81,
+    82,
+    83,
+    84,
+    193,
+    194,
+    261
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 259,
+   "name": "Ulyanovsk",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    48.312,
+    53.09
+   ],
+   "areaKm2": 64598,
+   "neighbours": [
+    84,
+    88,
+    340,
+    358
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 260,
+   "name": "Maikop",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    40.695,
+    44.342
+   ],
+   "areaKm2": 51101,
+   "neighbours": [
+    63,
+    76,
+    194,
+    195,
+    265
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 261,
+   "name": "Tambov",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    41.192,
+    53.519
+   ],
+   "areaKm2": 78712,
+   "neighbours": [
+    80,
+    82,
+    84,
+    88,
+    89,
+    196,
+    257,
+    258
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 262,
+   "name": "Mezen",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    45.308,
+    64.23
+   ],
+   "areaKm2": 152602,
+   "neighbours": [
+    87,
+    338,
+    342
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 263,
+   "name": "Kem",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    32.479,
+    64.95
+   ],
+   "areaKm2": 79716,
+   "neighbours": [
+    78,
+    79,
+    87,
+    149,
+    150,
+    151
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 264,
+   "name": "Kola Peninsula",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    37.7,
+    67.306
+   ],
+   "areaKm2": 64161,
+   "neighbours": [
+    78
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 265,
+   "name": "North Caucasus",
+   "owner": "Soviet Union",
+   "terrain": "mountains",
+   "centre": [
+    44.732,
+    43.626
+   ],
+   "areaKm2": 43189,
+   "neighbours": [
+    63,
+    64,
+    77,
+    85,
+    195,
+    260
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 266,
+   "name": "Pomerelia",
+   "owner": "Poland",
+   "terrain": "plains",
+   "centre": [
+    18.113,
+    53.739
+   ],
+   "areaKm2": 32878,
+   "neighbours": [
+    0,
+    9,
+    99,
+    100,
+    203
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 267,
+   "name": "Franconia",
+   "owner": "Germany",
+   "terrain": "plains",
+   "centre": [
+    11.049,
+    49.621
+   ],
+   "areaKm2": 34872,
+   "neighbours": [
+    1,
+    2,
+    8,
+    12,
+    13,
+    130,
+    275
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 268,
+   "name": "Baden",
+   "owner": "Germany",
+   "terrain": "plains",
+   "centre": [
+    8.689,
+    48.095
+   ],
+   "areaKm2": 17951,
+   "neighbours": [
+    2,
+    8,
+    139,
+    167,
+    168,
+    209
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 269,
+   "name": "Westphalia",
+   "owner": "Germany",
+   "terrain": "plains",
+   "centre": [
+    8.221,
+    51.805
+   ],
+   "areaKm2": 16587,
+   "neighbours": [
+    6,
+    7,
+    12,
+    165,
+    270
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 270,
+   "name": "Oldenburg",
+   "owner": "Germany",
+   "terrain": "plains",
+   "centre": [
+    8.206,
+    53.045
+   ],
+   "areaKm2": 23466,
+   "neighbours": [
+    4,
+    6,
+    165,
+    269
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 271,
+   "name": "South Holland",
+   "owner": "Netherlands",
+   "terrain": "plains",
+   "centre": [
+    4.443,
+    51.713
+   ],
+   "areaKm2": 7660,
+   "neighbours": [
+    163,
+    164,
+    165,
+    166,
+    206
+   ],
+   "victoryPoints": 5,
+   "city": "Rotterdam",
+   "capital": false
+  },
+  {
+   "id": 272,
+   "name": "Ghadames",
+   "owner": "Italy",
+   "terrain": "desert",
+   "centre": [
+    11.16,
+    30.526
+   ],
+   "areaKm2": 93587,
+   "neighbours": [
+    50,
+    223,
+    224,
+    420,
+    473
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 273,
+   "name": "Sirte",
+   "owner": "Italy",
+   "terrain": "desert",
+   "centre": [
+    16.539,
+    30.274
+   ],
+   "areaKm2": 85810,
+   "neighbours": [
+    50,
+    51,
+    472,
+    473
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 274,
+   "name": "Sollum",
+   "owner": "Egypt",
+   "terrain": "desert",
+   "centre": [
+    25.999,
+    29.381
+   ],
+   "areaKm2": 86204,
+   "neighbours": [
+    174,
+    222,
+    472,
+    475
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 275,
+   "name": "Southern Bohemia",
+   "owner": "Czechoslovakia",
+   "terrain": "hills",
+   "centre": [
+    13.999,
+    49.348
+   ],
+   "areaKm2": 20257,
+   "neighbours": [
+    2,
+    130,
+    133,
+    137,
+    138,
+    267
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 276,
+   "name": "Hama",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    37.059,
+    35.102
+   ],
+   "areaKm2": 54080,
+   "neighbours": [
+    21,
+    22,
+    113
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 277,
+   "name": "Central Finland",
+   "owner": "Finland",
+   "terrain": "forest",
+   "centre": [
+    23.937,
+    62.676
+   ],
+   "areaKm2": 43331,
+   "neighbours": [
+    150,
+    151,
+    152,
+    241
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 278,
+   "name": "Inari",
+   "owner": "Finland",
+   "terrain": "forest",
+   "centre": [
+    26.173,
+    68.612
+   ],
+   "areaKm2": 48365,
+   "neighbours": [
+    78,
+    145,
+    149,
+    279
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 279,
+   "name": "Kiruna",
+   "owner": "Sweden",
+   "terrain": "forest",
+   "centre": [
+    20.497,
+    67.714
+   ],
+   "areaKm2": 48062,
+   "neighbours": [
+    140,
+    145,
+    146,
+    149,
+    278
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 280,
+   "name": "Hokkaidō",
+   "owner": "Japan",
+   "terrain": "hills",
+   "centre": [
+    142.557,
+    43.38
+   ],
+   "areaKm2": 78640,
+   "neighbours": [
+    281
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 281,
+   "name": "Tōhoku",
+   "owner": "Japan",
+   "terrain": "hills",
+   "centre": [
+    140.375,
+    38.807
+   ],
+   "areaKm2": 79976,
+   "neighbours": [
+    280,
+    282,
+    283
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 282,
+   "name": "Kantō",
+   "owner": "Japan",
+   "terrain": "hills",
+   "centre": [
+    139.55,
+    36.07
+   ],
+   "areaKm2": 37118,
+   "neighbours": [
+    281,
+    283
+   ],
+   "victoryPoints": 20,
+   "city": "Tokyo",
+   "capital": true
+  },
+  {
+   "id": 283,
+   "name": "Chūbu",
+   "owner": "Japan",
+   "terrain": "hills",
+   "centre": [
+    137.446,
+    35.84
+   ],
+   "areaKm2": 49688,
+   "neighbours": [
+    281,
+    282,
+    284
+   ],
+   "victoryPoints": 6,
+   "city": "Nagoya",
+   "capital": false
+  },
+  {
+   "id": 284,
+   "name": "Kansai",
+   "owner": "Japan",
+   "terrain": "hills",
+   "centre": [
+    135.59,
+    34.73
+   ],
+   "areaKm2": 32960,
+   "neighbours": [
+    283,
+    285,
+    286
+   ],
+   "victoryPoints": 11,
+   "city": "Osaka",
+   "capital": false
+  },
+  {
+   "id": 285,
+   "name": "Chūgoku",
+   "owner": "Japan",
+   "terrain": "hills",
+   "centre": [
+    132.848,
+    34.781
+   ],
+   "areaKm2": 31843,
+   "neighbours": [
+    284,
+    287
+   ],
+   "victoryPoints": 4,
+   "city": "Kure",
+   "capital": false
+  },
+  {
+   "id": 286,
+   "name": "Shikoku",
+   "owner": "Japan",
+   "terrain": "hills",
+   "centre": [
+    133.462,
+    33.665
+   ],
+   "areaKm2": 18829,
+   "neighbours": [
+    284
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 287,
+   "name": "Kyūshū",
+   "owner": "Japan",
+   "terrain": "hills",
+   "centre": [
+    130.775,
+    32.618
+   ],
+   "areaKm2": 40877,
+   "neighbours": [
+    285
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 288,
+   "name": "Okinawa",
+   "owner": "Japan",
+   "terrain": "plains",
+   "centre": [
+    127.626,
+    26.64
+   ],
+   "areaKm2": 3301,
+   "neighbours": [],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 289,
+   "name": "Bonin Islands",
+   "owner": "Japan",
+   "terrain": "plains",
+   "centre": [
+    142.401,
+    26.101
+   ],
+   "areaKm2": 104,
+   "neighbours": [],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 290,
+   "name": "Karafuto",
+   "owner": "Japan",
+   "terrain": "plains",
+   "centre": [
+    142.721,
+    48.348
+   ],
+   "areaKm2": 33658,
+   "neighbours": [
+    335
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 291,
+   "name": "Kuril Islands",
+   "owner": "Japan",
+   "terrain": "plains",
+   "centre": [
+    150.407,
+    46.869
+   ],
+   "areaKm2": 10441,
+   "neighbours": [],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 292,
+   "name": "Formosa",
+   "owner": "Japan",
+   "terrain": "hills",
+   "centre": [
+    120.947,
+    23.749
+   ],
+   "areaKm2": 36283,
+   "neighbours": [],
+   "victoryPoints": 4,
+   "city": "Taipei",
+   "capital": false
+  },
+  {
+   "id": 293,
+   "name": "Central Korea",
+   "owner": "Japan",
+   "terrain": "hills",
+   "centre": [
+    127.245,
+    38.049
+   ],
+   "areaKm2": 59047,
+   "neighbours": [
+    294,
+    295
+   ],
+   "victoryPoints": 7,
+   "city": "Seoul",
+   "capital": false
+  },
+  {
+   "id": 294,
+   "name": "Northern Korea",
+   "owner": "Japan",
+   "terrain": "hills",
+   "centre": [
+    127.338,
+    40.638
+   ],
+   "areaKm2": 93509,
+   "neighbours": [
+    293,
+    301,
+    302,
+    353
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 295,
+   "name": "Southern Korea",
+   "owner": "Japan",
+   "terrain": "hills",
+   "centre": [
+    127.783,
+    35.804
+   ],
+   "areaKm2": 68210,
+   "neighbours": [
+    293
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 296,
+   "name": "Palau",
+   "owner": "Japan",
+   "terrain": "plains",
+   "centre": [
+    134.346,
+    7.197
+   ],
+   "areaKm2": 494,
+   "neighbours": [],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 297,
+   "name": "Caroline Islands",
+   "owner": "Japan",
+   "terrain": "plains",
+   "centre": [
+    155.258,
+    7.102
+   ],
+   "areaKm2": 682,
+   "neighbours": [],
+   "victoryPoints": 3,
+   "city": "Truk",
+   "capital": false
+  },
+  {
+   "id": 298,
+   "name": "Marshall Islands",
+   "owner": "Japan",
+   "terrain": "plains",
+   "centre": [
+    170.1,
+    7.113
+   ],
+   "areaKm2": 165,
+   "neighbours": [],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 299,
+   "name": "Mariana Islands",
+   "owner": "Japan",
+   "terrain": "plains",
+   "centre": [
+    145.599,
+    16.231
+   ],
+   "areaKm2": 581,
+   "neighbours": [],
+   "victoryPoints": 3,
+   "city": "Saipan",
+   "capital": false
+  },
+  {
+   "id": 300,
+   "name": "Heilungkiang",
+   "owner": "Manchukuo",
+   "terrain": "forest",
+   "centre": [
+    130.063,
+    46.147
+   ],
+   "areaKm2": 221986,
+   "neighbours": [
+    301,
+    352,
+    353,
+    602
+   ],
+   "victoryPoints": 5,
+   "city": "Harbin",
+   "capital": false
+  },
+  {
+   "id": 301,
+   "name": "Kirin",
+   "owner": "Manchukuo",
+   "terrain": "plains",
+   "centre": [
+    126.22,
+    43.675
+   ],
+   "areaKm2": 190656,
+   "neighbours": [
+    294,
+    300,
+    302,
+    303,
+    353,
+    602
+   ],
+   "victoryPoints": 20,
+   "city": "Hsinking",
+   "capital": true
+  },
+  {
+   "id": 302,
+   "name": "Fengtien",
+   "owner": "Manchukuo",
+   "terrain": "plains",
+   "centre": [
+    122.605,
+    41.3
+   ],
+   "areaKm2": 146314,
+   "neighbours": [
+    294,
+    301,
+    303,
+    590
+   ],
+   "victoryPoints": 7,
+   "city": "Mukden",
+   "capital": false
+  },
+  {
+   "id": 303,
+   "name": "Hsingan",
+   "owner": "Manchukuo",
+   "terrain": "forest",
+   "centre": [
+    120.455,
+    46.976
+   ],
+   "areaKm2": 507591,
+   "neighbours": [
+    301,
+    302,
+    332,
+    349,
+    590,
+    602
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 304,
+   "name": "Yenan",
+   "owner": "Chinese Communists",
+   "terrain": "desert",
+   "centre": [
+    109.443,
+    37.507
+   ],
+   "areaKm2": 69952,
+   "neighbours": [
+    305,
+    306,
+    311,
+    312,
+    597,
+    605,
+    606
+   ],
+   "victoryPoints": 20,
+   "city": "Yan'an",
+   "capital": true
+  },
+  {
+   "id": 305,
+   "name": "Shensi",
+   "owner": "China",
+   "terrain": "hills",
+   "centre": [
+    108.54,
+    33.92
+   ],
+   "areaKm2": 135788,
+   "neighbours": [
+    304,
+    312,
+    316,
+    331,
+    593,
+    599,
+    605
+   ],
+   "victoryPoints": 4,
+   "city": "Xi'an",
+   "capital": false
+  },
+  {
+   "id": 306,
+   "name": "Suiyuan",
+   "owner": "China",
+   "terrain": "desert",
+   "centre": [
+    104.008,
+    40.401
+   ],
+   "areaKm2": 342611,
+   "neighbours": [
+    304,
+    310,
+    311,
+    332,
+    334,
+    605,
+    606
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 307,
+   "name": "Sinkiang",
+   "owner": "China",
+   "terrain": "mountains",
+   "centre": [
+    84.987,
+    41.042
+   ],
+   "areaKm2": 1628116,
+   "neighbours": [
+    308,
+    309,
+    310,
+    333,
+    334,
+    343,
+    357,
+    363,
+    365,
+    546
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 308,
+   "name": "Tibet",
+   "owner": "China",
+   "terrain": "mountains",
+   "centre": [
+    88.208,
+    31.742
+   ],
+   "areaKm2": 1130659,
+   "neighbours": [
+    307,
+    309,
+    329,
+    330,
+    365,
+    368,
+    370,
+    372,
+    378,
+    380,
+    552
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 309,
+   "name": "Tsinghai",
+   "owner": "China",
+   "terrain": "mountains",
+   "centre": [
+    96.001,
+    35.755
+   ],
+   "areaKm2": 714400,
+   "neighbours": [
+    307,
+    308,
+    310,
+    330,
+    605
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 310,
+   "name": "Kansu",
+   "owner": "China",
+   "terrain": "desert",
+   "centre": [
+    97.586,
+    39.996
+   ],
+   "areaKm2": 207067,
+   "neighbours": [
+    306,
+    307,
+    309,
+    334,
+    605
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 311,
+   "name": "Ningsia",
+   "owner": "China",
+   "terrain": "desert",
+   "centre": [
+    106.157,
+    37.256
+   ],
+   "areaKm2": 52112,
+   "neighbours": [
+    304,
+    306,
+    605
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 312,
+   "name": "Shansi",
+   "owner": "China",
+   "terrain": "plains",
+   "centre": [
+    111.889,
+    36.276
+   ],
+   "areaKm2": 78448,
+   "neighbours": [
+    304,
+    305,
+    314,
+    316,
+    597
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 313,
+   "name": "Peiping",
+   "owner": "China",
+   "terrain": "plains",
+   "centre": [
+    116.785,
+    39.81
+   ],
+   "areaKm2": 27698,
+   "neighbours": [
+    314,
+    590
+   ],
+   "victoryPoints": 15,
+   "city": "Peiping",
+   "capital": false
+  },
+  {
+   "id": 314,
+   "name": "Hopeh",
+   "owner": "China",
+   "terrain": "plains",
+   "centre": [
+    115.245,
+    38.028
+   ],
+   "areaKm2": 87152,
+   "neighbours": [
+    312,
+    313,
+    315,
+    316,
+    590,
+    591,
+    592,
+    597
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 315,
+   "name": "Shantung",
+   "owner": "China",
+   "terrain": "plains",
+   "centre": [
+    119.492,
+    36.806
+   ],
+   "areaKm2": 76566,
+   "neighbours": [
+    314,
+    591,
+    603
+   ],
+   "victoryPoints": 4,
+   "city": "Tsingtao",
+   "capital": false
+  },
+  {
+   "id": 316,
+   "name": "Honan",
+   "owner": "China",
+   "terrain": "plains",
+   "centre": [
+    112.586,
+    34.151
+   ],
+   "areaKm2": 88979,
+   "neighbours": [
+    305,
+    312,
+    314,
+    317,
+    592,
+    593
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 317,
+   "name": "Hupeh",
+   "owner": "China",
+   "terrain": "plains",
+   "centre": [
+    113.926,
+    30.676
+   ],
+   "areaKm2": 90443,
+   "neighbours": [
+    316,
+    318,
+    323,
+    592,
+    593,
+    595,
+    596
+   ],
+   "victoryPoints": 9,
+   "city": "Hankow",
+   "capital": false
+  },
+  {
+   "id": 318,
+   "name": "Anhwei",
+   "owner": "China",
+   "terrain": "plains",
+   "centre": [
+    116.839,
+    32.926
+   ],
+   "areaKm2": 66118,
+   "neighbours": [
+    317,
+    591,
+    592,
+    596,
+    603
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 319,
+   "name": "Kiangsu",
+   "owner": "China",
+   "terrain": "plains",
+   "centre": [
+    120.177,
+    31.917
+   ],
+   "areaKm2": 42064,
+   "neighbours": [
+    320,
+    596,
+    603,
+    604
+   ],
+   "victoryPoints": 20,
+   "city": "Nanking",
+   "capital": true
+  },
+  {
+   "id": 320,
+   "name": "Shanghai",
+   "owner": "China",
+   "terrain": "plains",
+   "centre": [
+    121.449,
+    31.187
+   ],
+   "areaKm2": 6753,
+   "neighbours": [
+    319,
+    604
+   ],
+   "victoryPoints": 11,
+   "city": "Shanghai",
+   "capital": false
+  },
+  {
+   "id": 321,
+   "name": "Chekiang",
+   "owner": "China",
+   "terrain": "plains",
+   "centre": [
+    119.762,
+    28.541
+   ],
+   "areaKm2": 57505,
+   "neighbours": [
+    324,
+    595,
+    596,
+    604
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 322,
+   "name": "Kiangsi",
+   "owner": "China",
+   "terrain": "plains",
+   "centre": [
+    115.081,
+    26.538
+   ],
+   "areaKm2": 85664,
+   "neighbours": [
+    324,
+    594,
+    595,
+    598
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 323,
+   "name": "Hunan",
+   "owner": "China",
+   "terrain": "plains",
+   "centre": [
+    111.272,
+    28.556
+   ],
+   "areaKm2": 114789,
+   "neighbours": [
+    317,
+    328,
+    331,
+    593,
+    594,
+    595
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 324,
+   "name": "Fukien",
+   "owner": "China",
+   "terrain": "plains",
+   "centre": [
+    117.964,
+    26.072
+   ],
+   "areaKm2": 120952,
+   "neighbours": [
+    321,
+    322,
+    595,
+    598
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 325,
+   "name": "Kwangtung",
+   "owner": "China",
+   "terrain": "plains",
+   "centre": [
+    112.06,
+    22.799
+   ],
+   "areaKm2": 94864,
+   "neighbours": [
+    384,
+    594,
+    598,
+    601
+   ],
+   "victoryPoints": 7,
+   "city": "Canton",
+   "capital": false
+  },
+  {
+   "id": 326,
+   "name": "Hainan",
+   "owner": "China",
+   "terrain": "forest",
+   "centre": [
+    109.739,
+    19.197
+   ],
+   "areaKm2": 33943,
+   "neighbours": [],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 327,
+   "name": "Kwangsi",
+   "owner": "China",
+   "terrain": "mountains",
+   "centre": [
+    107.514,
+    23.503
+   ],
+   "areaKm2": 126556,
+   "neighbours": [
+    328,
+    437,
+    600,
+    601
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 328,
+   "name": "Kweichow",
+   "owner": "China",
+   "terrain": "mountains",
+   "centre": [
+    106.865,
+    26.812
+   ],
+   "areaKm2": 175465,
+   "neighbours": [
+    323,
+    327,
+    331,
+    594,
+    599,
+    600,
+    601
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 329,
+   "name": "Yunnan",
+   "owner": "China",
+   "terrain": "mountains",
+   "centre": [
+    99.569,
+    25.945
+   ],
+   "areaKm2": 145717,
+   "neighbours": [
+    308,
+    330,
+    380,
+    600
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 330,
+   "name": "Szechwan",
+   "owner": "China",
+   "terrain": "hills",
+   "centre": [
+    100.82,
+    30.517
+   ],
+   "areaKm2": 255087,
+   "neighbours": [
+    308,
+    309,
+    329,
+    599,
+    600,
+    605
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 331,
+   "name": "Chungking",
+   "owner": "China",
+   "terrain": "hills",
+   "centre": [
+    107.85,
+    30.051
+   ],
+   "areaKm2": 82454,
+   "neighbours": [
+    305,
+    323,
+    328,
+    593,
+    599
+   ],
+   "victoryPoints": 6,
+   "city": "Chungking",
+   "capital": false
+  },
+  {
+   "id": 332,
+   "name": "Eastern Mongolia",
+   "owner": "Mongolia",
+   "terrain": "desert",
+   "centre": [
+    109.429,
+    45.731
+   ],
+   "areaKm2": 640123,
+   "neighbours": [
+    303,
+    306,
+    334,
+    349,
+    606
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 333,
+   "name": "Western Mongolia",
+   "owner": "Mongolia",
+   "terrain": "mountains",
+   "centre": [
+    95.015,
+    48.855
+   ],
+   "areaKm2": 372094,
+   "neighbours": [
+    307,
+    334,
+    343,
+    347,
+    348
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 334,
+   "name": "Central Mongolia",
+   "owner": "Mongolia",
+   "terrain": "plains",
+   "centre": [
+    100.924,
+    46.68
+   ],
+   "areaKm2": 548316,
+   "neighbours": [
+    306,
+    307,
+    310,
+    332,
+    333,
+    347,
+    349
+   ],
+   "victoryPoints": 20,
+   "city": "Ulan Bator",
+   "capital": true
+  },
+  {
+   "id": 335,
+   "name": "North Sakhalin",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    142.708,
+    51.782
+   ],
+   "areaKm2": 41578,
+   "neighbours": [
+    290
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 336,
+   "name": "Chelyabinsk",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    62.342,
+    54.906
+   ],
+   "areaKm2": 160014,
+   "neighbours": [
+    337,
+    339,
+    344,
+    360
+   ],
+   "victoryPoints": 0,
+   "city": "Chelyabinsk",
+   "capital": false
+  },
+  {
+   "id": 337,
+   "name": "Bashkiria",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    56.125,
+    53.204
+   ],
+   "areaKm2": 267000,
+   "neighbours": [
+    336,
+    339,
+    340,
+    341,
+    358,
+    360
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 338,
+   "name": "Pechora",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    54.681,
+    67.966
+   ],
+   "areaKm2": 176118,
+   "neighbours": [
+    262,
+    342,
+    346
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 339,
+   "name": "Sverdlovsk",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    61.529,
+    58.549
+   ],
+   "areaKm2": 193555,
+   "neighbours": [
+    336,
+    337,
+    341,
+    342,
+    344
+   ],
+   "victoryPoints": 0,
+   "city": "Sverdlovsk",
+   "capital": false
+  },
+  {
+   "id": 340,
+   "name": "Kuibyshev",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    50.71,
+    54.445
+   ],
+   "areaKm2": 120677,
+   "neighbours": [
+    88,
+    89,
+    259,
+    337,
+    341
+   ],
+   "victoryPoints": 0,
+   "city": "Kuibyshev",
+   "capital": false
+  },
+  {
+   "id": 341,
+   "name": "Molotov",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    53.379,
+    58.707
+   ],
+   "areaKm2": 321880,
+   "neighbours": [
+    87,
+    89,
+    90,
+    196,
+    337,
+    339,
+    340,
+    342
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 342,
+   "name": "Komi",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    54.478,
+    64.05
+   ],
+   "areaKm2": 415218,
+   "neighbours": [
+    87,
+    262,
+    338,
+    339,
+    341,
+    344,
+    346
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 343,
+   "name": "Altai",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    85.648,
+    52.816
+   ],
+   "areaKm2": 417544,
+   "neighbours": [
+    307,
+    333,
+    345,
+    348,
+    351,
+    357,
+    359
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 344,
+   "name": "Tyumen",
+   "owner": "Soviet Union",
+   "terrain": "marsh",
+   "centre": [
+    70.114,
+    60.964
+   ],
+   "areaKm2": 689514,
+   "neighbours": [
+    336,
+    339,
+    342,
+    345,
+    346,
+    351,
+    360
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 345,
+   "name": "Novosibirsk",
+   "owner": "Soviet Union",
+   "terrain": "marsh",
+   "centre": [
+    79.455,
+    57.108
+   ],
+   "areaKm2": 631044,
+   "neighbours": [
+    343,
+    344,
+    351,
+    359,
+    360
+   ],
+   "victoryPoints": 0,
+   "city": "Novosibirsk",
+   "capital": false
+  },
+  {
+   "id": 346,
+   "name": "Ob",
+   "owner": "Soviet Union",
+   "terrain": "marsh",
+   "centre": [
+    74.78,
+    66.955
+   ],
+   "areaKm2": 681818,
+   "neighbours": [
+    338,
+    342,
+    344,
+    351
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 347,
+   "name": "Buryatia",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    109.236,
+    53.54
+   ],
+   "areaKm2": 351499,
+   "neighbours": [
+    333,
+    334,
+    348,
+    349
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 348,
+   "name": "Irkutsk",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    103.759,
+    56.112
+   ],
+   "areaKm2": 938462,
+   "neighbours": [
+    333,
+    343,
+    347,
+    349,
+    350,
+    351
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 349,
+   "name": "Chita",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    115.987,
+    52.771
+   ],
+   "areaKm2": 430675,
+   "neighbours": [
+    303,
+    332,
+    334,
+    347,
+    348,
+    350,
+    352,
+    602
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 350,
+   "name": "Yakutia",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    129.182,
+    65.981
+   ],
+   "areaKm2": 3053151,
+   "neighbours": [
+    348,
+    349,
+    351,
+    352,
+    354,
+    355
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 351,
+   "name": "Taimyr",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    95.337,
+    65.935
+   ],
+   "areaKm2": 2313947,
+   "neighbours": [
+    343,
+    344,
+    345,
+    346,
+    348,
+    350
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 352,
+   "name": "Khabarovsk",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    134.075,
+    54.163
+   ],
+   "areaKm2": 1143116,
+   "neighbours": [
+    300,
+    349,
+    350,
+    353,
+    354,
+    602
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 353,
+   "name": "Primorye",
+   "owner": "Soviet Union",
+   "terrain": "hills",
+   "centre": [
+    134.233,
+    45.757
+   ],
+   "areaKm2": 200722,
+   "neighbours": [
+    294,
+    300,
+    301,
+    352,
+    602
+   ],
+   "victoryPoints": 0,
+   "city": "Vladivostok",
+   "capital": false
+  },
+  {
+   "id": 354,
+   "name": "Kolyma",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    153.792,
+    62.688
+   ],
+   "areaKm2": 461214,
+   "neighbours": [
+    350,
+    352,
+    355,
+    356
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 355,
+   "name": "Chukotka",
+   "owner": "Soviet Union",
+   "terrain": "marsh",
+   "centre": [
+    172.962,
+    66.543
+   ],
+   "areaKm2": 711994,
+   "neighbours": [
+    350,
+    354,
+    356
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 356,
+   "name": "Kamchatka",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    162.243,
+    58.646
+   ],
+   "areaKm2": 461338,
+   "neighbours": [
+    354,
+    355
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 357,
+   "name": "Alma-Ata",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    76.597,
+    46.074
+   ],
+   "areaKm2": 756598,
+   "neighbours": [
+    307,
+    343,
+    359,
+    361,
+    363
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 358,
+   "name": "Western Kazakhstan",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    54.87,
+    47.706
+   ],
+   "areaKm2": 730681,
+   "neighbours": [
+    83,
+    84,
+    85,
+    259,
+    337,
+    359,
+    360,
+    361,
+    362
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 359,
+   "name": "Karaganda",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    69.506,
+    48
+   ],
+   "areaKm2": 781400,
+   "neighbours": [
+    343,
+    345,
+    357,
+    358,
+    360,
+    361
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 360,
+   "name": "Northern Kazakhstan",
+   "owner": "Soviet Union",
+   "terrain": "forest",
+   "centre": [
+    67.131,
+    52.15
+   ],
+   "areaKm2": 444156,
+   "neighbours": [
+    336,
+    337,
+    344,
+    345,
+    358,
+    359
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 361,
+   "name": "Uzbekistan",
+   "owner": "Soviet Union",
+   "terrain": "desert",
+   "centre": [
+    63.303,
+    41.776
+   ],
+   "areaKm2": 447176,
+   "neighbours": [
+    357,
+    358,
+    359,
+    362,
+    363,
+    546
+   ],
+   "victoryPoints": 0,
+   "city": "Tashkent",
+   "capital": false
+  },
+  {
+   "id": 362,
+   "name": "Turkmenia",
+   "owner": "Soviet Union",
+   "terrain": "desert",
+   "centre": [
+    59.452,
+    39.126
+   ],
+   "areaKm2": 470447,
+   "neighbours": [
+    358,
+    361,
+    542,
+    544,
+    545,
+    546
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 363,
+   "name": "Kirghizia",
+   "owner": "Soviet Union",
+   "terrain": "plains",
+   "centre": [
+    73.021,
+    40.262
+   ],
+   "areaKm2": 340849,
+   "neighbours": [
+    307,
+    357,
+    361,
+    546
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 364,
+   "name": "Andaman Islands",
+   "owner": "United Kingdom",
+   "terrain": "forest",
+   "centre": [
+    92.979,
+    11.12
+   ],
+   "areaKm2": 7133,
+   "neighbours": [],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 365,
+   "name": "Kashmir",
+   "owner": "United Kingdom",
+   "terrain": "mountains",
+   "centre": [
+    75.863,
+    34.523
+   ],
+   "areaKm2": 186131,
+   "neighbours": [
+    307,
+    308,
+    366,
+    368,
+    546
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 366,
+   "name": "North-West Frontier",
+   "owner": "United Kingdom",
+   "terrain": "mountains",
+   "centre": [
+    71.604,
+    34.113
+   ],
+   "areaKm2": 102405,
+   "neighbours": [
+    365,
+    367,
+    368,
+    546
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 367,
+   "name": "Sind and Baluchistan",
+   "owner": "United Kingdom",
+   "terrain": "desert",
+   "centre": [
+    66.688,
+    27.654
+   ],
+   "areaKm2": 489417,
+   "neighbours": [
+    366,
+    368,
+    369,
+    543,
+    545,
+    546
+   ],
+   "victoryPoints": 0,
+   "city": "Karachi",
+   "capital": false
+  },
+  {
+   "id": 368,
+   "name": "Punjab",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    73.905,
+    30.813
+   ],
+   "areaKm2": 354894,
+   "neighbours": [
+    308,
+    365,
+    366,
+    367,
+    369,
+    370
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 369,
+   "name": "Rajputana",
+   "owner": "United Kingdom",
+   "terrain": "desert",
+   "centre": [
+    73.024,
+    25.23
+   ],
+   "areaKm2": 529159,
+   "neighbours": [
+    367,
+    368,
+    370,
+    373,
+    374
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 370,
+   "name": "United Provinces",
+   "owner": "United Kingdom",
+   "terrain": "mountains",
+   "centre": [
+    80.311,
+    27.519
+   ],
+   "areaKm2": 294861,
+   "neighbours": [
+    308,
+    368,
+    369,
+    371,
+    373,
+    552
+   ],
+   "victoryPoints": 0,
+   "city": "Delhi",
+   "capital": false
+  },
+  {
+   "id": 371,
+   "name": "Bihar and Orissa",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    85.009,
+    22.746
+   ],
+   "areaKm2": 328632,
+   "neighbours": [
+    370,
+    372,
+    373,
+    375,
+    377,
+    552
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 372,
+   "name": "Bengal",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    89.581,
+    24.431
+   ],
+   "areaKm2": 281992,
+   "neighbours": [
+    308,
+    371,
+    378,
+    380,
+    552
+   ],
+   "victoryPoints": 0,
+   "city": "Calcutta",
+   "capital": false
+  },
+  {
+   "id": 373,
+   "name": "Central Provinces",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    79.43,
+    22.853
+   ],
+   "areaKm2": 445120,
+   "neighbours": [
+    369,
+    370,
+    371,
+    374,
+    375
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 374,
+   "name": "Bombay",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    76.072,
+    19.416
+   ],
+   "areaKm2": 310912,
+   "neighbours": [
+    369,
+    373,
+    375,
+    376
+   ],
+   "victoryPoints": 0,
+   "city": "Bombay",
+   "capital": false
+  },
+  {
+   "id": 375,
+   "name": "Hyderabad",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    79.05,
+    17.794
+   ],
+   "areaKm2": 115189,
+   "neighbours": [
+    371,
+    373,
+    374,
+    376,
+    377
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 376,
+   "name": "Mysore",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    76.156,
+    14.709
+   ],
+   "areaKm2": 192531,
+   "neighbours": [
+    374,
+    375,
+    377
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 377,
+   "name": "Madras",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    78.895,
+    13.24
+   ],
+   "areaKm2": 330753,
+   "neighbours": [
+    371,
+    375,
+    376
+   ],
+   "victoryPoints": 0,
+   "city": "Madras",
+   "capital": false
+  },
+  {
+   "id": 378,
+   "name": "Assam",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    93.479,
+    26.409
+   ],
+   "areaKm2": 242867,
+   "neighbours": [
+    308,
+    372,
+    380
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 379,
+   "name": "Ceylon",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    80.704,
+    7.614
+   ],
+   "areaKm2": 66573,
+   "neighbours": [],
+   "victoryPoints": 0,
+   "city": "Colombo",
+   "capital": false
+  },
+  {
+   "id": 380,
+   "name": "Upper Burma",
+   "owner": "United Kingdom",
+   "terrain": "forest",
+   "centre": [
+    96.308,
+    22.701
+   ],
+   "areaKm2": 495083,
+   "neighbours": [
+    308,
+    329,
+    372,
+    378,
+    381,
+    441,
+    538,
+    600
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 381,
+   "name": "Lower Burma",
+   "owner": "United Kingdom",
+   "terrain": "forest",
+   "centre": [
+    97.021,
+    16.408
+   ],
+   "areaKm2": 169873,
+   "neighbours": [
+    380,
+    536,
+    538,
+    539
+   ],
+   "victoryPoints": 0,
+   "city": "Rangoon",
+   "capital": false
+  },
+  {
+   "id": 382,
+   "name": "British Borneo",
+   "owner": "United Kingdom",
+   "terrain": "forest",
+   "centre": [
+    114.724,
+    3.653
+   ],
+   "areaKm2": 203103,
+   "neighbours": [
+    449,
+    450
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 383,
+   "name": "Malaya",
+   "owner": "United Kingdom",
+   "terrain": "forest",
+   "centre": [
+    102.184,
+    4.027
+   ],
+   "areaKm2": 132488,
+   "neighbours": [
+    536
+   ],
+   "victoryPoints": 0,
+   "city": "Singapore",
+   "capital": false
+  },
+  {
+   "id": 384,
+   "name": "Hong Kong",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    114.131,
+    22.385
+   ],
+   "areaKm2": 1038,
+   "neighbours": [
+    325
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 385,
+   "name": "Kuwait",
+   "owner": "United Kingdom",
+   "terrain": "hills",
+   "centre": [
+    47.595,
+    29.339
+   ],
+   "areaKm2": 17496,
+   "neighbours": [
+    177,
+    547
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 386,
+   "name": "Trucial Coast",
+   "owner": "United Kingdom",
+   "terrain": "desert",
+   "centre": [
+    53.849,
+    24.117
+   ],
+   "areaKm2": 83141,
+   "neighbours": [
+    547,
+    551
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 387,
+   "name": "Aden",
+   "owner": "United Kingdom",
+   "terrain": "desert",
+   "centre": [
+    49.041,
+    16.057
+   ],
+   "areaKm2": 304752,
+   "neighbours": [
+    547,
+    549,
+    550,
+    551
+   ],
+   "victoryPoints": 0,
+   "city": "Aden",
+   "capital": false
+  },
+  {
+   "id": 388,
+   "name": "Southern Sudan",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    29.617,
+    8.864
+   ],
+   "areaKm2": 1023625,
+   "neighbours": [
+    389,
+    391,
+    392,
+    431,
+    432,
+    465,
+    553,
+    555
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 389,
+   "name": "Northern Sudan",
+   "owner": "United Kingdom",
+   "terrain": "desert",
+   "centre": [
+    30.293,
+    17.19
+   ],
+   "areaKm2": 1469918,
+   "neighbours": [
+    388,
+    431,
+    470,
+    472,
+    474,
+    475,
+    555
+   ],
+   "victoryPoints": 0,
+   "city": "Khartoum",
+   "capital": false
+  },
+  {
+   "id": 390,
+   "name": "British Somaliland",
+   "owner": "United Kingdom",
+   "terrain": "desert",
+   "centre": [
+    46.256,
+    9.733
+   ],
+   "areaKm2": 168094,
+   "neighbours": [
+    436,
+    471,
+    554
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 391,
+   "name": "Kenya",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    37.823,
+    0.55
+   ],
+   "areaKm2": 588323,
+   "neighbours": [
+    388,
+    392,
+    393,
+    471,
+    553,
+    554
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 392,
+   "name": "Uganda",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    32.367,
+    1.275
+   ],
+   "areaKm2": 242933,
+   "neighbours": [
+    388,
+    391,
+    393,
+    465
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 393,
+   "name": "Tanganyika",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    34.802,
+    -6.268
+   ],
+   "areaKm2": 945558,
+   "neighbours": [
+    391,
+    392,
+    394,
+    395,
+    462,
+    465,
+    466
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 394,
+   "name": "Northern Rhodesia",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    27.808,
+    -13.457
+   ],
+   "areaKm2": 754730,
+   "neighbours": [
+    393,
+    395,
+    396,
+    460,
+    462,
+    466,
+    533
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 395,
+   "name": "Nyasaland",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    34.283,
+    -13.203
+   ],
+   "areaKm2": 119850,
+   "neighbours": [
+    393,
+    394,
+    462
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 396,
+   "name": "Southern Rhodesia",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    29.851,
+    -18.995
+   ],
+   "areaKm2": 390524,
+   "neighbours": [
+    394,
+    397,
+    461,
+    462,
+    535
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 397,
+   "name": "Bechuanaland",
+   "owner": "United Kingdom",
+   "terrain": "desert",
+   "centre": [
+    23.809,
+    -22.167
+   ],
+   "areaKm2": 580515,
+   "neighbours": [
+    396,
+    533,
+    534,
+    535
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 398,
+   "name": "Basutoland",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    28.23,
+    -29.579
+   ],
+   "areaKm2": 30143,
+   "neighbours": [
+    534,
+    535
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 399,
+   "name": "Swaziland",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    31.48,
+    -26.561
+   ],
+   "areaKm2": 17142,
+   "neighbours": [
+    461,
+    535
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 400,
+   "name": "Southern Nigeria",
+   "owner": "United Kingdom",
+   "terrain": "forest",
+   "centre": [
+    6.185,
+    8.944
+   ],
+   "areaKm2": 559856,
+   "neighbours": [
+    401,
+    429,
+    430,
+    434
+   ],
+   "victoryPoints": 0,
+   "city": "Lagos",
+   "capital": false
+  },
+  {
+   "id": 401,
+   "name": "Northern Nigeria",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    11.118,
+    10.604
+   ],
+   "areaKm2": 351362,
+   "neighbours": [
+    400,
+    429,
+    431,
+    434
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 402,
+   "name": "Gold Coast",
+   "owner": "United Kingdom",
+   "terrain": "forest",
+   "centre": [
+    -1.217,
+    7.948
+   ],
+   "areaKm2": 239678,
+   "neighbours": [
+    427,
+    428,
+    430
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 403,
+   "name": "Sierra Leone",
+   "owner": "United Kingdom",
+   "terrain": "forest",
+   "centre": [
+    -11.795,
+    8.562
+   ],
+   "areaKm2": 71913,
+   "neighbours": [
+    424,
+    556
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 404,
+   "name": "Gambia",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    -15.398,
+    13.451
+   ],
+   "areaKm2": 10540,
+   "neighbours": [
+    423
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 405,
+   "name": "Newfoundland",
+   "owner": "United Kingdom",
+   "terrain": "forest",
+   "centre": [
+    -60.178,
+    52.737
+   ],
+   "areaKm2": 401713,
+   "neighbours": [
+    512,
+    518
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 406,
+   "name": "British Guiana",
+   "owner": "United Kingdom",
+   "terrain": "forest",
+   "centre": [
+    -58.978,
+    4.789
+   ],
+   "areaKm2": 212138,
+   "neighbours": [
+    454,
+    573,
+    586,
+    587
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 407,
+   "name": "British Honduras",
+   "owner": "United Kingdom",
+   "terrain": "forest",
+   "centre": [
+    -88.695,
+    17.206
+   ],
+   "areaKm2": 22370,
+   "neighbours": [
+    559,
+    561
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 408,
+   "name": "Jamaica",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    -77.318,
+    18.156
+   ],
+   "areaKm2": 11067,
+   "neighbours": [],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 409,
+   "name": "Bahamas",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    -76.512,
+    24.215
+   ],
+   "areaKm2": 12633,
+   "neighbours": [],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 410,
+   "name": "Trinidad",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    -61.259,
+    10.469
+   ],
+   "areaKm2": 5144,
+   "neighbours": [],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 411,
+   "name": "Bermuda",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    -64.764,
+    32.31
+   ],
+   "areaKm2": 62,
+   "neighbours": [],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 412,
+   "name": "Falkland Islands",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    -59.374,
+    -51.735
+   ],
+   "areaKm2": 11553,
+   "neighbours": [],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 413,
+   "name": "Solomon Islands",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    159.627,
+    -8.912
+   ],
+   "areaKm2": 27314,
+   "neighbours": [],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 414,
+   "name": "Fiji",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    178.526,
+    -17.447
+   ],
+   "areaKm2": 18993,
+   "neighbours": [],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 415,
+   "name": "Gilbert Islands",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    -167.153,
+    0.831
+   ],
+   "areaKm2": 923,
+   "neighbours": [],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 416,
+   "name": "New Hebrides",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    167.69,
+    -16.191
+   ],
+   "areaKm2": 12339,
+   "neighbours": [],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 417,
+   "name": "Tonga",
+   "owner": "United Kingdom",
+   "terrain": "plains",
+   "centre": [
+    -174.838,
+    -19.951
+   ],
+   "areaKm2": 620,
+   "neighbours": [],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 418,
+   "name": "French Guiana",
+   "owner": "France",
+   "terrain": "forest",
+   "centre": [
+    -53.245,
+    3.922
+   ],
+   "areaKm2": 83551,
+   "neighbours": [
+    454,
+    587
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 419,
+   "name": "Touat",
+   "owner": "France",
+   "terrain": "desert",
+   "centre": [
+    -1.788,
+    26.154
+   ],
+   "areaKm2": 629273,
+   "neighbours": [
+    16,
+    20,
+    224,
+    225,
+    420,
+    421,
+    422,
+    426,
+    468
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 420,
+   "name": "Hoggar",
+   "owner": "France",
+   "terrain": "desert",
+   "centre": [
+    5.911,
+    24.646
+   ],
+   "areaKm2": 807174,
+   "neighbours": [
+    224,
+    272,
+    419,
+    426,
+    429,
+    473
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 421,
+   "name": "Southern Morocco",
+   "owner": "France",
+   "terrain": "desert",
+   "centre": [
+    -9.792,
+    28.238
+   ],
+   "areaKm2": 101605,
+   "neighbours": [
+    20,
+    419,
+    468
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 422,
+   "name": "Mauritania",
+   "owner": "France",
+   "terrain": "desert",
+   "centre": [
+    -10.365,
+    20.22
+   ],
+   "areaKm2": 1039370,
+   "neighbours": [
+    419,
+    423,
+    425,
+    426,
+    468
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 423,
+   "name": "Senegal",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    -14.467,
+    14.366
+   ],
+   "areaKm2": 196943,
+   "neighbours": [
+    404,
+    422,
+    424,
+    425,
+    463
+   ],
+   "victoryPoints": 0,
+   "city": "Dakar",
+   "capital": false
+  },
+  {
+   "id": 424,
+   "name": "French Guinea",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    -10.937,
+    10.436
+   ],
+   "areaKm2": 245289,
+   "neighbours": [
+    403,
+    423,
+    425,
+    427,
+    463,
+    556
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 425,
+   "name": "Bamako",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    -7.149,
+    13.567
+   ],
+   "areaKm2": 430642,
+   "neighbours": [
+    422,
+    423,
+    424,
+    426,
+    427,
+    428
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 426,
+   "name": "Timbuktu",
+   "owner": "France",
+   "terrain": "desert",
+   "centre": [
+    -1.675,
+    19.241
+   ],
+   "areaKm2": 826168,
+   "neighbours": [
+    419,
+    420,
+    422,
+    425,
+    428,
+    429
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 427,
+   "name": "Ivory Coast",
+   "owner": "France",
+   "terrain": "forest",
+   "centre": [
+    -5.569,
+    7.625
+   ],
+   "areaKm2": 322036,
+   "neighbours": [
+    402,
+    424,
+    425,
+    428,
+    556
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 428,
+   "name": "Upper Volta",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    -1.762,
+    12.271
+   ],
+   "areaKm2": 273826,
+   "neighbours": [
+    402,
+    425,
+    426,
+    427,
+    429,
+    430
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 429,
+   "name": "Niger",
+   "owner": "France",
+   "terrain": "desert",
+   "centre": [
+    9.332,
+    17.411
+   ],
+   "areaKm2": 1185154,
+   "neighbours": [
+    400,
+    401,
+    420,
+    426,
+    428,
+    430,
+    431,
+    473
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 430,
+   "name": "Dahomey and Togo",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    1.878,
+    9.27
+   ],
+   "areaKm2": 173689,
+   "neighbours": [
+    400,
+    402,
+    428,
+    429
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 431,
+   "name": "Chad",
+   "owner": "France",
+   "terrain": "desert",
+   "centre": [
+    18.636,
+    15.275
+   ],
+   "areaKm2": 1270720,
+   "neighbours": [
+    388,
+    389,
+    401,
+    429,
+    432,
+    434,
+    472,
+    473
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 432,
+   "name": "Ubangi-Shari",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    20.458,
+    6.57
+   ],
+   "areaKm2": 620639,
+   "neighbours": [
+    388,
+    431,
+    433,
+    434,
+    464,
+    465
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 433,
+   "name": "French Congo",
+   "owner": "France",
+   "terrain": "forest",
+   "centre": [
+    13.745,
+    -0.732
+   ],
+   "areaKm2": 607559,
+   "neighbours": [
+    432,
+    434,
+    459,
+    464,
+    469
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 434,
+   "name": "Cameroun",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    12.731,
+    5.683
+   ],
+   "areaKm2": 466332,
+   "neighbours": [
+    400,
+    401,
+    431,
+    432,
+    433,
+    469
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 435,
+   "name": "Madagascar",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    46.744,
+    -19.318
+   ],
+   "areaKm2": 594757,
+   "neighbours": [],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 436,
+   "name": "French Somaliland",
+   "owner": "France",
+   "terrain": "desert",
+   "centre": [
+    42.566,
+    11.75
+   ],
+   "areaKm2": 21933,
+   "neighbours": [
+    390,
+    470,
+    554,
+    555
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 437,
+   "name": "Tonkin",
+   "owner": "France",
+   "terrain": "forest",
+   "centre": [
+    105.061,
+    21.566
+   ],
+   "areaKm2": 125520,
+   "neighbours": [
+    327,
+    438,
+    441,
+    600
+   ],
+   "victoryPoints": 0,
+   "city": "Hanoi",
+   "capital": false
+  },
+  {
+   "id": 438,
+   "name": "Annam",
+   "owner": "France",
+   "terrain": "forest",
+   "centre": [
+    107.465,
+    15.039
+   ],
+   "areaKm2": 131354,
+   "neighbours": [
+    437,
+    439,
+    440,
+    441
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 439,
+   "name": "Cochinchina",
+   "owner": "France",
+   "terrain": "forest",
+   "centre": [
+    106.468,
+    10.595
+   ],
+   "areaKm2": 73106,
+   "neighbours": [
+    438,
+    440
+   ],
+   "victoryPoints": 0,
+   "city": "Saigon",
+   "capital": false
+  },
+  {
+   "id": 440,
+   "name": "Cambodia",
+   "owner": "France",
+   "terrain": "forest",
+   "centre": [
+    104.901,
+    12.715
+   ],
+   "areaKm2": 181753,
+   "neighbours": [
+    438,
+    439,
+    441,
+    537,
+    539
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 441,
+   "name": "Laos",
+   "owner": "France",
+   "terrain": "forest",
+   "centre": [
+    103.775,
+    18.488
+   ],
+   "areaKm2": 228827,
+   "neighbours": [
+    380,
+    437,
+    438,
+    440,
+    537,
+    538,
+    600
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 442,
+   "name": "New Caledonia",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    165.698,
+    -21.305
+   ],
+   "areaKm2": 18892,
+   "neighbours": [],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 443,
+   "name": "Tahiti",
+   "owner": "France",
+   "terrain": "plains",
+   "centre": [
+    -144.945,
+    -15.155
+   ],
+   "areaKm2": 3350,
+   "neighbours": [],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 444,
+   "name": "Northern Sumatra",
+   "owner": "Netherlands",
+   "terrain": "forest",
+   "centre": [
+    99.893,
+    1.582
+   ],
+   "areaKm2": 266961,
+   "neighbours": [
+    445
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 445,
+   "name": "Southern Sumatra",
+   "owner": "Netherlands",
+   "terrain": "forest",
+   "centre": [
+    103.97,
+    -3.092
+   ],
+   "areaKm2": 207013,
+   "neighbours": [
+    444
+   ],
+   "victoryPoints": 0,
+   "city": "Palembang",
+   "capital": false
+  },
+  {
+   "id": 446,
+   "name": "Western Java",
+   "owner": "Netherlands",
+   "terrain": "forest",
+   "centre": [
+    107.297,
+    -6.817
+   ],
+   "areaKm2": 47633,
+   "neighbours": [
+    447
+   ],
+   "victoryPoints": 0,
+   "city": "Batavia",
+   "capital": false
+  },
+  {
+   "id": 447,
+   "name": "Eastern Java",
+   "owner": "Netherlands",
+   "terrain": "forest",
+   "centre": [
+    111.634,
+    -7.553
+   ],
+   "areaKm2": 84710,
+   "neighbours": [
+    446
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 448,
+   "name": "Lesser Sunda Islands",
+   "owner": "Netherlands",
+   "terrain": "forest",
+   "centre": [
+    120.349,
+    -9.019
+   ],
+   "areaKm2": 71974,
+   "neighbours": [
+    457
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 449,
+   "name": "Western Borneo",
+   "owner": "Netherlands",
+   "terrain": "forest",
+   "centre": [
+    112.306,
+    -0.856
+   ],
+   "areaKm2": 301533,
+   "neighbours": [
+    382,
+    450
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 450,
+   "name": "Eastern Borneo",
+   "owner": "Netherlands",
+   "terrain": "forest",
+   "centre": [
+    116.227,
+    0.64
+   ],
+   "areaKm2": 235399,
+   "neighbours": [
+    382,
+    449
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 451,
+   "name": "Moluccas",
+   "owner": "Netherlands",
+   "terrain": "forest",
+   "centre": [
+    128.84,
+    -2.673
+   ],
+   "areaKm2": 76650,
+   "neighbours": [],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 452,
+   "name": "Dutch New Guinea",
+   "owner": "Netherlands",
+   "terrain": "forest",
+   "centre": [
+    137.314,
+    -4.026
+   ],
+   "areaKm2": 409726,
+   "neighbours": [
+    526,
+    528
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 453,
+   "name": "Celebes",
+   "owner": "Netherlands",
+   "terrain": "forest",
+   "centre": [
+    121.285,
+    -2.099
+   ],
+   "areaKm2": 186564,
+   "neighbours": [],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 454,
+   "name": "Dutch Guiana",
+   "owner": "Netherlands",
+   "terrain": "forest",
+   "centre": [
+    -55.911,
+    4.131
+   ],
+   "areaKm2": 145765,
+   "neighbours": [
+    406,
+    418,
+    587
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 455,
+   "name": "Azores",
+   "owner": "Portugal",
+   "terrain": "plains",
+   "centre": [
+    -27.31,
+    38.374
+   ],
+   "areaKm2": 2607,
+   "neighbours": [],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 456,
+   "name": "Madeira",
+   "owner": "Portugal",
+   "terrain": "plains",
+   "centre": [
+    -16.944,
+    32.756
+   ],
+   "areaKm2": 811,
+   "neighbours": [],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 457,
+   "name": "Portuguese Timor",
+   "owner": "Portugal",
+   "terrain": "forest",
+   "centre": [
+    125.852,
+    -8.824
+   ],
+   "areaKm2": 15145,
+   "neighbours": [
+    448
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 458,
+   "name": "Macau",
+   "owner": "Portugal",
+   "terrain": "plains",
+   "centre": [
+    113.55,
+    22.158
+   ],
+   "areaKm2": 30,
+   "neighbours": [],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 459,
+   "name": "Northern Angola",
+   "owner": "Portugal",
+   "terrain": "plains",
+   "centre": [
+    17.047,
+    -8.917
+   ],
+   "areaKm2": 491007,
+   "neighbours": [
+    433,
+    460,
+    464,
+    466
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 460,
+   "name": "Southern Angola",
+   "owner": "Portugal",
+   "terrain": "plains",
+   "centre": [
+    17.851,
+    -14.44
+   ],
+   "areaKm2": 758428,
+   "neighbours": [
+    394,
+    459,
+    466,
+    533
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 461,
+   "name": "Southern Mozambique",
+   "owner": "Portugal",
+   "terrain": "plains",
+   "centre": [
+    33.719,
+    -21.506
+   ],
+   "areaKm2": 300285,
+   "neighbours": [
+    396,
+    399,
+    462,
+    535
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 462,
+   "name": "Northern Mozambique",
+   "owner": "Portugal",
+   "terrain": "plains",
+   "centre": [
+    36.718,
+    -14.545
+   ],
+   "areaKm2": 490737,
+   "neighbours": [
+    393,
+    394,
+    395,
+    396,
+    461
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 463,
+   "name": "Portuguese Guinea",
+   "owner": "Portugal",
+   "terrain": "plains",
+   "centre": [
+    -14.978,
+    12.027
+   ],
+   "areaKm2": 32958,
+   "neighbours": [
+    423,
+    424
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 464,
+   "name": "Lower Congo",
+   "owner": "Belgium",
+   "terrain": "forest",
+   "centre": [
+    19.227,
+    -1.587
+   ],
+   "areaKm2": 769086,
+   "neighbours": [
+    432,
+    433,
+    459,
+    465,
+    466
+   ],
+   "victoryPoints": 0,
+   "city": "Léopoldville",
+   "capital": false
+  },
+  {
+   "id": 465,
+   "name": "Kivu",
+   "owner": "Belgium",
+   "terrain": "forest",
+   "centre": [
+    26.916,
+    0.337
+   ],
+   "areaKm2": 806885,
+   "neighbours": [
+    388,
+    392,
+    393,
+    432,
+    464,
+    466
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 466,
+   "name": "Katanga",
+   "owner": "Belgium",
+   "terrain": "forest",
+   "centre": [
+    24.97,
+    -7.245
+   ],
+   "areaKm2": 812026,
+   "neighbours": [
+    393,
+    394,
+    459,
+    460,
+    464,
+    465
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 467,
+   "name": "Canary Islands",
+   "owner": "Spain",
+   "terrain": "desert",
+   "centre": [
+    -15.682,
+    28.345
+   ],
+   "areaKm2": 7446,
+   "neighbours": [],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 468,
+   "name": "Rio de Oro",
+   "owner": "Spain",
+   "terrain": "desert",
+   "centre": [
+    -13.491,
+    24.364
+   ],
+   "areaKm2": 240066,
+   "neighbours": [
+    419,
+    421,
+    422
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 469,
+   "name": "Spanish Guinea",
+   "owner": "Spain",
+   "terrain": "forest",
+   "centre": [
+    10.333,
+    1.707
+   ],
+   "areaKm2": 26791,
+   "neighbours": [
+    433,
+    434
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 470,
+   "name": "Eritrea",
+   "owner": "Italy",
+   "terrain": "desert",
+   "centre": [
+    38.864,
+    15.357
+   ],
+   "areaKm2": 122976,
+   "neighbours": [
+    389,
+    436,
+    555
+   ],
+   "victoryPoints": 0,
+   "city": "Asmara",
+   "capital": false
+  },
+  {
+   "id": 471,
+   "name": "Italian Somaliland",
+   "owner": "Italy",
+   "terrain": "desert",
+   "centre": [
+    45.678,
+    4.738
+   ],
+   "areaKm2": 473862,
+   "neighbours": [
+    390,
+    391,
+    554
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 472,
+   "name": "Kufra",
+   "owner": "Italy",
+   "terrain": "desert",
+   "centre": [
+    21.978,
+    25.354
+   ],
+   "areaKm2": 621452,
+   "neighbours": [
+    51,
+    222,
+    273,
+    274,
+    389,
+    431,
+    473,
+    475
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 473,
+   "name": "Fezzan",
+   "owner": "Italy",
+   "terrain": "desert",
+   "centre": [
+    14.87,
+    26.103
+   ],
+   "areaKm2": 596867,
+   "neighbours": [
+    50,
+    272,
+    273,
+    420,
+    429,
+    431,
+    472
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 474,
+   "name": "Red Sea Hills",
+   "owner": "Egypt",
+   "terrain": "desert",
+   "centre": [
+    33.416,
+    25.026
+   ],
+   "areaKm2": 213655,
+   "neighbours": [
+    173,
+    389,
+    475,
+    476
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 475,
+   "name": "New Valley",
+   "owner": "Egypt",
+   "terrain": "desert",
+   "centre": [
+    28.584,
+    24.767
+   ],
+   "areaKm2": 454097,
+   "neighbours": [
+    274,
+    389,
+    472,
+    474,
+    476
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 476,
+   "name": "Middle Egypt",
+   "owner": "Egypt",
+   "terrain": "desert",
+   "centre": [
+    31.015,
+    28.763
+   ],
+   "areaKm2": 99389,
+   "neighbours": [
+    173,
+    174,
+    175,
+    474,
+    475
+   ],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 477,
+   "name": "Greenland",
+   "owner": "Denmark",
+   "terrain": "plains",
+   "centre": [
+    -41.777,
+    73.127
+   ],
+   "areaKm2": 2137886,
+   "neighbours": [],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 478,
+   "name": "Faroe Islands",
+   "owner": "Denmark",
+   "terrain": "plains",
+   "centre": [
+    -6.87,
+    62.072
+   ],
+   "areaKm2": 1320,
+   "neighbours": [],
+   "victoryPoints": 0,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 479,
+   "name": "Iceland",
+   "owner": "Iceland",
+   "terrain": "plains",
+   "centre": [
+    -18.602,
+    65
+   ],
+   "areaKm2": 101721,
+   "neighbours": [],
+   "victoryPoints": 20,
+   "city": "Reykjavík",
+   "capital": true
+  },
+  {
+   "id": 480,
+   "name": "Alaska",
+   "owner": "United States",
+   "terrain": "forest",
+   "centre": [
+    -152.46,
+    63.985
+   ],
+   "areaKm2": 1495911,
+   "neighbours": [
+    517,
+    518
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 481,
+   "name": "Hawaii",
+   "owner": "United States",
+   "terrain": "plains",
+   "centre": [
+    -156.337,
+    20.252
+   ],
+   "areaKm2": 16897,
+   "neighbours": [],
+   "victoryPoints": 6,
+   "city": "Pearl Harbor",
+   "capital": false
+  },
+  {
+   "id": 482,
+   "name": "New England",
+   "owner": "United States",
+   "terrain": "plains",
+   "centre": [
+    -70.721,
+    44.223
+   ],
+   "areaKm2": 169512,
+   "neighbours": [
+    483,
+    511,
+    512
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 483,
+   "name": "New York",
+   "owner": "United States",
+   "terrain": "plains",
+   "centre": [
+    -75.559,
+    42.638
+   ],
+   "areaKm2": 156340,
+   "neighbours": [
+    482,
+    484,
+    512,
+    513
+   ],
+   "victoryPoints": 16,
+   "city": "New York",
+   "capital": false
+  },
+  {
+   "id": 484,
+   "name": "Pennsylvania",
+   "owner": "United States",
+   "terrain": "hills",
+   "centre": [
+    -77.74,
+    40.824
+   ],
+   "areaKm2": 124373,
+   "neighbours": [
+    483,
+    485,
+    490,
+    513
+   ],
+   "victoryPoints": 13,
+   "city": "Pittsburgh",
+   "capital": false
+  },
+  {
+   "id": 485,
+   "name": "Virginia",
+   "owner": "United States",
+   "terrain": "hills",
+   "centre": [
+    -79.153,
+    38.1
+   ],
+   "areaKm2": 191967,
+   "neighbours": [
+    484,
+    486,
+    489,
+    490
+   ],
+   "victoryPoints": 20,
+   "city": "Washington",
+   "capital": true
+  },
+  {
+   "id": 486,
+   "name": "Carolinas",
+   "owner": "United States",
+   "terrain": "hills",
+   "centre": [
+    -79.977,
+    34.928
+   ],
+   "areaKm2": 207843,
+   "neighbours": [
+    485,
+    487,
+    489
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 487,
+   "name": "Florida",
+   "owner": "United States",
+   "terrain": "plains",
+   "centre": [
+    -82.94,
+    30.675
+   ],
+   "areaKm2": 299170,
+   "neighbours": [
+    486,
+    488,
+    489
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 488,
+   "name": "Alabama",
+   "owner": "United States",
+   "terrain": "plains",
+   "centre": [
+    -88.197,
+    32.77
+   ],
+   "areaKm2": 257785,
+   "neighbours": [
+    487,
+    489,
+    493,
+    494
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 489,
+   "name": "Tennessee",
+   "owner": "United States",
+   "terrain": "plains",
+   "centre": [
+    -85.843,
+    36.682
+   ],
+   "areaKm2": 213810,
+   "neighbours": [
+    485,
+    486,
+    487,
+    488,
+    490,
+    492,
+    493
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 490,
+   "name": "Ohio",
+   "owner": "United States",
+   "terrain": "hills",
+   "centre": [
+    -84.327,
+    40.197
+   ],
+   "areaKm2": 210143,
+   "neighbours": [
+    484,
+    485,
+    489,
+    491,
+    492,
+    513
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 491,
+   "name": "Michigan",
+   "owner": "United States",
+   "terrain": "plains",
+   "centre": [
+    -87.307,
+    44.771
+   ],
+   "areaKm2": 418532,
+   "neighbours": [
+    490,
+    492,
+    496,
+    513
+   ],
+   "victoryPoints": 9,
+   "city": "Detroit",
+   "capital": false
+  },
+  {
+   "id": 492,
+   "name": "Illinois",
+   "owner": "United States",
+   "terrain": "plains",
+   "centre": [
+    -91.257,
+    41.095
+   ],
+   "areaKm2": 295214,
+   "neighbours": [
+    489,
+    490,
+    491,
+    493,
+    496,
+    497
+   ],
+   "victoryPoints": 11,
+   "city": "Chicago",
+   "capital": false
+  },
+  {
+   "id": 493,
+   "name": "Missouri",
+   "owner": "United States",
+   "terrain": "plains",
+   "centre": [
+    -92.457,
+    36.861
+   ],
+   "areaKm2": 317908,
+   "neighbours": [
+    488,
+    489,
+    492,
+    494,
+    495,
+    497
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 494,
+   "name": "Louisiana",
+   "owner": "United States",
+   "terrain": "plains",
+   "centre": [
+    -92.008,
+    31.072
+   ],
+   "areaKm2": 119656,
+   "neighbours": [
+    488,
+    493,
+    495
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 495,
+   "name": "Texas",
+   "owner": "United States",
+   "terrain": "plains",
+   "centre": [
+    -99.327,
+    31.481
+   ],
+   "areaKm2": 685904,
+   "neighbours": [
+    493,
+    494,
+    497,
+    500,
+    558
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 496,
+   "name": "Minnesota",
+   "owner": "United States",
+   "terrain": "plains",
+   "centre": [
+    -98.078,
+    46.079
+   ],
+   "areaKm2": 605337,
+   "neighbours": [
+    491,
+    492,
+    497,
+    498,
+    513,
+    514,
+    515
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 497,
+   "name": "Kansas",
+   "owner": "United States",
+   "terrain": "plains",
+   "centre": [
+    -98.557,
+    38.644
+   ],
+   "areaKm2": 593984,
+   "neighbours": [
+    492,
+    493,
+    495,
+    496,
+    498,
+    499,
+    500
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 498,
+   "name": "Montana",
+   "owner": "United States",
+   "terrain": "mountains",
+   "centre": [
+    -110.269,
+    45.185
+   ],
+   "areaKm2": 847310,
+   "neighbours": [
+    496,
+    497,
+    499,
+    500,
+    502,
+    515,
+    516,
+    517
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 499,
+   "name": "Colorado",
+   "owner": "United States",
+   "terrain": "mountains",
+   "centre": [
+    -108.29,
+    39.177
+   ],
+   "areaKm2": 488530,
+   "neighbours": [
+    497,
+    498,
+    500
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 500,
+   "name": "Southwest",
+   "owner": "United States",
+   "terrain": "mountains",
+   "centre": [
+    -111.191,
+    36.012
+   ],
+   "areaKm2": 897098,
+   "neighbours": [
+    495,
+    497,
+    498,
+    499,
+    501,
+    502,
+    557,
+    558
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 501,
+   "name": "California",
+   "owner": "United States",
+   "terrain": "mountains",
+   "centre": [
+    -119.467,
+    37.18
+   ],
+   "areaKm2": 409579,
+   "neighbours": [
+    500,
+    502,
+    557
+   ],
+   "victoryPoints": 15,
+   "city": "Los Angeles",
+   "capital": false
+  },
+  {
+   "id": 502,
+   "name": "Pacific Northwest",
+   "owner": "United States",
+   "terrain": "mountains",
+   "centre": [
+    -120.51,
+    45.345
+   ],
+   "areaKm2": 425004,
+   "neighbours": [
+    498,
+    500,
+    501,
+    517
+   ],
+   "victoryPoints": 4,
+   "city": "Seattle",
+   "capital": false
+  },
+  {
+   "id": 503,
+   "name": "Luzon",
+   "owner": "United States",
+   "terrain": "hills",
+   "centre": [
+    121.44,
+    15.654
+   ],
+   "areaKm2": 120499,
+   "neighbours": [],
+   "victoryPoints": 9,
+   "city": "Manila",
+   "capital": false
+  },
+  {
+   "id": 504,
+   "name": "Mindanao",
+   "owner": "United States",
+   "terrain": "hills",
+   "centre": [
+    124.705,
+    7.865
+   ],
+   "areaKm2": 107239,
+   "neighbours": [
+    505
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 505,
+   "name": "Visayas",
+   "owner": "United States",
+   "terrain": "hills",
+   "centre": [
+    122.601,
+    10.797
+   ],
+   "areaKm2": 66555,
+   "neighbours": [
+    504
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 506,
+   "name": "Guam",
+   "owner": "United States",
+   "terrain": "plains",
+   "centre": [
+    144.772,
+    13.444
+   ],
+   "areaKm2": 566,
+   "neighbours": [],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 507,
+   "name": "Puerto Rico",
+   "owner": "United States",
+   "terrain": "plains",
+   "centre": [
+    -66.468,
+    18.224
+   ],
+   "areaKm2": 9036,
+   "neighbours": [],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 508,
+   "name": "Midway",
+   "owner": "United States",
+   "terrain": "plains",
+   "centre": [
+    -177.367,
+    28.207
+   ],
+   "areaKm2": 4,
+   "neighbours": [],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 509,
+   "name": "Wake Island",
+   "owner": "United States",
+   "terrain": "plains",
+   "centre": [
+    166.642,
+    19.287
+   ],
+   "areaKm2": 4,
+   "neighbours": [],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 510,
+   "name": "American Samoa",
+   "owner": "United States",
+   "terrain": "plains",
+   "centre": [
+    -170.4,
+    -14.255
+   ],
+   "areaKm2": 181,
+   "neighbours": [],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 511,
+   "name": "Maritimes",
+   "owner": "Canada",
+   "terrain": "plains",
+   "centre": [
+    -64.973,
+    46.017
+   ],
+   "areaKm2": 133294,
+   "neighbours": [
+    482,
+    512
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 512,
+   "name": "Quebec",
+   "owner": "Canada",
+   "terrain": "forest",
+   "centre": [
+    -71.795,
+    53.031
+   ],
+   "areaKm2": 1499431,
+   "neighbours": [
+    405,
+    482,
+    483,
+    511,
+    513
+   ],
+   "victoryPoints": 6,
+   "city": "Montreal",
+   "capital": false
+  },
+  {
+   "id": 513,
+   "name": "Ontario",
+   "owner": "Canada",
+   "terrain": "plains",
+   "centre": [
+    -85.446,
+    49.933
+   ],
+   "areaKm2": 1073991,
+   "neighbours": [
+    483,
+    484,
+    490,
+    491,
+    496,
+    512,
+    514
+   ],
+   "victoryPoints": 25,
+   "city": "Ottawa",
+   "capital": true
+  },
+  {
+   "id": 514,
+   "name": "Manitoba",
+   "owner": "Canada",
+   "terrain": "forest",
+   "centre": [
+    -97.495,
+    54.733
+   ],
+   "areaKm2": 649708,
+   "neighbours": [
+    496,
+    513,
+    515,
+    518
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 515,
+   "name": "Saskatchewan",
+   "owner": "Canada",
+   "terrain": "mountains",
+   "centre": [
+    -105.884,
+    54.194
+   ],
+   "areaKm2": 648093,
+   "neighbours": [
+    496,
+    498,
+    514,
+    516,
+    518
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 516,
+   "name": "Alberta",
+   "owner": "Canada",
+   "terrain": "mountains",
+   "centre": [
+    -114.404,
+    54.983
+   ],
+   "areaKm2": 660775,
+   "neighbours": [
+    498,
+    515,
+    517,
+    518
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 517,
+   "name": "British Columbia",
+   "owner": "Canada",
+   "terrain": "mountains",
+   "centre": [
+    -124.352,
+    54.566
+   ],
+   "areaKm2": 941486,
+   "neighbours": [
+    480,
+    498,
+    502,
+    516,
+    518
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 518,
+   "name": "Northwest Territories",
+   "owner": "Canada",
+   "terrain": "forest",
+   "centre": [
+    -107.289,
+    68.442
+   ],
+   "areaKm2": 3885997,
+   "neighbours": [
+    405,
+    480,
+    514,
+    515,
+    516,
+    517
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 519,
+   "name": "Western Australia",
+   "owner": "Australia",
+   "terrain": "desert",
+   "centre": [
+    122.28,
+    -25.33
+   ],
+   "areaKm2": 2533127,
+   "neighbours": [
+    520,
+    521
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 520,
+   "name": "Northern Territory",
+   "owner": "Australia",
+   "terrain": "desert",
+   "centre": [
+    133.359,
+    -19.34
+   ],
+   "areaKm2": 1352533,
+   "neighbours": [
+    519,
+    521,
+    522
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 521,
+   "name": "South Australia",
+   "owner": "Australia",
+   "terrain": "desert",
+   "centre": [
+    135.758,
+    -30.077
+   ],
+   "areaKm2": 984908,
+   "neighbours": [
+    519,
+    520,
+    522,
+    523,
+    524
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 522,
+   "name": "Queensland",
+   "owner": "Australia",
+   "terrain": "plains",
+   "centre": [
+    144.464,
+    -22.501
+   ],
+   "areaKm2": 1734427,
+   "neighbours": [
+    520,
+    521,
+    523
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 523,
+   "name": "New South Wales",
+   "owner": "Australia",
+   "terrain": "plains",
+   "centre": [
+    147.026,
+    -32.172
+   ],
+   "areaKm2": 804827,
+   "neighbours": [
+    521,
+    522,
+    524
+   ],
+   "victoryPoints": 26,
+   "city": "Canberra",
+   "capital": true
+  },
+  {
+   "id": 524,
+   "name": "Victoria",
+   "owner": "Australia",
+   "terrain": "plains",
+   "centre": [
+    144.286,
+    -36.864
+   ],
+   "areaKm2": 227869,
+   "neighbours": [
+    521,
+    523
+   ],
+   "victoryPoints": 6,
+   "city": "Melbourne",
+   "capital": false
+  },
+  {
+   "id": 525,
+   "name": "Tasmania",
+   "owner": "Australia",
+   "terrain": "plains",
+   "centre": [
+    146.596,
+    -41.93
+   ],
+   "areaKm2": 68012,
+   "neighbours": [],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 526,
+   "name": "Papua",
+   "owner": "Australia",
+   "terrain": "forest",
+   "centre": [
+    144.48,
+    -7.834
+   ],
+   "areaKm2": 226929,
+   "neighbours": [
+    452,
+    528
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 527,
+   "name": "New Britain",
+   "owner": "Australia",
+   "terrain": "forest",
+   "centre": [
+    151.502,
+    -5.143
+   ],
+   "areaKm2": 56949,
+   "neighbours": [],
+   "victoryPoints": 4,
+   "city": "Rabaul",
+   "capital": false
+  },
+  {
+   "id": 528,
+   "name": "New Guinea",
+   "owner": "Australia",
+   "terrain": "forest",
+   "centre": [
+    144.194,
+    -5.192
+   ],
+   "areaKm2": 183262,
+   "neighbours": [
+    452,
+    526
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 529,
+   "name": "Nauru",
+   "owner": "Australia",
+   "terrain": "plains",
+   "centre": [
+    166.933,
+    -0.521
+   ],
+   "areaKm2": 29,
+   "neighbours": [],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 530,
+   "name": "South Island",
+   "owner": "New Zealand",
+   "terrain": "plains",
+   "centre": [
+    170.151,
+    -44.37
+   ],
+   "areaKm2": 131362,
+   "neighbours": [
+    531
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 531,
+   "name": "North Island",
+   "owner": "New Zealand",
+   "terrain": "plains",
+   "centre": [
+    175.331,
+    -39.022
+   ],
+   "areaKm2": 135135,
+   "neighbours": [
+    530
+   ],
+   "victoryPoints": 23,
+   "city": "Wellington",
+   "capital": true
+  },
+  {
+   "id": 532,
+   "name": "Western Samoa",
+   "owner": "New Zealand",
+   "terrain": "plains",
+   "centre": [
+    -172.162,
+    -13.755
+   ],
+   "areaKm2": 2790,
+   "neighbours": [],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 533,
+   "name": "South West Africa",
+   "owner": "South Africa",
+   "terrain": "desert",
+   "centre": [
+    17.197,
+    -22.069
+   ],
+   "areaKm2": 824820,
+   "neighbours": [
+    394,
+    397,
+    460,
+    534
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 534,
+   "name": "Cape Province",
+   "owner": "South Africa",
+   "terrain": "plains",
+   "centre": [
+    22.512,
+    -30.831
+   ],
+   "areaKm2": 671925,
+   "neighbours": [
+    397,
+    398,
+    533,
+    535
+   ],
+   "victoryPoints": 5,
+   "city": "Cape Town",
+   "capital": false
+  },
+  {
+   "id": 535,
+   "name": "Transvaal",
+   "owner": "South Africa",
+   "terrain": "plains",
+   "centre": [
+    28.345,
+    -26.623
+   ],
+   "areaKm2": 549203,
+   "neighbours": [
+    396,
+    397,
+    398,
+    399,
+    461,
+    534
+   ],
+   "victoryPoints": 25,
+   "city": "Pretoria",
+   "capital": true
+  },
+  {
+   "id": 536,
+   "name": "Southern Siam",
+   "owner": "Siam",
+   "terrain": "forest",
+   "centre": [
+    99.754,
+    8.107
+   ],
+   "areaKm2": 71274,
+   "neighbours": [
+    381,
+    383,
+    539
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 537,
+   "name": "Isan",
+   "owner": "Siam",
+   "terrain": "forest",
+   "centre": [
+    103.345,
+    16.009
+   ],
+   "areaKm2": 157484,
+   "neighbours": [
+    440,
+    441,
+    538,
+    539
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 538,
+   "name": "Northern Siam",
+   "owner": "Siam",
+   "terrain": "forest",
+   "centre": [
+    99.634,
+    18.194
+   ],
+   "areaKm2": 140958,
+   "neighbours": [
+    380,
+    381,
+    441,
+    537,
+    539
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 539,
+   "name": "Central Siam",
+   "owner": "Siam",
+   "terrain": "forest",
+   "centre": [
+    100.411,
+    14.447
+   ],
+   "areaKm2": 146562,
+   "neighbours": [
+    381,
+    440,
+    536,
+    537,
+    538
+   ],
+   "victoryPoints": 20,
+   "city": "Bangkok",
+   "capital": true
+  },
+  {
+   "id": 540,
+   "name": "Tabriz",
+   "owner": "Iran",
+   "terrain": "hills",
+   "centre": [
+    46.746,
+    36.957
+   ],
+   "areaKm2": 179029,
+   "neighbours": [
+    64,
+    65,
+    111,
+    176,
+    198,
+    236,
+    541,
+    544
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 541,
+   "name": "Khuzestan",
+   "owner": "Iran",
+   "terrain": "hills",
+   "centre": [
+    49.289,
+    31.65
+   ],
+   "areaKm2": 164153,
+   "neighbours": [
+    176,
+    177,
+    237,
+    540,
+    543,
+    544
+   ],
+   "victoryPoints": 5,
+   "city": "Abadan",
+   "capital": false
+  },
+  {
+   "id": 542,
+   "name": "Khorasan",
+   "owner": "Iran",
+   "terrain": "hills",
+   "centre": [
+    58.944,
+    34.617
+   ],
+   "areaKm2": 245162,
+   "neighbours": [
+    362,
+    543,
+    544,
+    545
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 543,
+   "name": "Kerman",
+   "owner": "Iran",
+   "terrain": "hills",
+   "centre": [
+    56.997,
+    29.4
+   ],
+   "areaKm2": 679232,
+   "neighbours": [
+    367,
+    541,
+    542,
+    544,
+    545
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 544,
+   "name": "Tehran",
+   "owner": "Iran",
+   "terrain": "hills",
+   "centre": [
+    52.393,
+    34.925
+   ],
+   "areaKm2": 355906,
+   "neighbours": [
+    198,
+    362,
+    540,
+    541,
+    542,
+    543
+   ],
+   "victoryPoints": 20,
+   "city": "Tehran",
+   "capital": true
+  },
+  {
+   "id": 545,
+   "name": "Herat",
+   "owner": "Afghanistan",
+   "terrain": "plains",
+   "centre": [
+    63.241,
+    32.99
+   ],
+   "areaKm2": 281800,
+   "neighbours": [
+    362,
+    367,
+    542,
+    543,
+    546
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 546,
+   "name": "Kabul",
+   "owner": "Afghanistan",
+   "terrain": "mountains",
+   "centre": [
+    68.067,
+    34.427
+   ],
+   "areaKm2": 360594,
+   "neighbours": [
+    307,
+    361,
+    362,
+    363,
+    365,
+    366,
+    367,
+    545
+   ],
+   "victoryPoints": 20,
+   "city": "Kabul",
+   "capital": true
+  },
+  {
+   "id": 547,
+   "name": "Hasa",
+   "owner": "Saudi Arabia",
+   "terrain": "desert",
+   "centre": [
+    50.201,
+    22.877
+   ],
+   "areaKm2": 554592,
+   "neighbours": [
+    177,
+    385,
+    386,
+    387,
+    548,
+    549,
+    551
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 548,
+   "name": "Nejd",
+   "owner": "Saudi Arabia",
+   "terrain": "desert",
+   "centre": [
+    43.303,
+    25.984
+   ],
+   "areaKm2": 796038,
+   "neighbours": [
+    41,
+    176,
+    177,
+    237,
+    547,
+    549
+   ],
+   "victoryPoints": 20,
+   "city": "Riyadh",
+   "capital": true
+  },
+  {
+   "id": 549,
+   "name": "Hejaz",
+   "owner": "Saudi Arabia",
+   "terrain": "desert",
+   "centre": [
+    41.173,
+    22.482
+   ],
+   "areaKm2": 575376,
+   "neighbours": [
+    387,
+    547,
+    548,
+    550
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 550,
+   "name": "Yemen",
+   "owner": "Yemen",
+   "terrain": "desert",
+   "centre": [
+    44.592,
+    15.592
+   ],
+   "areaKm2": 149899,
+   "neighbours": [
+    387,
+    549
+   ],
+   "victoryPoints": 20,
+   "city": "Sana'a",
+   "capital": true
+  },
+  {
+   "id": 551,
+   "name": "Oman",
+   "owner": "Oman",
+   "terrain": "desert",
+   "centre": [
+    56.063,
+    20.582
+   ],
+   "areaKm2": 312085,
+   "neighbours": [
+    386,
+    387,
+    547
+   ],
+   "victoryPoints": 20,
+   "city": "Muscat",
+   "capital": true
+  },
+  {
+   "id": 552,
+   "name": "Nepal",
+   "owner": "Nepal",
+   "terrain": "mountains",
+   "centre": [
+    83.947,
+    28.257
+   ],
+   "areaKm2": 147324,
+   "neighbours": [
+    308,
+    370,
+    371,
+    372
+   ],
+   "victoryPoints": 20,
+   "city": "Kathmandu",
+   "capital": true
+  },
+  {
+   "id": 553,
+   "name": "Shoa",
+   "owner": "Ethiopia",
+   "terrain": "mountains",
+   "centre": [
+    37.976,
+    7.273
+   ],
+   "areaKm2": 467785,
+   "neighbours": [
+    388,
+    391,
+    554,
+    555
+   ],
+   "victoryPoints": 20,
+   "city": "Addis Ababa",
+   "capital": true
+  },
+  {
+   "id": 554,
+   "name": "Ogaden",
+   "owner": "Ethiopia",
+   "terrain": "desert",
+   "centre": [
+    43.317,
+    6.947
+   ],
+   "areaKm2": 313317,
+   "neighbours": [
+    390,
+    391,
+    436,
+    471,
+    553,
+    555
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 555,
+   "name": "Gojjam",
+   "owner": "Ethiopia",
+   "terrain": "mountains",
+   "centre": [
+    38.461,
+    11.869
+   ],
+   "areaKm2": 350965,
+   "neighbours": [
+    388,
+    389,
+    436,
+    470,
+    553,
+    554
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 556,
+   "name": "Liberia",
+   "owner": "Liberia",
+   "terrain": "forest",
+   "centre": [
+    -9.318,
+    6.451
+   ],
+   "areaKm2": 95710,
+   "neighbours": [
+    403,
+    424,
+    427
+   ],
+   "victoryPoints": 20,
+   "city": "Monrovia",
+   "capital": true
+  },
+  {
+   "id": 557,
+   "name": "Baja California",
+   "owner": "Mexico",
+   "terrain": "plains",
+   "centre": [
+    -111.313,
+    28.444
+   ],
+   "areaKm2": 382481,
+   "neighbours": [
+    500,
+    501,
+    558,
+    560
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 558,
+   "name": "Northern Mexico",
+   "owner": "Mexico",
+   "terrain": "plains",
+   "centre": [
+    -103.566,
+    26.927
+   ],
+   "areaKm2": 665696,
+   "neighbours": [
+    495,
+    500,
+    557,
+    560
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 559,
+   "name": "Yucatán",
+   "owner": "Mexico",
+   "terrain": "plains",
+   "centre": [
+    -90.589,
+    18.506
+   ],
+   "areaKm2": 237717,
+   "neighbours": [
+    407,
+    560,
+    561
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 560,
+   "name": "Central Mexico",
+   "owner": "Mexico",
+   "terrain": "hills",
+   "centre": [
+    -100.155,
+    19.997
+   ],
+   "areaKm2": 676344,
+   "neighbours": [
+    557,
+    558,
+    559
+   ],
+   "victoryPoints": 20,
+   "city": "Mexico City",
+   "capital": true
+  },
+  {
+   "id": 561,
+   "name": "Guatemala",
+   "owner": "Guatemala",
+   "terrain": "forest",
+   "centre": [
+    -90.363,
+    15.692
+   ],
+   "areaKm2": 109193,
+   "neighbours": [
+    407,
+    559,
+    562,
+    563
+   ],
+   "victoryPoints": 20,
+   "city": "Guatemala City",
+   "capital": true
+  },
+  {
+   "id": 562,
+   "name": "Honduras",
+   "owner": "Honduras",
+   "terrain": "forest",
+   "centre": [
+    -86.628,
+    14.823
+   ],
+   "areaKm2": 112642,
+   "neighbours": [
+    561,
+    563,
+    564
+   ],
+   "victoryPoints": 20,
+   "city": "Tegucigalpa",
+   "capital": true
+  },
+  {
+   "id": 563,
+   "name": "El Salvador",
+   "owner": "El Salvador",
+   "terrain": "forest",
+   "centre": [
+    -88.87,
+    13.736
+   ],
+   "areaKm2": 20616,
+   "neighbours": [
+    561,
+    562
+   ],
+   "victoryPoints": 20,
+   "city": "San Salvador",
+   "capital": true
+  },
+  {
+   "id": 564,
+   "name": "Nicaragua",
+   "owner": "Nicaragua",
+   "terrain": "forest",
+   "centre": [
+    -85.035,
+    12.843
+   ],
+   "areaKm2": 129180,
+   "neighbours": [
+    562,
+    565
+   ],
+   "victoryPoints": 20,
+   "city": "Managua",
+   "capital": true
+  },
+  {
+   "id": 565,
+   "name": "Costa Rica",
+   "owner": "Costa Rica",
+   "terrain": "forest",
+   "centre": [
+    -84.191,
+    9.973
+   ],
+   "areaKm2": 51361,
+   "neighbours": [
+    564,
+    566
+   ],
+   "victoryPoints": 20,
+   "city": "San José",
+   "capital": true
+  },
+  {
+   "id": 566,
+   "name": "Panama",
+   "owner": "Panama",
+   "terrain": "forest",
+   "centre": [
+    -80.121,
+    8.517
+   ],
+   "areaKm2": 74843,
+   "neighbours": [
+    565,
+    572
+   ],
+   "victoryPoints": 20,
+   "city": "Panama City",
+   "capital": true
+  },
+  {
+   "id": 567,
+   "name": "Oriente",
+   "owner": "Cuba",
+   "terrain": "plains",
+   "centre": [
+    -76.907,
+    20.916
+   ],
+   "areaKm2": 59205,
+   "neighbours": [
+    568
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 568,
+   "name": "Havana",
+   "owner": "Cuba",
+   "terrain": "plains",
+   "centre": [
+    -81.468,
+    22.448
+   ],
+   "areaKm2": 51021,
+   "neighbours": [
+    567
+   ],
+   "victoryPoints": 20,
+   "city": "Havana",
+   "capital": true
+  },
+  {
+   "id": 569,
+   "name": "Haiti",
+   "owner": "Haiti",
+   "terrain": "plains",
+   "centre": [
+    -72.692,
+    18.938
+   ],
+   "areaKm2": 26973,
+   "neighbours": [
+    570
+   ],
+   "victoryPoints": 20,
+   "city": "Port-au-Prince",
+   "capital": true
+  },
+  {
+   "id": 570,
+   "name": "Dominican Republic",
+   "owner": "Dominican Republic",
+   "terrain": "plains",
+   "centre": [
+    -70.496,
+    18.897
+   ],
+   "areaKm2": 48590,
+   "neighbours": [
+    569
+   ],
+   "victoryPoints": 20,
+   "city": "Ciudad Trujillo",
+   "capital": true
+  },
+  {
+   "id": 571,
+   "name": "Llanos",
+   "owner": "Colombia",
+   "terrain": "mountains",
+   "centre": [
+    -72.227,
+    1.764
+   ],
+   "areaKm2": 671287,
+   "neighbours": [
+    572,
+    573,
+    574,
+    576,
+    586
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 572,
+   "name": "Cundinamarca",
+   "owner": "Colombia",
+   "terrain": "mountains",
+   "centre": [
+    -74.309,
+    6.953
+   ],
+   "areaKm2": 468806,
+   "neighbours": [
+    566,
+    571,
+    573
+   ],
+   "victoryPoints": 20,
+   "city": "Bogotá",
+   "capital": true
+  },
+  {
+   "id": 573,
+   "name": "Venezuela",
+   "owner": "Venezuela",
+   "terrain": "mountains",
+   "centre": [
+    -66.158,
+    7.126
+   ],
+   "areaKm2": 916571,
+   "neighbours": [
+    406,
+    571,
+    572,
+    586
+   ],
+   "victoryPoints": 20,
+   "city": "Caracas",
+   "capital": true
+  },
+  {
+   "id": 574,
+   "name": "Ecuador",
+   "owner": "Ecuador",
+   "terrain": "mountains",
+   "centre": [
+    -78.394,
+    -1.453
+   ],
+   "areaKm2": 248419,
+   "neighbours": [
+    571,
+    576
+   ],
+   "victoryPoints": 20,
+   "city": "Quito",
+   "capital": true
+  },
+  {
+   "id": 575,
+   "name": "Southern Peru",
+   "owner": "Peru",
+   "terrain": "mountains",
+   "centre": [
+    -72.805,
+    -12.943
+   ],
+   "areaKm2": 639852,
+   "neighbours": [
+    576,
+    577,
+    581,
+    586
+   ],
+   "victoryPoints": 20,
+   "city": "Lima",
+   "capital": true
+  },
+  {
+   "id": 576,
+   "name": "Northern Peru",
+   "owner": "Peru",
+   "terrain": "mountains",
+   "centre": [
+    -75.957,
+    -5.358
+   ],
+   "areaKm2": 655269,
+   "neighbours": [
+    571,
+    574,
+    575,
+    586
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 577,
+   "name": "Bolivia",
+   "owner": "Bolivia",
+   "terrain": "plains",
+   "centre": [
+    -64.698,
+    -16.681
+   ],
+   "areaKm2": 1090450,
+   "neighbours": [
+    575,
+    578,
+    581,
+    583,
+    585,
+    586,
+    588
+   ],
+   "victoryPoints": 20,
+   "city": "La Paz",
+   "capital": true
+  },
+  {
+   "id": 578,
+   "name": "Paraguay",
+   "owner": "Paraguay",
+   "terrain": "plains",
+   "centre": [
+    -58.442,
+    -23.208
+   ],
+   "areaKm2": 400859,
+   "neighbours": [
+    577,
+    583,
+    585
+   ],
+   "victoryPoints": 20,
+   "city": "Asunción",
+   "capital": true
+  },
+  {
+   "id": 579,
+   "name": "Uruguay",
+   "owner": "Uruguay",
+   "terrain": "plains",
+   "centre": [
+    -56.024,
+    -32.79
+   ],
+   "areaKm2": 177439,
+   "neighbours": [
+    582,
+    583,
+    585
+   ],
+   "victoryPoints": 20,
+   "city": "Montevideo",
+   "capital": true
+  },
+  {
+   "id": 580,
+   "name": "Chilean Patagonia",
+   "owner": "Chile",
+   "terrain": "plains",
+   "centre": [
+    -72.645,
+    -48.33
+   ],
+   "areaKm2": 272225,
+   "neighbours": [
+    581,
+    582,
+    584
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 581,
+   "name": "Chile",
+   "owner": "Chile",
+   "terrain": "mountains",
+   "centre": [
+    -70.315,
+    -28.894
+   ],
+   "areaKm2": 463904,
+   "neighbours": [
+    575,
+    577,
+    580,
+    582,
+    583
+   ],
+   "victoryPoints": 20,
+   "city": "Santiago",
+   "capital": true
+  },
+  {
+   "id": 582,
+   "name": "Pampas",
+   "owner": "Argentina",
+   "terrain": "plains",
+   "centre": [
+    -64.77,
+    -36.823
+   ],
+   "areaKm2": 1052470,
+   "neighbours": [
+    579,
+    580,
+    581,
+    583,
+    584
+   ],
+   "victoryPoints": 20,
+   "city": "Buenos Aires",
+   "capital": true
+  },
+  {
+   "id": 583,
+   "name": "Gran Chaco",
+   "owner": "Argentina",
+   "terrain": "plains",
+   "centre": [
+    -63.412,
+    -28.131
+   ],
+   "areaKm2": 1242891,
+   "neighbours": [
+    577,
+    578,
+    579,
+    581,
+    582,
+    585
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 584,
+   "name": "Patagonia",
+   "owner": "Argentina",
+   "terrain": "plains",
+   "centre": [
+    -69.136,
+    -46.71
+   ],
+   "areaKm2": 487748,
+   "neighbours": [
+    580,
+    582
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 585,
+   "name": "Southeast Brazil",
+   "owner": "Brazil",
+   "terrain": "plains",
+   "centre": [
+    -49.329,
+    -21.279
+   ],
+   "areaKm2": 2199770,
+   "neighbours": [
+    577,
+    578,
+    579,
+    583,
+    588,
+    589
+   ],
+   "victoryPoints": 26,
+   "city": "Rio de Janeiro",
+   "capital": true
+  },
+  {
+   "id": 586,
+   "name": "Amazonia",
+   "owner": "Brazil",
+   "terrain": "forest",
+   "centre": [
+    -64.574,
+    -4.639
+   ],
+   "areaKm2": 2191682,
+   "neighbours": [
+    406,
+    571,
+    573,
+    575,
+    576,
+    577,
+    587,
+    588
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 587,
+   "name": "Pará",
+   "owner": "Brazil",
+   "terrain": "forest",
+   "centre": [
+    -53.014,
+    -3.479
+   ],
+   "areaKm2": 1376004,
+   "neighbours": [
+    406,
+    418,
+    454,
+    586,
+    588,
+    589
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 588,
+   "name": "Central Brazil",
+   "owner": "Brazil",
+   "terrain": "forest",
+   "centre": [
+    -55.932,
+    -12.954
+   ],
+   "areaKm2": 906373,
+   "neighbours": [
+    577,
+    585,
+    586,
+    587,
+    589
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 589,
+   "name": "Northeast Brazil",
+   "owner": "Brazil",
+   "terrain": "plains",
+   "centre": [
+    -42.74,
+    -8.851
+   ],
+   "areaKm2": 1831062,
+   "neighbours": [
+    585,
+    587,
+    588
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 590,
+   "name": "Northern Hopeh",
+   "owner": "China",
+   "terrain": "plains",
+   "centre": [
+    116.864,
+    40.803
+   ],
+   "areaKm2": 101638,
+   "neighbours": [
+    302,
+    303,
+    313,
+    314,
+    597,
+    606
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 591,
+   "name": "Western Shantung",
+   "owner": "China",
+   "terrain": "plains",
+   "centre": [
+    116.843,
+    35.906
+   ],
+   "areaKm2": 79312,
+   "neighbours": [
+    314,
+    315,
+    318,
+    592,
+    603
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 592,
+   "name": "Eastern Honan",
+   "owner": "China",
+   "terrain": "plains",
+   "centre": [
+    114.779,
+    33.548
+   ],
+   "areaKm2": 77221,
+   "neighbours": [
+    314,
+    316,
+    317,
+    318,
+    591
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 593,
+   "name": "Western Hupeh",
+   "owner": "China",
+   "terrain": "hills",
+   "centre": [
+    110.699,
+    31.247
+   ],
+   "areaKm2": 95326,
+   "neighbours": [
+    305,
+    316,
+    317,
+    323,
+    331
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 594,
+   "name": "Southern Hunan",
+   "owner": "China",
+   "terrain": "plains",
+   "centre": [
+    112.206,
+    26.477
+   ],
+   "areaKm2": 96901,
+   "neighbours": [
+    322,
+    323,
+    325,
+    328,
+    595,
+    598,
+    601
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 595,
+   "name": "Northern Kiangsi",
+   "owner": "China",
+   "terrain": "plains",
+   "centre": [
+    116.363,
+    28.71
+   ],
+   "areaKm2": 82404,
+   "neighbours": [
+    317,
+    321,
+    322,
+    323,
+    324,
+    594,
+    596
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 596,
+   "name": "Southern Anhwei",
+   "owner": "China",
+   "terrain": "plains",
+   "centre": [
+    117.581,
+    30.811
+   ],
+   "areaKm2": 74181,
+   "neighbours": [
+    317,
+    318,
+    319,
+    321,
+    595,
+    603,
+    604
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 597,
+   "name": "Northern Shansi",
+   "owner": "China",
+   "terrain": "plains",
+   "centre": [
+    112.662,
+    38.828
+   ],
+   "areaKm2": 77566,
+   "neighbours": [
+    304,
+    312,
+    314,
+    590,
+    606
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 598,
+   "name": "Eastern Kwangtung",
+   "owner": "China",
+   "terrain": "plains",
+   "centre": [
+    114.991,
+    23.997
+   ],
+   "areaKm2": 81041,
+   "neighbours": [
+    322,
+    324,
+    325,
+    594
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 599,
+   "name": "Eastern Szechwan",
+   "owner": "China",
+   "terrain": "hills",
+   "centre": [
+    104.796,
+    30.67
+   ],
+   "areaKm2": 230215,
+   "neighbours": [
+    305,
+    328,
+    330,
+    331,
+    600,
+    605
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 600,
+   "name": "Eastern Yunnan",
+   "owner": "China",
+   "terrain": "mountains",
+   "centre": [
+    102.62,
+    24.357
+   ],
+   "areaKm2": 240481,
+   "neighbours": [
+    327,
+    328,
+    329,
+    330,
+    380,
+    437,
+    441,
+    599
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 601,
+   "name": "Eastern Kwangsi",
+   "owner": "China",
+   "terrain": "plains",
+   "centre": [
+    110.212,
+    24.19
+   ],
+   "areaKm2": 111297,
+   "neighbours": [
+    325,
+    327,
+    328,
+    594
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 602,
+   "name": "Northern Heilungkiang",
+   "owner": "Manchukuo",
+   "terrain": "forest",
+   "centre": [
+    125.663,
+    49.363
+   ],
+   "areaKm2": 228973,
+   "neighbours": [
+    300,
+    301,
+    303,
+    349,
+    352,
+    353
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 603,
+   "name": "Northern Kiangsu",
+   "owner": "China",
+   "terrain": "plains",
+   "centre": [
+    118.924,
+    33.729
+   ],
+   "areaKm2": 58075,
+   "neighbours": [
+    315,
+    318,
+    319,
+    591,
+    596
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 604,
+   "name": "Northern Chekiang",
+   "owner": "China",
+   "terrain": "plains",
+   "centre": [
+    120.474,
+    29.994
+   ],
+   "areaKm2": 43963,
+   "neighbours": [
+    319,
+    320,
+    321,
+    596
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 605,
+   "name": "Eastern Kansu",
+   "owner": "China",
+   "terrain": "plains",
+   "centre": [
+    104.681,
+    35.423
+   ],
+   "areaKm2": 198308,
+   "neighbours": [
+    304,
+    305,
+    306,
+    309,
+    310,
+    311,
+    330,
+    599
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  },
+  {
+   "id": 606,
+   "name": "Chahar",
+   "owner": "China",
+   "terrain": "plains",
+   "centre": [
+    112.594,
+    42.525
+   ],
+   "areaKm2": 292024,
+   "neighbours": [
+    304,
+    306,
+    332,
+    590,
+    597
+   ],
+   "victoryPoints": 1,
+   "city": null,
+   "capital": false
+  }
+ ]
+}

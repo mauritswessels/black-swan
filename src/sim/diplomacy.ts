@@ -21,7 +21,7 @@
  */
 import { COUNTRIES } from './countries';
 import { DECLARATION_COST } from './economy';
-import { partsOf, PROVINCES } from './map';
+import { OUTPOST, partsOf, PROVINCES } from './map';
 import type { Decision, Demand, DipEvent, Diplomacy, Economy, Government, Mode, Order, Pact, PactKind, PeaceTerms, StoryState, Ultimatum, Unit, UnitType, World } from './types';
 import { warKey } from './war';
 
@@ -42,6 +42,7 @@ export interface DipDraft {
   wars: string[];
   declaredBy: Record<string, string>;
   capitulated: string[];
+  asleep?: string[];
   economies: Record<string, Economy>;
   factories: World['factories'];
   diplomacy: Diplomacy;
@@ -54,7 +55,7 @@ export const setEventHook = (hook: typeof eventHook): void => {
   eventHook = hook;
 };
 
-type View = Pick<World, 'units' | 'controller' | 'owner' | 'wars' | 'capitulated' | 'economies' | 'diplomacy' | 'day' | 'mode' | 'player'> & { declaredBy: Record<string, string> };
+type View = Pick<World, 'units' | 'controller' | 'owner' | 'wars' | 'capitulated' | 'asleep' | 'economies' | 'diplomacy' | 'day' | 'mode' | 'player'> & { declaredBy: Record<string, string> };
 
 // ---------- the numbers ----------
 
@@ -198,13 +199,16 @@ const list = (xs: string[]): string => (xs.length > 1 ? `${xs.slice(0, -1).join(
 /** Countries that share a land border on the 1936 map. */
 export const BORDERS: Map<string, Set<string>> = (() => {
   const out = new Map<string, Set<string>>();
-  for (const p of PROVINCES) for (const n of p.neighbours) if (PROVINCES[n].owner !== p.owner) (out.get(p.owner) ?? out.set(p.owner, new Set()).get(p.owner)!).add(PROVINCES[n].owner);
+  // Outposts (map.ts) do not count, so the borders of Europe stay as they were before the world map of 1.7.
+  for (const p of PROVINCES) for (const n of p.neighbours) if (PROVINCES[n].owner !== p.owner && !OUTPOST[p.id] && !OUTPOST[n]) (out.get(p.owner) ?? out.set(p.owner, new Set()).get(p.owner)!).add(PROVINCES[n].owner);
   return out;
 })();
 
 // ---------- reading the state ----------
 
-export const alive = (w: Pick<World, 'capitulated'>, name: string): boolean => KNOWN.has(name) && !w.capitulated.includes(name);
+export const alive = (w: Pick<World, 'capitulated'> & { asleep?: string[] }, name: string): boolean => KNOWN.has(name) && !w.capitulated.includes(name) && !w.asleep?.includes(name);
+/** Does this country sit out the war for now (World.asleep)? */
+export const asleep = (w: { asleep?: string[] }, name: string): boolean => !!w.asleep?.includes(name);
 export const governmentOf = (w: Pick<World, 'economies'>, name: string): Government => w.economies[name]?.government ?? COUNTRIES.find((c) => c.name === name)?.government ?? 'authoritarian';
 export const relation = (dip: Diplomacy, a: string, b: string): number => dip.relations[warKey(a, b)] ?? 0;
 export const shift = (dip: Diplomacy, a: string, b: string, by: number): void => {
@@ -289,6 +293,7 @@ const protegesOf = (dip: Diplomacy, name: string): string[] => [...new Set([...a
 
 /** Why `by` cannot declare war on `on` right now, or null if it can. */
 export function cannotDeclare(w: View, by: string, on: string): string | null {
+  if (asleep(w, on)) return `${on} stays out of the war in this version of the game`;
   if (by === on || !alive(w, by) || !alive(w, on)) return 'no such country to fight';
   if (fighting(w, by, on)) return 'already at war';
   if (allied(w.diplomacy, by, on)) return 'you are allies: end the alliance first';
@@ -460,14 +465,25 @@ export function oddsAgainst(w: Pick<World, 'units' | 'wars' | 'capitulated' | 'd
 
 // ---------- the start of a game ----------
 
-export function startDiplomacy(economies: Record<string, Economy>): Diplomacy {
+/** Relations start where they would rest. Countries that are `asleep` (World.asleep) get none until they wake: a missing relation counts as 0. */
+export function startDiplomacy(economies: Record<string, Economy>, asleep: string[] = []): Diplomacy {
   const dip: Diplomacy = {
     relations: {}, pacts: START_PACTS.map(([kind, a, b]) => ({ kind, a, b, since: 0 })), tension: 0, aggression: {}, causes: [], justifying: [], truces: {}, aims: {}, warStart: {}, honour: [],
     conquered: {}, owed: {}, missions: [], agenda: {}, rebuffs: {}, ultimatums: [], decisions: [], nextId: 0, log: [],
   };
   const w = { economies, diplomacy: dip, wars: [] };
-  for (let i = 0; i < NAMES.length; i++) for (let j = i + 1; j < NAMES.length; j++) dip.relations[warKey(NAMES[i], NAMES[j])] = restingRelation(w, NAMES[i], NAMES[j]);
+  const awake = NAMES.filter((x) => !asleep.includes(x));
+  for (let i = 0; i < awake.length; i++) for (let j = i + 1; j < awake.length; j++) dip.relations[warKey(awake[i], awake[j])] = restingRelation(w, awake[i], awake[j]);
   return dip;
+}
+
+/** Wake countries that sat out the war (World.asleep): they join in, with relations where they would rest. */
+export function wake<W extends Pick<World, 'economies' | 'diplomacy' | 'wars'> & { asleep?: string[] }>(w: W, names: string[]): W {
+  const asleep = (w.asleep ?? []).filter((x) => !names.includes(x));
+  const relations = { ...w.diplomacy.relations };
+  const view = { ...w, asleep };
+  for (const a of names) for (const b of NAMES) if (a !== b && !asleep.includes(b) && !(warKey(a, b) in relations)) relations[warKey(a, b)] = restingRelation(view, a, b);
+  return { ...w, asleep, diplomacy: { ...w.diplomacy, relations } };
 }
 
 /**
@@ -782,7 +798,8 @@ export function capitulate(d: DipDraft, loser: string, victor: string): void {
     for (const p of aim.provinces) if (d.owner[p] === loser && d.controller[p] === aim.by) d.owner[p] = aim.by;
   }
   remove(d, loser, victor);
-  for (const p of PROVINCES) if (d.controller[p.id] === loser) d.controller[p.id] = victor;
+  // Outposts (map.ts: colonies beyond the Europe-only map, such as the Dutch East Indies) stay with their owner.
+  for (const p of PROVINCES) if (d.controller[p.id] === loser && !OUTPOST[p.id]) d.controller[p.id] = victor;
   for (const name of [...back].sort()) if (d.capitulated.includes(name)) restore(d, name, victor);
   raiseTension(d, isMajor(loser) ? -10 : 0);
   note(d, 'peace', `${loser} surrenders to ${victor}`, [loser, victor]);
@@ -797,14 +814,14 @@ function giveIn(d: DipDraft, u: Ultimatum): void {
   blame(d, by, -5);
   if (demand.kind === 'annex') {
     for (const p of PROVINCES) {
-      if (d.owner[p.id] !== on && d.controller[p.id] !== on) continue;
+      if ((d.owner[p.id] !== on && d.controller[p.id] !== on) || OUTPOST[p.id]) continue;
       if (d.owner[p.id] === on) d.owner[p.id] = by;
       if (d.controller[p.id] === on) d.controller[p.id] = by;
     }
     remove(d, on, by);
     note(d, 'crisis', `${on} gives in: it is annexed by ${by}`, [by, on]);
   } else if (demand.kind === 'submit') {
-    for (const p of PROVINCES) if (d.controller[p.id] === on) d.controller[p.id] = by;
+    for (const p of PROVINCES) if (d.controller[p.id] === on && !OUTPOST[p.id]) d.controller[p.id] = by;
     remove(d, on, by);
     note(d, 'crisis', `${on} gives in and is occupied by ${by} without a fight`, [by, on]);
   } else {
@@ -1142,9 +1159,10 @@ export function runDiplomacy(d: DipDraft, monthEnd: boolean): void {
   }
   if (!monthEnd) return;
   for (let i = 0; i < NAMES.length; i++) {
+    if (asleep(d, NAMES[i])) continue;
     for (let j = i + 1; j < NAMES.length; j++) {
       const key = warKey(NAMES[i], NAMES[j]);
-      if (d.wars.includes(key)) continue;
+      if (d.wars.includes(key) || asleep(d, NAMES[j])) continue;
       const rest = restingRelation(d, NAMES[i], NAMES[j]);
       const now = dip.relations[key] ?? 0;
       dip.relations[key] = now + clamp(rest - now, -RELATIONS_DRIFT, RELATIONS_DRIFT);
@@ -1185,7 +1203,8 @@ export function onGovernmentFell(d: DipDraft, name: string, was: Government): vo
 export function fightsOn(d: Pick<DipDraft, 'units' | 'controller' | 'owner' | 'diplomacy' | 'capitulated' | 'wars'> & { story?: { fired: string[] } }, name: string): boolean {
   // Italy after its armistice (story.ts) fights on beside the Allies like a small country.
   if (isMajor(name) && !(name === 'Italy' && d.story?.fired.includes('italy-armistice'))) return false;
-  const mine = PROVINCES.filter((p) => p.owner === name && d.owner[p.id] === name);
+  // Its home land, not its outposts beyond the Europe-only map (map.ts): a government does not fight on from the colonies.
+  const mine = PROVINCES.filter((p) => p.owner === name && d.owner[p.id] === name && !OUTPOST[p.id]);
   if (!mine.some((p) => d.controller[p.id] === name)) return false;
   const friends = allianceMap(d.diplomacy).get(name);
   if (!friends) return false;

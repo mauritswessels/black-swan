@@ -21,10 +21,11 @@ export type Slot = (typeof SLOTS)[number];
  * The save format. Version 11 (game 1.2) added the front line in battles and the war replay;
  * version 12 (game 1.3) added armies; version 13 (game 1.4) added aimed air wings and fleets,
  * paratroopers and joint attacks; version 14 (game 1.5) the finer map of 280 provinces and deep
- * attacks. Saves from version 10 on still load (see upgrade.ts).
+ * attacks; version 15 (game 1.7) the world map. Saves from version 10 on still load (see
+ * upgrade.ts); those from before 1.7 load as Europe-only games.
  */
-export const SAVE_VERSION = 14;
-const READABLE = [10, 11, 12, 13, 14];
+export const SAVE_VERSION = 15;
+const READABLE = [10, 11, 12, 13, 14, 15];
 
 export interface SaveFile<State = unknown> {
   version: number;

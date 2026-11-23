@@ -14,6 +14,9 @@ const NOTE: Record<string, string> = {
   Italy: 'A big infantry army behind the Alps.',
   'Soviet Union': 'By far the most divisions, spread over huge distances.',
   Poland: 'Flat country between two great powers.',
+  Japan: 'An island empire with a strong navy, a war industry and an army already in China.',
+  'United States': 'The largest economy on Earth, with almost no army yet.',
+  China: 'Half a billion people and very little industry.',
 };
 
 const STARTS: { id: StartId; title: string; text: string }[] = [

@@ -3,7 +3,7 @@ import { aimOf, bombTarget, flying, MEN_PER_WING, MISSIONS, RANGE_KM, REBASE_DAY
 import { PROVINCES } from '../../sim/map';
 import { modsOf } from '../../sim/mods';
 import { describeFleet, LANDING_BASE, LANDING_PREP_DAYS, MISSION_NAME, MISSION_NOTE, tradeRoute, TRANSPORT_DAYS } from '../../sim/navy';
-import { DAYS_PER_ZONE, fleetPower, seaDependence, SHIP_KINDS, SHIP_POWER, shipCount, SHORES, ZONE_INDEX, zoneById, zonePath, ZONES, type SeaStatus } from '../../sim/sea';
+import { sailDays, fleetPower, seaDependence, SHIP_KINDS, SHIP_POWER, shipCount, SHORES, ZONE_INDEX, zoneById, zonePath, ZONES, type SeaStatus } from '../../sim/sea';
 import type { Fleet, FleetMission, PlaneKind, ShipKind, Wing, WingMission, World } from '../../sim/types';
 import { atWar } from '../../sim/war';
 import { picturesOf, skyOver } from '../forces';
@@ -225,13 +225,13 @@ export function FleetView({ w, id }: { w: World; id: number }) {
             return (
               <option key={z.id} value={z.id} disabled={!path}>
                 {z.name}
-                {path ? ` (${(path.length - 1) * DAYS_PER_ZONE} days)` : ' (no way)'}
+                {path ? ` (${sailDays(path)} days)` : ' (no way)'}
               </option>
             );
           })}
         </select>
       </label>
-      <p className="sb-fine">A fleet takes {DAYS_PER_ZONE} days to cross each zone and does nothing until it arrives.</p>
+      <p className="sb-fine">A fleet takes 2 days to cross each zone around Europe, and longer out on the oceans (about 450 km a day). It does nothing until it arrives.</p>
       <h3>Split and join</h3>
       <div className="sb-actions">
         {SHIP_KINDS.filter((k) => f.ships[k] >= 1 && shipCount(f) - f.ships[k] >= 1).map((k) => (
@@ -378,7 +378,7 @@ export function SeaOrders({ w, ids }: { w: World; ids: number[] }) {
         <button className={`sb-btn${bySea ? ' on' : ''}`} aria-pressed={bySea} onClick={() => setBySea(!bySea)}>
           {bySea ? 'Cancel' : 'Go by sea'} <kbd>B</kbd>
           <small>
-            From a coast to any other coast. A friendly shore takes {TRANSPORT_DAYS} days plus {DAYS_PER_ZONE} for each further sea zone. An enemy shore is a landing: {LANDING_PREP_DAYS} days to prepare, you must control the sea off the beach, and only {LANDING_BASE} divisions plus one for each of your ships there can land at once.
+            From a coast to any other coast. A friendly shore takes {TRANSPORT_DAYS} days plus the days to sail there (2 for each sea zone around Europe). An enemy shore is a landing: {LANDING_PREP_DAYS} days to prepare, you must control the sea off the beach, and only {LANDING_BASE} divisions plus one for each of your ships there can land at once.
           </small>
         </button>
       </div>

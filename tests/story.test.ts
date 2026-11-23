@@ -178,6 +178,15 @@ describe('the story led by the AI (bot playtest, 1936 to the end of 1941)', () =
     expect(atWar(end, 'Germany', 'Soviet Union')).toBe(true);
   });
 
+  it('stays quick on the busiest days, the summer of 1941 (speed test)', () => {
+    // Version 1.7 (the world map) took about 30 ms a day here on the cloud machines; fail if that gets 50% slower.
+    const M1_MS = 30;
+    const t0 = performance.now();
+    until(mid, '1941-07-25');
+    const perDay = (performance.now() - t0) / 20;
+    expect(perDay).toBeLessThan(M1_MS * 1.5);
+  });
+
   it('pays for the war without wrecking the Soviet economy, and keeps the German army near its real size', () => {
     const soviet = end.economies['Soviet Union'];
     expect(soviet.governmentsFallen).toBe(0);

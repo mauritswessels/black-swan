@@ -7,6 +7,7 @@
  */
 import { AIR_CONTROL_MIN, AIR_CONTROL_RATIO, airPicture, cannotRaiseWing, giveWingOrder, km, MEN_PER_WING, navalAir, runAir, startWings, type AirPicture } from './air';
 import { musterPoint } from './economy';
+import { COUNTRIES, EUROPE_COUNTRIES } from './countries';
 import { PROVINCES } from './map';
 import { modsOf } from './mods';
 import { arrived, giveFleetOrder, giveShipOrder, logForce, navalPicture, runNavy, runShipping, SHELL_MAX, SHELL_POWER, startFleets, type ForceDraft } from './navy';
@@ -32,8 +33,15 @@ export function pictures(w: View, friends: Map<string, Set<string>>): Pictures {
 
 /** The navies and air forces of 1 January 1936. */
 export function startForces(): Pick<World, 'fleets' | 'wings' | 'nextForceId' | 'bombed' | 'clashes' | 'forceLog' | 'nextForceEventId'> {
-  const fleets = startFleets();
-  const wings = startWings(fleets.length);
+  // The Europe-only map's fleets and wings first, numbered as before 1.7; then the rest of the world's.
+  const europe = COUNTRIES.slice(0, EUROPE_COUNTRIES);
+  const world = COUNTRIES.slice(EUROPE_COUNTRIES);
+  const fleets = startFleets(europe);
+  const wings = startWings(fleets.length, europe);
+  const farFleets = startFleets(world, fleets.length + wings.length);
+  const farWings = startWings(fleets.length + wings.length + farFleets.length, world);
+  fleets.push(...farFleets);
+  wings.push(...farWings);
   return { fleets, wings, nextForceId: fleets.length + wings.length, bombed: {}, clashes: [], forceLog: [], nextForceEventId: 0 };
 }
 

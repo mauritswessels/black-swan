@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { COUNTRIES } from '../src/sim/countries';
-import { distanceKm, findRoute, PROVINCES, provinceByName, routeDays } from '../src/sim/map';
+import { distanceKm, EUROPE_SIZE, findRoute, PROVINCES, provinceByName, routeDays } from '../src/sim/map';
 
 describe('the 1936 map', () => {
-  it('has about 280 provinces with unique names (183 before the finer map of version 1.5)', () => {
-    expect(PROVINCES.length).toBeGreaterThanOrEqual(260);
-    expect(PROVINCES.length).toBeLessThanOrEqual(300);
+  it('has about 600 provinces with unique names: the 280 of the Europe-only map first (183 before the finer map of version 1.5)', () => {
+    expect(EUROPE_SIZE).toBe(280);
+    expect(PROVINCES.length).toBeGreaterThanOrEqual(500);
+    expect(PROVINCES.length).toBeLessThanOrEqual(650);
     expect(new Set(PROVINCES.map((p) => p.name)).size).toBe(PROVINCES.length);
     PROVINCES.forEach((p, i) => expect(p.id).toBe(i));
   });
@@ -48,8 +49,8 @@ describe('the 1936 map', () => {
   });
 
   it('cuts the big provinces into parts that together cover the old province, each named after a place in it', async () => {
-    const data = (await import('../src/content/map/europe1936.json')).default as unknown as { splitFrom: [number, number][] };
-    expect(data.splitFrom.length).toBe(PROVINCES.length - 183);
+    const data = (await import('../src/content/map/world1936.json')).default as unknown as { splitFrom: [number, number][] };
+    expect(data.splitFrom.length).toBe(EUROPE_SIZE - 183);
     for (const [part, from] of data.splitFrom) {
       expect(part).toBeGreaterThanOrEqual(183);
       expect(from).toBeLessThan(183);

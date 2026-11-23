@@ -35,7 +35,7 @@
  *      division about to be overrun on a foreign shore is taken off by sea.
  */
 import { ATTACK_WIDTH, ATTACK_WIDTH_PER_EXTRA_DIRECTION, attackPower, defencePower, DEFENCE_WIDTH, STATS } from './combat';
-import { daysToEnter, distanceKm, PROVINCES } from './map';
+import { daysToEnter, distanceKm, EUROPEAN, OUTPOST, PROVINCES } from './map';
 import { combatEdges } from './mods';
 import { linkedProvinces, supplyCapacity } from './supply';
 import type { Order, Unit, World } from './types';
@@ -43,7 +43,7 @@ import { EXPEDITION_SHARE, seaOrders } from './aiForces';
 import { allianceMap, isMajor } from './diplomacy';
 import { musterPoint } from './economy';
 import { navalPicture } from './navy';
-import { COAST, seaRoute, type SeaPicture } from './sea';
+import { COAST, europeanSeas, seaRoute, type SeaPicture } from './sea';
 import { enemiesOf } from './war';
 import { activeOperations, endedOperations, landedOperations, type Operation } from './operations';
 
@@ -137,7 +137,9 @@ export interface Front {
 export function frontsOf(w: World, country: string, planned: string[] = []): Front[] {
   const enemies = new Set(enemiesOf(w, country));
   const allies = allianceMap(w.diplomacy).get(country);
-  const friendly = (p: number) => w.controller[p] === country || !!allies?.has(w.controller[p]);
+  // As in aiOrders: in a war of the Europe-only map, outposts take no part.
+  const walled = EUROPEAN.has(country) && [...enemies, ...planned].every((x) => EUROPEAN.has(x));
+  const friendly = (p: number) => (w.controller[p] === country || !!allies?.has(w.controller[p])) && !(walled && OUTPOST[p]);
   const hostile = (owner: string) => enemies.has(owner);
   const at = unitsByProvince(w);
   const foes = [...new Set([...enemies, ...planned.filter((x) => !enemies.has(x) && x !== country && !allies?.has(x))])].sort();
@@ -145,13 +147,15 @@ export function frontsOf(w: World, country: string, planned: string[] = []): Fro
   const fronts: Front[] = [];
   for (const foe of foes) {
     const isPlanned = !enemies.has(foe);
+    const oldWar = EUROPEAN.has(country) && EUROPEAN.has(foe);
     const line: number[] = [];
     const targets = new Set<number>();
     for (const p of PROVINCES) {
       if (!friendly(p.id)) continue;
       let touches = false;
       for (const n of p.neighbours) {
-        if (w.controller[n] !== foe) continue;
+        // Between two countries of the Europe-only map the AI fights that map's war, as before 1.7: no fronts in their outposts (map.ts), such as British and Italian East Africa.
+        if (w.controller[n] !== foe || (oldWar && (OUTPOST[p.id] || OUTPOST[n]))) continue;
         touches = true;
         if (!isPlanned) targets.add(n);
       }
@@ -258,11 +262,14 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
   const unitsAt = (p: number) => at.get(p) ?? [];
   const enemyAt = (p: number) => unitsAt(p).filter((u) => enemies.has(u.owner));
   const mineAt = (p: number) => unitsAt(p).filter((u) => u.owner === country && (!army || army.units.has(u.id)));
-  const friendly = (p: number) => w.controller[p] === country || !!allies?.has(w.controller[p]);
+  // In a war between countries of the Europe-only map, their outposts (map.ts: Siberia, India...) take no part: the AI fights where it did before 1.7.
+  const walled = EUROPEAN.has(country) && [...enemies, ...planned].every((x) => EUROPEAN.has(x));
+  const friendly = (p: number) => (w.controller[p] === country || !!allies?.has(w.controller[p])) && !(walled && OUTPOST[p]);
   const phoney = w.story.effects.some((x) => x.id === 'phoney' && x.country === country && x.until >= w.day);
 
-  let seaToday = opts.sea;
-  const sea = () => (seaToday ??= navalPicture(w, friends));
+  // In a war of the Europe-only map the AI ships its divisions over that map's seas only (sea.ts).
+  let seaToday = opts.sea && walled ? europeanSeas(opts.sea) : opts.sea;
+  const sea = () => (seaToday ??= walled ? europeanSeas(navalPicture(w, friends)) : navalPicture(w, friends));
 
   // 1. The fronts.
   const fronts = frontsOf(w, country, planned).filter((f) => !army || f.foe === army.foe);

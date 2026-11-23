@@ -100,11 +100,14 @@ export const WING_MISSION_NOTE: Record<WingMission, string> = {
 const START_WINGS: Record<string, [number, number]> = {
   'United Kingdom': [4, 3], France: [4, 3], Germany: [3, 3], Italy: [3, 3], 'Soviet Union': [7, 5], Poland: [2, 1], Czechoslovakia: [2, 1],
   Spain: [1, 1], Belgium: [1, 0], Netherlands: [1, 0], Romania: [1, 0], Yugoslavia: [1, 0], Turkey: [1, 0], Sweden: [1, 0], Switzerland: [1, 0], Greece: [1, 0], Finland: [1, 0],
+  // The rest of the world (1.7).
+  'United States': [3, 2], Japan: [3, 3], China: [1, 0], Australia: [1, 0], Canada: [1, 0],
 };
 
-export function startWings(firstId: number): Wing[] {
+/** The air forces of the given countries (all of them if none are given), numbered from `firstId`. */
+export function startWings(firstId: number, countries = COUNTRIES): Wing[] {
   const wings: Wing[] = [];
-  for (const c of COUNTRIES) {
+  for (const c of countries) {
     const [fighters, bombers] = START_WINGS[c.name] ?? [0, 0];
     const capital = PROVINCES.find((p) => p.owner === c.name && p.capital);
     if (!capital) continue;

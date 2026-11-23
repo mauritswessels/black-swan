@@ -373,7 +373,8 @@ describe('four years of peace with research and plans (bot playtest)', () => {
     for (const c of COUNTRIES) {
       const e = w.economies[c.name];
       expect(e.research.done.length, c.name).toBeGreaterThanOrEqual(c.major ? 8 : 4);
-      expect(e.research.done.length, c.name).toBeLessThanOrEqual(c.major ? 15 : 8);
+      // The tiniest countries of the wider world (1.7), with no army to equip, may get a little further.
+      expect(e.research.done.length, c.name).toBeLessThanOrEqual(c.major ? 15 : c.startArmy.some((n) => n > 0) ? 8 : 10);
       expect(e.governmentsFallen, c.name).toBe(0);
       expect(e.warSupport, c.name).toBeGreaterThanOrEqual(20);
       expect(e.warSupport, c.name).toBeLessThanOrEqual(100);

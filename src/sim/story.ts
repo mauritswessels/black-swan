@@ -27,7 +27,7 @@ import { AGENDA, aimDay, dayOf, surpriseLanding } from './agenda';
 import { CHAPTERS } from './chapters';
 import { COUNTRIES } from './countries';
 import { addPact, alive, allied, ask, between, capitulate, dropPacts, endWar, governmentOf, hasPact, isMajor, note, raiseTension, relation, restore, setEventHook, shift, startWar, type DipDraft } from './diplomacy';
-import { partsOf, PROVINCES } from './map';
+import { beyond, OUTPOST, partsOf, PROVINCES } from './map';
 import { Rng, seedFrom } from './rng';
 import type { ArmyEffect, Decision, LineKind, StartId, StoryState } from './types';
 import { warKey } from './war';
@@ -760,7 +760,7 @@ function italyChangesSides(d: DipDraft): void {
     const queue = PROVINCES.filter((p) => reach.has(d.controller[p.id])).map((p) => p.id);
     for (let i = 0; i < queue.length; i++) {
       for (const n of PROVINCES[queue[i]].neighbours) {
-        if (d.controller[n] !== it || nearAllies(n)) continue;
+        if (d.controller[n] !== it || OUTPOST[n] || nearAllies(n)) continue;
         d.controller[n] = de;
         queue.push(n);
       }
@@ -789,7 +789,7 @@ function farEast(d: DipDraft): void {
     const want = Math.floor(FAR_EAST.share * (mine.length + away)) - away;
     if (want <= 0) return;
     // Infantry from the interior goes, the newest first: never a division at a border, marching or fighting.
-    const border = (p: number) => PROVINCES[p].neighbours.some((n) => d.controller[n] !== name);
+    const border = (p: number) => PROVINCES[p].neighbours.some((n) => d.controller[n] !== name && !beyond(n, name, d.controller[n], d.asleep));
     const going = mine
       .filter((u) => u.type === 'infantry' && !u.path.length && !u.sea && !u.landing && d.controller[u.at] === name && !border(u.at))
       .sort((a, b) => b.id - a.id)

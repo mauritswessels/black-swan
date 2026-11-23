@@ -52,7 +52,7 @@ export function Title() {
     <main className="title-screen">
       <div className="title-glow" aria-hidden="true" />
       <div className="title-inner rise">
-        <div className="eyebrow">Europe · 1936</div>
+        <div className="eyebrow">The world · 1936</div>
         <h1>
           Black <span>Swan</span>
         </h1>

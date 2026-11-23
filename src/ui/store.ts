@@ -14,7 +14,7 @@ import { prepareGame, type GameOptions } from '../sim/scenario';
 import { atWar } from '../sim/war';
 import { shipPlan } from '../sim/navy';
 import { cannotBase, REBASE_DAYS } from '../sim/air';
-import { DAYS_PER_ZONE, zoneById, ZONE_INDEX, zonePath } from '../sim/sea';
+import { sailDays, zoneById, ZONE_INDEX, zonePath } from '../sim/sea';
 import { picturesOf } from './forces';
 import { applyOrders, dateLabel } from '../sim/world';
 import { readSave, writeSave, type Slot } from '../save/storage';
@@ -558,7 +558,7 @@ export const useGame = create<Store>((set, get) => {
       if (!path) return set({ notice: `No way by sea to the ${target.name}.`, ordering: false });
       give(ownOrders(world, [{ type: 'fleet', fleet: fleet.id, zone }]));
       if (!get().muted) sound.click();
-      set({ notice: `Sailing to the ${target.name}: ${(path.length - 1) * DAYS_PER_ZONE} days.`, ordering: false });
+      set({ notice: `Sailing to the ${target.name}: ${sailDays(path)} days.`, ordering: false });
     },
 
     rebaseTo: (province) => {

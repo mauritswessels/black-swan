@@ -21,7 +21,7 @@ import { picturesOf, skyOver } from '../forces';
 import { useGame, type MapMode } from '../store';
 import { lessonById } from '../../tutorial/lessons';
 import { countryColour, landColour, TERRAIN_COLOUR, tint } from './colours';
-import { COAST, COUNTRY_POINTS, countryLines, GRATICULE, outline, POINTS, PROVINCE_LINES, SEAS, SHAPES, sharedBorder, TABLE_H, TABLE_W, ZONE_POINTS, ZONE_SHAPES } from './geo';
+import { COAST, COUNTRY_POINTS, countryLines, GRATICULE, HOME_AREA, nearX, outline, POINTS, PROVINCE_LINES, SEAS, SHAPES, sharedBorder, TABLE_H, TABLE_W, ZONE_POINTS, ZONE_SHAPES } from './geo';
 import { RIVER_BORDERS, riverBetween } from '../../sim/rivers';
 import { pocketsOf, pocketWords } from '../../sim/pockets';
 import { GROUND_WORDS, groundOn } from '../../sim/seasons';
@@ -37,8 +37,15 @@ interface View {
   x: number;
   y: number;
 }
-const MIN_K = 0.8;
+/** The furthest out you can zoom: the whole world once across the screen (it wraps around, see geo.ts). */
+const minK = (width: number) => Math.max(0.1, width / TABLE_W);
 const MAX_K = 9;
+/** Below this zoom you are looking at the whole world: fewer names, so it stays readable. */
+const WORLD_VIEW = 0.7;
+/** A country this big (km2 around its capital) keeps its name on the world view. */
+const BIG_COUNTRY = 1_500_000;
+/** Where the map opens when there is no country of yours to look at: central Europe. */
+const OPENING = PROVINCES.find((p) => p.city === 'Berlin')?.id ?? 0;
 /** Countries too small to label until you zoom in. */
 const SMALL = new Set(COUNTRIES.filter((c) => PROVINCES.filter((p) => p.owner === c.name).length <= 2).map((c) => c.name));
 
@@ -189,16 +196,20 @@ export function MapView() {
   const [hover, setHover] = useState<number | null>(null);
   const [hoverZone, setHoverZone] = useState<string | null>(null);
 
-  // Keep the table on screen: never let it be dragged wholly out of view.
+  // Keep the table on screen: never let it be dragged wholly out of view up or down. Left and right
+  // it wraps around the world, so x is kept within one world's width.
   const clamp = useCallback((v: View): View => {
     const { w, h } = sizeRef.current;
-    const k = Math.max(MIN_K, Math.min(MAX_K, v.k));
+    const k = Math.max(minK(w), Math.min(MAX_K, v.k));
     const m = 0.5;
-    return { k, x: Math.max(w * (1 - m) - TABLE_W * k, Math.min(w * m, v.x)), y: Math.max(h * (1 - m) - TABLE_H * k, Math.min(h * m, v.y)) };
+    const world = TABLE_W * k;
+    let x = v.x % world;
+    if (x > 0) x -= world;
+    return { k, x, y: Math.max(h * (1 - m) - TABLE_H * k, Math.min(h * m, v.y)) };
   }, []);
   const zoomAt = useCallback((factor: number, cx: number, cy: number) => {
     setView((v) => {
-      const k = Math.max(MIN_K, Math.min(MAX_K, v.k * factor));
+      const k = Math.max(minK(sizeRef.current.w), Math.min(MAX_K, v.k * factor));
       return clamp({ k, x: cx - ((cx - v.x) / v.k) * k, y: cy - ((cy - v.y) / v.k) * k });
     });
   }, [clamp]);
@@ -223,6 +234,7 @@ export function MapView() {
   const sized = size.w !== 1200 || size.h !== 800;
   useEffect(() => {
     if (focus) centreOn(focus.province, 2.2);
+    else centreOn(OPENING, 1);
   }, [focus, centreOn, sized]);
 
   // Wheel and trackpad. Listeners are added by hand because React's wheel events cannot stop the page scrolling.
@@ -339,7 +351,9 @@ export function MapView() {
       const toMap = (x: number, y: number) => [(x - view.x) / view.k, (y - view.y) / view.k];
       const [ax, ay] = toMap(Math.min(x0, x1), Math.min(y0, y1));
       const [bx, by] = toMap(Math.max(x0, x1), Math.max(y0, y1));
-      const ids = world.units.filter((u) => u.owner === me && !u.sea && POINTS[u.at][0] >= ax && POINTS[u.at][0] <= bx && POINTS[u.at][1] >= ay && POINTS[u.at][1] <= by).map((u) => u.id);
+      // The box may reach into the next copy of the world (geo.ts wraps around).
+      const across = (x: number) => [x, x + TABLE_W, x - TABLE_W].some((v) => v >= ax && v <= bx);
+      const ids = world.units.filter((u) => u.owner === me && !u.sea && across(POINTS[u.at][0]) && POINTS[u.at][1] >= ay && POINTS[u.at][1] <= by).map((u) => u.id);
       if (!ids.length) return useGame.setState({ notice: 'No divisions of yours in that box.' });
       g.select({ kind: 'units', ids });
       return useGame.setState({ notice: `${ids.length} ${ids.length === 1 ? 'division' : 'divisions'} selected. Press A to form an army from them.` });
@@ -470,7 +484,7 @@ export function MapView() {
     const y1 = y0 + size.h / view.k;
     const near = world.battles.filter((b) => {
       const [x, y] = POINTS[b.province];
-      return x >= x0 && x <= x1 && y >= y0 && y <= y1;
+      return [x, x + TABLE_W].some((v) => v >= x0 && v <= x1) && y >= y0 && y <= y1;
     }).length;
     sound.setRumble(Math.min(1, near / 6));
   }, [world.battles, view, size, running, battleSounds]);
@@ -510,7 +524,8 @@ export function MapView() {
     const c = armyCentre(world, a);
     if (c === null || c === a.order.target) return [];
     const [x1, y1] = POINTS[c];
-    const [x2, y2] = POINTS[a.order.target];
+    const x2 = nearX(x1, POINTS[a.order.target][0]);
+    const y2 = POINTS[a.order.target][1];
     // A gentle curve, bowed to the left of the way it goes.
     const mx = (x1 + x2) / 2 - (y2 - y1) * 0.18;
     const my = (y1 + y2) / 2 + (x2 - x1) * 0.18;
@@ -545,7 +560,9 @@ export function MapView() {
       const key = `${start.join('>')}>${u.path.join('>')}`;
       if (done.has(key)) continue;
       done.add(key);
-      routes.push([...start, ...u.path].map((p) => POINTS[p].join(',')).join(' '));
+      // Each step takes the short way across the seam of the wrap-around map.
+      let x = POINTS[start[0]][0];
+      routes.push([...start, ...u.path].map((p) => `${(x = nearX(x, POINTS[p][0]))},${POINTS[p][1]}`).join(' '));
       ends.add(u.path[u.path.length - 1]);
     }
   }
@@ -613,13 +630,274 @@ export function MapView() {
 
   const showNames = k >= 2.6;
   const showCities = k >= 1.5;
+  // The world wraps around (geo.ts): a second copy of everything fills the screen past the seam.
+  const copies = view.x + TABLE_W * k < size.w ? [0, 1] : [0];
+  const scene = (
+    <>
+      {airsea && (
+        <g className="mt-zones">
+          {ZONES.map((z, i) => (
+            <path key={z.id} d={ZONE_SHAPES[i]} data-z={z.id} fill={me && seaNow ? SEA_FILL[seaNow.status(me, i)] : SEA_FILL.open} className={`mt-zone${hoverZone === z.id ? ' hover' : ''}${selectedZone === z.id ? ' picked' : ''}`} />
+          ))}
+        </g>
+      )}
+      <Land fill={fill} lines={lines} />
+      {mapMode !== 'airsea' && (
+        <g className="mt-fronts" aria-hidden="true">
+          {bands.map((b) => (
+            <FrontBand key={b.key} band={b} k={k} />
+          ))}
+        </g>
+      )}
+      {k >= WORLD_VIEW && <path d={RIVER_LINES} className="mt-river" />}
+      {inRange.length > 0 && <path d={inRange.map((p) => SHAPES[p]).join('')} className="mt-range" />}
+      {hover !== null && <path d={SHAPES[hover]} className="mt-hover" />}
+      {selectedProvince !== null && <path d={SHAPES[selectedProvince]} className="mt-picked" />}
+      {[...ends].map((p) => (
+        <path key={p} d={SHAPES[p]} className="mt-target" />
+      ))}
+      {lessonProvince !== undefined && <path d={SHAPES[lessonProvince]} className="mt-lesson" />}
+
+      <g className="mt-labels">
+        {!airsea &&
+          SEAS.filter((s) => !s.near || k >= WORLD_VIEW).map((s) => (
+            <text key={`${s.name}@${s.at[0]}`} x={s.at[0]} y={s.at[1]} className="mt-sea" style={{ fontSize: 12 * Math.max(inv, 0.5) }}>
+              {s.name}
+            </text>
+          ))}
+        {airsea &&
+          ZONES.map((z, i) => (
+            <text key={z.id} x={ZONE_POINTS[i][0]} y={ZONE_POINTS[i][1] - 20 * cs} className="mt-sea zone" style={{ fontSize: 10.5 * Math.max(inv, 0.55) }}>
+              {z.name.toUpperCase()}
+            </text>
+          ))}
+        {k < 3.4 &&
+          COUNTRIES.map((c) => {
+            const at = COUNTRY_POINTS.get(c.name);
+            if (!at || world.capitulated.includes(c.name)) return null;
+            // Zoomed out to the whole world, only the biggest countries keep their names; closer in, the small ones wait until you zoom in.
+            const big = (HOME_AREA.get(c.name) ?? 0) >= BIG_COUNTRY;
+            if (k < WORLD_VIEW ? !big : !c.major && !big && k < (SMALL.has(c.name) ? 2.4 : 1.3)) return null;
+            return (
+              <text key={c.name} transform={`translate(${at[0]},${at[1]}) scale(${inv})`} data-c={c.name} className={`mt-country${c.major ? ' major' : ''}`} style={{ fontSize: c.major ? 15 : 11 }}>
+                {c.name.toUpperCase()}
+              </text>
+            );
+          })}
+        {PROVINCES.map((p) => {
+          const [x, y] = POINTS[p.id];
+          if ((p.capital && k >= WORLD_VIEW) || (showCities && p.city))
+            return (
+              <g key={p.id} transform={`translate(${x},${y}) scale(${inv})`} className="mt-city">
+                <rect x={-4} y={-4} width={8} height={8} transform="rotate(45)" className={p.capital ? 'capital' : ''} />
+                {(showCities || k >= 1) && (
+                  <text x={9} y={-8}>
+                    {p.city}
+                  </text>
+                )}
+              </g>
+            );
+          return showNames ? (
+            <text key={p.id} transform={`translate(${x},${y - 17 * inv}) scale(${inv})`} className="mt-pname">
+              {p.name}
+            </text>
+          ) : null;
+        })}
+      </g>
+
+      <g className="mt-arrows">
+        {arrows.map((a) => {
+          const [x1, y1] = POINTS[a.from];
+          const x2 = nearX(x1, POINTS[a.to][0]);
+          const y2 = POINTS[a.to][1];
+          // Stop short of the far counter so the arrowhead stays visible.
+          const t = 0.78;
+          return <line key={a.key} x1={x1} y1={y1} x2={x1 + (x2 - x1) * t} y2={y1 + (y2 - y1) * t} className={a.attack ? 'attack' : a.own ? 'own' : 'other'} markerEnd="url(#arr)" />;
+        })}
+        {[...crossings].map(([key, c]) => (
+          <line key={key} x1={POINTS[c.from][0]} y1={POINTS[c.from][1]} x2={nearX(POINTS[c.from][0], POINTS[c.to][0])} y2={POINTS[c.to][1]} className={c.landing ? 'crossing landing' : 'crossing'} markerEnd="url(#arr)" />
+        ))}
+        {routes.map((pts, i) => (
+          <polyline key={i} points={pts} className="route" markerEnd="url(#arr)" />
+        ))}
+      </g>
+
+      <g className="mt-pushes" aria-hidden="true">
+        {pushes.map((x) => (
+          <g key={x.id} className={`mt-push${x.pincer ? ' pincer' : ''}${x.picked ? ' picked' : ''}`}>
+            <path d={x.d} className="halo" />
+            <path d={x.d} className="shaft" style={{ stroke: x.colour }} markerEnd="url(#push-head)" />
+          </g>
+        ))}
+        {pincerLabels.map((x) => {
+          const [px, py] = POINTS[x.at];
+          return (
+            <g key={x.at} transform={`translate(${px},${py + 30 * cs}) scale(${Math.max(cs, inv * 0.8)})`} className={`mt-pincer${x.closing && x.cutOff ? ' closing' : ''}`}>
+              <rect x={-62} y={-10} width={124} height={20} rx={10} />
+              <text y={4.5}>{x.cutOff ? `Pincer: ${x.cutOff} cut off` : 'Pincer'}</text>
+            </g>
+          );
+        })}
+        {post !== null && <circle cx={POINTS[post][0]} cy={POINTS[post][1]} r={30 * cs} className="mt-post" />}
+      </g>
+
+      <g className="mt-aims" aria-hidden="true">
+        {aims.map((a) => {
+          const [x2, y2] = POINTS[a.to];
+          return (
+            <g key={a.key} className={`mt-aim ${a.kind}`}>
+              <title>{`${a.n} ${AIM_WORDS[a.kind]} over ${PROVINCES[a.to].name}`}</title>
+              {/* Lines on the map keep their width on screen (non-scaling stroke), so these are pixels. */}
+              <line x1={a.x1} y1={a.y1} x2={x2} y2={y2} className="halo" style={{ strokeWidth: 6 }} />
+              <line x1={a.x1} y1={a.y1} x2={x2} y2={y2} style={{ strokeWidth: 2.6, strokeDasharray: a.kind === 'scout' ? '3 5' : '12 6' }} />
+              <circle cx={x2} cy={y2} r={16 * cs} className="halo" style={{ strokeWidth: 6 * cs }} />
+              <circle cx={x2} cy={y2} r={16 * cs} style={{ strokeWidth: 3 * cs }} />
+            </g>
+          );
+        })}
+        {strikes.map((x) => {
+          const [px, py] = POINTS[x.province];
+          return (
+            <g key={x.id} className="mt-strike" transform={`translate(${px},${py - 40 * cs}) scale(${Math.max(cs, inv * 0.8)})`}>
+              <title>{strikeStatus(world, x)}</title>
+              <rect x={-50} y={-9} width={100} height={18} rx={9} />
+              <text y={4}>{x.how === 'sea' ? 'Joint landing' : x.how === 'drop' ? 'Joint drop' : 'Joint attack'}</text>
+            </g>
+          );
+        })}
+      </g>
+
+      <g className="mt-counters">
+        {stacks.map((s) => {
+          const [x, y] = POINTS[s.province];
+          const { n, org, moving, armour } = summary(s);
+          const own = s.owner === me;
+          const enemy = !!me && atWar(world, me, s.owner);
+          const picked = own ? s.units.some((u) => selected.has(u.id)) : selection?.kind === 'stack' && selection.province === s.province && selection.owner === s.owner;
+          if (!own && !enemy && k < 1.3 && !picked) return null; // neutral armies appear as you zoom in
+          if (airsea && !picked) return null; // the air and sea map shows fleets and air wings instead
+          const colour = countryColour(s.owner);
+          return (
+            <g key={`${s.province}|${s.owner}`} data-s={`${s.province}|${s.owner}`} transform={`translate(${x},${y}) scale(${cs})`} className={`mt-counter${own ? ' own' : ''}${enemy ? ' enemy' : ''}${picked ? ' picked' : ''}${fighting.has(s.province) ? ' fighting' : ''}`}>
+              {picked && <rect x={-27} y={-17} width={54} height={34} rx={5} className="ring" />}
+              <rect x={-23} y={-13} width={46} height={26} rx={3} className="body" />
+              <rect x={-23} y={-13} width={46} height={5} rx={1} fill={colour} />
+              <text x={-19} y={7} className="tag">
+                {countryByName(s.owner).tag}
+              </text>
+              <text x={19} y={8} textAnchor="end" className="num">
+                {n}
+              </text>
+              <rect x={-21} y={10} width={42} height={2} className="org-back" />
+              <rect x={-21} y={10} width={(42 * org) / 100} height={2} className="org" />
+              {armour && <path d="M-22 -19h8v4h-8z" className="pip" />}
+              {moving && <path d="M16 -20l6 3.5l-6 3.5z" className="pip" />}
+            </g>
+          );
+        })}
+      </g>
+
+      {!airsea && (
+        <g className="mt-flags">
+          {flags.map((f) => (
+            <g key={f.id} data-a={f.id} transform={`translate(${f.x},${f.y}) scale(${cs})`} className={`mt-flag${f.picked ? ' picked' : ''}`}>
+              <title>{`${f.name}${f.slot ? ` (key ${f.slot})` : ''}: click to select, drag to give it a new front`}</title>
+              <rect x={-6} y={-38} width={36} height={42} className="hit" />
+              <line x1={0} y1={0} x2={0} y2={-34} className="pole" />
+              <path d="M0 -34h26l-6 9l6 9h-26z" fill={armyColour(f.slot)} className="cloth" />
+              <text x={10} y={-20.5} className="slot">
+                {f.slot || '·'}
+              </text>
+              {(k >= 1.6 || f.picked) && (
+                <text x={30} y={-21} className="name">
+                  {f.name}
+                </text>
+              )}
+            </g>
+          ))}
+        </g>
+      )}
+
+      {airsea && (
+        <g className="mt-forces">
+          {ZONES.map((z, i) => {
+            const here = fleetGroups.filter((g) => g.zone === i).sort((a, b) => (a.owner === me ? -1 : b.owner === me ? 1 : b.ships - a.ships));
+            return here.map((g, n) => {
+              const own = g.owner === me;
+              const enemy = !!me && atWar(world, me, g.owner);
+              const x = ZONE_POINTS[i][0] + (n - (here.length - 1) / 2) * 44 * cs;
+              return (
+                <g key={`${z.id}|${g.owner}`} data-z={z.id} transform={`translate(${x},${ZONE_POINTS[i][1]}) scale(${cs})`} className={`mt-fleet${own ? ' own' : ''}${enemy ? ' enemy' : ''}${selectedZone === z.id && own ? ' picked' : ''}`}>
+                  <path d="M-20 -9h40l-5 18h-30z" className="body" />
+                  <rect x={-20} y={-9} width={40} height={4} fill={countryColour(g.owner)} />
+                  <text x={-13} y={7} className="tag">
+                    {countryByName(g.owner).tag}
+                  </text>
+                  <text x={13} y={7} textAnchor="end" className="num">
+                    {Math.round(g.ships)}
+                  </text>
+                  {g.sailing && <path d="M14 -16l6 3.5l-6 3.5z" className="pip" />}
+                </g>
+              );
+            });
+          })}
+          {wingGroups.map((g) => {
+            const [x, y] = POINTS[g.base];
+            const own = g.owner === me;
+            const picked = own && selection?.kind === 'wings' && selection.province === g.base;
+            return (
+              <g key={`${g.base}|${g.owner}`} data-w={own ? g.base : undefined} data-p={own ? undefined : g.base} transform={`translate(${x},${y + 22 * cs}) scale(${cs})`} className={`mt-wing${own ? ' own' : ''}${picked ? ' picked' : ''}`}>
+                <rect x={-22} y={-8} width={44} height={16} rx={8} className="body" />
+                <circle cx={-14} cy={0} r={3.5} fill={countryColour(g.owner)} />
+                <text x={15} y={4.5} textAnchor="end">
+                  {g.fighters ? `F${g.fighters}` : ''}
+                  {g.fighters && g.bombers ? ' ' : ''}
+                  {g.bombers ? `B${g.bombers}` : ''}
+                </text>
+              </g>
+            );
+          })}
+        </g>
+      )}
+
+      <g className="mt-pockets">
+        {pockets.map((x) => {
+          const [px, py] = POINTS[x.centre];
+          const own = x.owner === me || !!friendsOfMe?.has(x.owner);
+          return (
+            <g key={`${x.owner}|${x.centre}`} className={`mt-pocket${own ? ' own' : ''}`}>
+              <path d={x.d} className="ring" />
+              <g transform={`translate(${px},${py + 26 * cs}) scale(${Math.max(cs, inv * 0.8)})`}>
+                <rect x={-58} y={-9} width={116} height={18} rx={9} className="tag-back" />
+                <text y={4}>{pocketWords(x.divisions)}</text>
+              </g>
+            </g>
+          );
+        })}
+      </g>
+
+      <g className="mt-battles">
+        {world.battles.map((b) => {
+          if (!seen[b.province] && !(me && (b.attackers.includes(me) || b.defenders.includes(me)))) return null;
+          const [x, y] = POINTS[b.province];
+          const on = selection?.kind === 'battle' && selection.id === b.id;
+          return (
+            <g key={b.id} data-b={b.id} transform={`translate(${x},${y - 24 * cs}) scale(${Math.max(cs, inv * 0.8)})`} className={`mt-battle${on ? ' picked' : ''}`}>
+              <circle r={11} />
+              <path d="M-5 -5L5 5M5 -5L-5 5M-6.5 -2.5l3 -3M6.5 -2.5l-3 -3" />
+            </g>
+          );
+        })}
+      </g>
+    </>
+  );
   return (
     <div
       ref={box}
       className={`mt-map${ordering || aim ? ' ordering' : ''}`}
       tabIndex={0}
       role="application"
-      aria-label="Map of Europe. Arrow keys move the map, plus and minus zoom, Tab steps through your armies, G gives a destination, H halts. Details of what you select appear in the sidebar."
+      aria-label="Map of the world, which wraps around from east to west. Arrow keys move the map, plus and minus zoom, Tab steps through your armies, G gives a destination, H halts. Details of what you select appear in the sidebar."
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
@@ -658,260 +936,13 @@ export function MapView() {
             <stop offset="1" stopColor="#05070c" />
           </radialGradient>
         </defs>
+        <rect width={size.w} height={size.h} fill="url(#table-glow)" />
         <g transform={`translate(${view.x},${view.y}) scale(${k})`}>
-          <rect x={-TABLE_W} y={-TABLE_H} width={TABLE_W * 3} height={TABLE_H * 3} fill="url(#table-glow)" />
-          {airsea && (
-            <g className="mt-zones">
-              {ZONES.map((z, i) => (
-                <path key={z.id} d={ZONE_SHAPES[i]} data-z={z.id} fill={me && seaNow ? SEA_FILL[seaNow.status(me, i)] : SEA_FILL.open} className={`mt-zone${hoverZone === z.id ? ' hover' : ''}${selectedZone === z.id ? ' picked' : ''}`} />
-              ))}
+          {copies.map((o) => (
+            <g key={o} transform={o ? `translate(${o * TABLE_W},0)` : undefined}>
+              {scene}
             </g>
-          )}
-          <Land fill={fill} lines={lines} />
-          {mapMode !== 'airsea' && (
-            <g className="mt-fronts" aria-hidden="true">
-              {bands.map((b) => (
-                <FrontBand key={b.key} band={b} k={k} />
-              ))}
-            </g>
-          )}
-          <path d={RIVER_LINES} className="mt-river" />
-          {inRange.length > 0 && <path d={inRange.map((p) => SHAPES[p]).join('')} className="mt-range" />}
-          {hover !== null && <path d={SHAPES[hover]} className="mt-hover" />}
-          {selectedProvince !== null && <path d={SHAPES[selectedProvince]} className="mt-picked" />}
-          {[...ends].map((p) => (
-            <path key={p} d={SHAPES[p]} className="mt-target" />
           ))}
-          {lessonProvince !== undefined && <path d={SHAPES[lessonProvince]} className="mt-lesson" />}
-
-          <g className="mt-labels">
-            {!airsea &&
-              SEAS.map((s) => (
-                <text key={s.name} x={s.at[0]} y={s.at[1]} className="mt-sea" style={{ fontSize: 12 * Math.max(inv, 0.5) }}>
-                  {s.name}
-                </text>
-              ))}
-            {airsea &&
-              ZONES.map((z, i) => (
-                <text key={z.id} x={ZONE_POINTS[i][0]} y={ZONE_POINTS[i][1] - 20 * cs} className="mt-sea zone" style={{ fontSize: 10.5 * Math.max(inv, 0.55) }}>
-                  {z.name.toUpperCase()}
-                </text>
-              ))}
-            {k < 3.4 &&
-              COUNTRIES.map((c) => {
-                const at = COUNTRY_POINTS.get(c.name);
-                if (!at || world.capitulated.includes(c.name)) return null;
-                if (!c.major && k < (SMALL.has(c.name) ? 2.4 : 1.3)) return null;
-                return (
-                  <text key={c.name} transform={`translate(${at[0]},${at[1]}) scale(${inv})`} data-c={c.name} className={`mt-country${c.major ? ' major' : ''}`} style={{ fontSize: c.major ? 15 : 11 }}>
-                    {c.name.toUpperCase()}
-                  </text>
-                );
-              })}
-            {PROVINCES.map((p) => {
-              const [x, y] = POINTS[p.id];
-              if (p.capital || (showCities && p.city))
-                return (
-                  <g key={p.id} transform={`translate(${x},${y}) scale(${inv})`} className="mt-city">
-                    <rect x={-4} y={-4} width={8} height={8} transform="rotate(45)" className={p.capital ? 'capital' : ''} />
-                    {(showCities || k >= 1) && (
-                      <text x={9} y={-8}>
-                        {p.city}
-                      </text>
-                    )}
-                  </g>
-                );
-              return showNames ? (
-                <text key={p.id} transform={`translate(${x},${y - 17 * inv}) scale(${inv})`} className="mt-pname">
-                  {p.name}
-                </text>
-              ) : null;
-            })}
-          </g>
-
-          <g className="mt-arrows">
-            {arrows.map((a) => {
-              const [x1, y1] = POINTS[a.from];
-              const [x2, y2] = POINTS[a.to];
-              // Stop short of the far counter so the arrowhead stays visible.
-              const t = 0.78;
-              return <line key={a.key} x1={x1} y1={y1} x2={x1 + (x2 - x1) * t} y2={y1 + (y2 - y1) * t} className={a.attack ? 'attack' : a.own ? 'own' : 'other'} markerEnd="url(#arr)" />;
-            })}
-            {[...crossings].map(([key, c]) => (
-              <line key={key} x1={POINTS[c.from][0]} y1={POINTS[c.from][1]} x2={POINTS[c.to][0]} y2={POINTS[c.to][1]} className={c.landing ? 'crossing landing' : 'crossing'} markerEnd="url(#arr)" />
-            ))}
-            {routes.map((pts, i) => (
-              <polyline key={i} points={pts} className="route" markerEnd="url(#arr)" />
-            ))}
-          </g>
-
-          <g className="mt-pushes" aria-hidden="true">
-            {pushes.map((x) => (
-              <g key={x.id} className={`mt-push${x.pincer ? ' pincer' : ''}${x.picked ? ' picked' : ''}`}>
-                <path d={x.d} className="halo" />
-                <path d={x.d} className="shaft" style={{ stroke: x.colour }} markerEnd="url(#push-head)" />
-              </g>
-            ))}
-            {pincerLabels.map((x) => {
-              const [px, py] = POINTS[x.at];
-              return (
-                <g key={x.at} transform={`translate(${px},${py + 30 * cs}) scale(${Math.max(cs, inv * 0.8)})`} className={`mt-pincer${x.closing && x.cutOff ? ' closing' : ''}`}>
-                  <rect x={-62} y={-10} width={124} height={20} rx={10} />
-                  <text y={4.5}>{x.cutOff ? `Pincer: ${x.cutOff} cut off` : 'Pincer'}</text>
-                </g>
-              );
-            })}
-            {post !== null && <circle cx={POINTS[post][0]} cy={POINTS[post][1]} r={30 * cs} className="mt-post" />}
-          </g>
-
-          <g className="mt-aims" aria-hidden="true">
-            {aims.map((a) => {
-              const [x2, y2] = POINTS[a.to];
-              return (
-                <g key={a.key} className={`mt-aim ${a.kind}`}>
-                  <title>{`${a.n} ${AIM_WORDS[a.kind]} over ${PROVINCES[a.to].name}`}</title>
-                  {/* Lines on the map keep their width on screen (non-scaling stroke), so these are pixels. */}
-                  <line x1={a.x1} y1={a.y1} x2={x2} y2={y2} className="halo" style={{ strokeWidth: 6 }} />
-                  <line x1={a.x1} y1={a.y1} x2={x2} y2={y2} style={{ strokeWidth: 2.6, strokeDasharray: a.kind === 'scout' ? '3 5' : '12 6' }} />
-                  <circle cx={x2} cy={y2} r={16 * cs} className="halo" style={{ strokeWidth: 6 * cs }} />
-                  <circle cx={x2} cy={y2} r={16 * cs} style={{ strokeWidth: 3 * cs }} />
-                </g>
-              );
-            })}
-            {strikes.map((x) => {
-              const [px, py] = POINTS[x.province];
-              return (
-                <g key={x.id} className="mt-strike" transform={`translate(${px},${py - 40 * cs}) scale(${Math.max(cs, inv * 0.8)})`}>
-                  <title>{strikeStatus(world, x)}</title>
-                  <rect x={-50} y={-9} width={100} height={18} rx={9} />
-                  <text y={4}>{x.how === 'sea' ? 'Joint landing' : x.how === 'drop' ? 'Joint drop' : 'Joint attack'}</text>
-                </g>
-              );
-            })}
-          </g>
-
-          <g className="mt-counters">
-            {stacks.map((s) => {
-              const [x, y] = POINTS[s.province];
-              const { n, org, moving, armour } = summary(s);
-              const own = s.owner === me;
-              const enemy = !!me && atWar(world, me, s.owner);
-              const picked = own ? s.units.some((u) => selected.has(u.id)) : selection?.kind === 'stack' && selection.province === s.province && selection.owner === s.owner;
-              if (!own && !enemy && k < 1.3 && !picked) return null; // neutral armies appear as you zoom in
-              if (airsea && !picked) return null; // the air and sea map shows fleets and air wings instead
-              const colour = countryColour(s.owner);
-              return (
-                <g key={`${s.province}|${s.owner}`} data-s={`${s.province}|${s.owner}`} transform={`translate(${x},${y}) scale(${cs})`} className={`mt-counter${own ? ' own' : ''}${enemy ? ' enemy' : ''}${picked ? ' picked' : ''}${fighting.has(s.province) ? ' fighting' : ''}`}>
-                  {picked && <rect x={-27} y={-17} width={54} height={34} rx={5} className="ring" />}
-                  <rect x={-23} y={-13} width={46} height={26} rx={3} className="body" />
-                  <rect x={-23} y={-13} width={46} height={5} rx={1} fill={colour} />
-                  <text x={-19} y={7} className="tag">
-                    {countryByName(s.owner).tag}
-                  </text>
-                  <text x={19} y={8} textAnchor="end" className="num">
-                    {n}
-                  </text>
-                  <rect x={-21} y={10} width={42} height={2} className="org-back" />
-                  <rect x={-21} y={10} width={(42 * org) / 100} height={2} className="org" />
-                  {armour && <path d="M-22 -19h8v4h-8z" className="pip" />}
-                  {moving && <path d="M16 -20l6 3.5l-6 3.5z" className="pip" />}
-                </g>
-              );
-            })}
-          </g>
-
-          {!airsea && (
-            <g className="mt-flags">
-              {flags.map((f) => (
-                <g key={f.id} data-a={f.id} transform={`translate(${f.x},${f.y}) scale(${cs})`} className={`mt-flag${f.picked ? ' picked' : ''}`}>
-                  <title>{`${f.name}${f.slot ? ` (key ${f.slot})` : ''}: click to select, drag to give it a new front`}</title>
-                  <rect x={-6} y={-38} width={36} height={42} className="hit" />
-                  <line x1={0} y1={0} x2={0} y2={-34} className="pole" />
-                  <path d="M0 -34h26l-6 9l6 9h-26z" fill={armyColour(f.slot)} className="cloth" />
-                  <text x={10} y={-20.5} className="slot">
-                    {f.slot || '·'}
-                  </text>
-                  {(k >= 1.6 || f.picked) && (
-                    <text x={30} y={-21} className="name">
-                      {f.name}
-                    </text>
-                  )}
-                </g>
-              ))}
-            </g>
-          )}
-
-          {airsea && (
-            <g className="mt-forces">
-              {ZONES.map((z, i) => {
-                const here = fleetGroups.filter((g) => g.zone === i).sort((a, b) => (a.owner === me ? -1 : b.owner === me ? 1 : b.ships - a.ships));
-                return here.map((g, n) => {
-                  const own = g.owner === me;
-                  const enemy = !!me && atWar(world, me, g.owner);
-                  const x = ZONE_POINTS[i][0] + (n - (here.length - 1) / 2) * 44 * cs;
-                  return (
-                    <g key={`${z.id}|${g.owner}`} data-z={z.id} transform={`translate(${x},${ZONE_POINTS[i][1]}) scale(${cs})`} className={`mt-fleet${own ? ' own' : ''}${enemy ? ' enemy' : ''}${selectedZone === z.id && own ? ' picked' : ''}`}>
-                      <path d="M-20 -9h40l-5 18h-30z" className="body" />
-                      <rect x={-20} y={-9} width={40} height={4} fill={countryColour(g.owner)} />
-                      <text x={-13} y={7} className="tag">
-                        {countryByName(g.owner).tag}
-                      </text>
-                      <text x={13} y={7} textAnchor="end" className="num">
-                        {Math.round(g.ships)}
-                      </text>
-                      {g.sailing && <path d="M14 -16l6 3.5l-6 3.5z" className="pip" />}
-                    </g>
-                  );
-                });
-              })}
-              {wingGroups.map((g) => {
-                const [x, y] = POINTS[g.base];
-                const own = g.owner === me;
-                const picked = own && selection?.kind === 'wings' && selection.province === g.base;
-                return (
-                  <g key={`${g.base}|${g.owner}`} data-w={own ? g.base : undefined} data-p={own ? undefined : g.base} transform={`translate(${x},${y + 22 * cs}) scale(${cs})`} className={`mt-wing${own ? ' own' : ''}${picked ? ' picked' : ''}`}>
-                    <rect x={-22} y={-8} width={44} height={16} rx={8} className="body" />
-                    <circle cx={-14} cy={0} r={3.5} fill={countryColour(g.owner)} />
-                    <text x={15} y={4.5} textAnchor="end">
-                      {g.fighters ? `F${g.fighters}` : ''}
-                      {g.fighters && g.bombers ? ' ' : ''}
-                      {g.bombers ? `B${g.bombers}` : ''}
-                    </text>
-                  </g>
-                );
-              })}
-            </g>
-          )}
-
-          <g className="mt-pockets">
-            {pockets.map((x) => {
-              const [px, py] = POINTS[x.centre];
-              const own = x.owner === me || !!friendsOfMe?.has(x.owner);
-              return (
-                <g key={`${x.owner}|${x.centre}`} className={`mt-pocket${own ? ' own' : ''}`}>
-                  <path d={x.d} className="ring" />
-                  <g transform={`translate(${px},${py + 26 * cs}) scale(${Math.max(cs, inv * 0.8)})`}>
-                    <rect x={-58} y={-9} width={116} height={18} rx={9} className="tag-back" />
-                    <text y={4}>{pocketWords(x.divisions)}</text>
-                  </g>
-                </g>
-              );
-            })}
-          </g>
-
-          <g className="mt-battles">
-            {world.battles.map((b) => {
-              if (!seen[b.province] && !(me && (b.attackers.includes(me) || b.defenders.includes(me)))) return null;
-              const [x, y] = POINTS[b.province];
-              const on = selection?.kind === 'battle' && selection.id === b.id;
-              return (
-                <g key={b.id} data-b={b.id} transform={`translate(${x},${y - 24 * cs}) scale(${Math.max(cs, inv * 0.8)})`} className={`mt-battle${on ? ' picked' : ''}`}>
-                  <circle r={11} />
-                  <path d="M-5 -5L5 5M5 -5L-5 5M-6.5 -2.5l3 -3M6.5 -2.5l-3 -3" />
-                </g>
-              );
-            })}
-          </g>
         </g>
       </svg>
       {band && <div className="mt-band-select" style={{ left: Math.min(band.x0, band.x1), top: Math.min(band.y0, band.y1), width: Math.abs(band.x1 - band.x0), height: Math.abs(band.y1 - band.y0) }} />}

@@ -410,6 +410,14 @@ export interface World {
   declaredBy: Record<string, string>;
   /** Countries that have surrendered. */
   capitulated: string[];
+  /**
+   * Countries that sit out the war for now (version 1.7): the rest of the world in Story mode,
+   * until later versions bring in Japan, America and China. They take no part: no economy, no
+   * diplomacy, and nobody can declare war on them. Missing means everyone is awake.
+   */
+  asleep?: string[];
+  /** A game saved before version 1.7, on the map of Europe, North Africa and the Near East only. Its new countries stay asleep for good. */
+  europeOnly?: boolean;
   battles: Battle[];
   nextBattleId: number;
   /** The most recent battle reports, oldest first (the last 60 are kept). */

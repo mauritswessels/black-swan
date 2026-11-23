@@ -39,10 +39,10 @@
  * shelling stops the defenders from digging in (world.ts).
  */
 import { COUNTRIES } from './countries';
-import { PROVINCES } from './map';
+import { EUROPE_SIZE, EUROPEAN, PROVINCES } from './map';
 import { modsOf, type Mods } from './mods';
 import { Rng } from './rng';
-import { COAST, DAYS_PER_ZONE, fleetPower, HOME_ZONES, seaPicture, seaRoute, shipCount, SHIP_KINDS, TRADE_ROUTE, ZONE_INDEX, zonePath, ZONES, type SeaPicture } from './sea';
+import { COAST, europeanSeas, sailDays, fleetPower, HOME_ZONES, seaPicture, seaRoute, shipCount, SHIP_KINDS, TRADE_ROUTE, ZONE_INDEX, zonePath, ZONES, type SeaPicture } from './sea';
 import type { Economy, Fleet, FleetMission, ForceEvent, Order, ShipKind, Strike, Unit, World } from './types';
 import { atWar, enemiesOf } from './war';
 
@@ -94,13 +94,20 @@ const START_FLEETS: Record<string, [string, string, number, number, number][]> =
   Yugoslavia: [['Fleet', 'adriatic', 0, 2, 0]],
   Romania: [['Fleet', 'black', 0, 2, 0]],
   Portugal: [['Fleet', 'iberian', 0, 2, 0]],
+  // The rest of the world (1.7).
+  Japan: [['Combined Fleet', 'japanwaters', 10, 12, 5], ['China Area Fleet', 'eastchina', 0, 4, 0]],
+  'United States': [['Battle Force', 'westcoast', 9, 12, 4], ['Atlantic Squadron', 'eastcoast', 3, 5, 2], ['Asiatic Fleet', 'southchina', 0, 2, 1]],
+  Australia: [['Squadron', 'tasman', 0, 2, 0]],
+  Argentina: [['Fleet', 'southatlantic', 0, 2, 0]],
+  Brazil: [['Fleet', 'brazil', 0, 2, 0]],
 };
 
-export function startFleets(): Fleet[] {
+/** The navies of the given countries (all of them if none are given), numbered from `firstId`. */
+export function startFleets(countries = COUNTRIES, firstId = 0): Fleet[] {
   const fleets: Fleet[] = [];
-  for (const c of COUNTRIES) {
+  for (const c of countries) {
     for (const [name, zone, capital, escort, submarine] of START_FLEETS[c.name] ?? []) {
-      fleets.push({ id: fleets.length, owner: c.name, name, zone, mission: capital + escort === 0 ? 'raid' : 'patrol', ships: { capital, escort, submarine }, arrives: 0 });
+      fleets.push({ id: firstId + fleets.length, owner: c.name, name, zone, mission: capital + escort === 0 ? 'raid' : 'patrol', ships: { capital, escort, submarine }, arrives: 0 });
     }
   }
   return fleets;
@@ -297,7 +304,7 @@ export function giveFleetOrder(d: Pick<ForceDraft, 'fleets' | 'day' | 'nextForce
       const path = zonePath(ZONE_INDEX[f.zone], ZONE_INDEX[o.zone]);
       if (path) {
         f.zone = o.zone;
-        f.arrives = Math.max(d.day, f.arrives) + DAYS_PER_ZONE * (path.length - 1);
+        f.arrives = Math.max(d.day, f.arrives) + sailDays(path);
       }
     }
     if (o.target === null) f.target = undefined;
@@ -333,7 +340,9 @@ export function shipPlan(w: ShipView, sea: SeaPicture, friends: Map<string, Set<
   const holder = w.controller[to];
   const landing = atWar(w, u.owner, holder);
   if (!landing && holder !== u.owner && !friends.get(u.owner)?.has(holder)) return { why: `${p.name} belongs to ${holder}, which is neutral` };
-  const route = seaRoute(sea, u.owner, u.at, to, landing, planned && landing);
+  // A crossing between two ports of the Europe-only map, by a country of that map, keeps to that map's seas as before 1.7: not round Africa.
+  const oldMap = EUROPEAN.has(u.owner) && u.at < EUROPE_SIZE && to < EUROPE_SIZE;
+  const route = seaRoute(oldMap ? europeanSeas(sea) : sea, u.owner, u.at, to, landing, planned && landing);
   if ('why' in route) return route;
   if (landing) {
     const zone = route.zones[route.zones.length - 1];
@@ -344,7 +353,7 @@ export function shipPlan(w: ShipView, sea: SeaPicture, friends: Map<string, Set<
     if (waiting >= room) return { why: `your ships in the ${ZONES[zone].name} can land only ${room} divisions at a time` };
   }
   const prep = landing ? Math.ceil(LANDING_PREP_DAYS * Math.max(0.3, 1 + modsOf(w.economies[u.owner]).landingPrep)) : TRANSPORT_DAYS;
-  return { days: prep + DAYS_PER_ZONE * (route.zones.length - 1), landing, zones: route.zones };
+  return { days: prep + sailDays(route.zones), landing, zones: route.zones };
 }
 
 /** Order a division to go by sea. Ignored if there is no way. */

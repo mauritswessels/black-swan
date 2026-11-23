@@ -1,22 +1,45 @@
 /**
- * The map's shapes, worked out once: every province as an SVG path on a 1600 x 1000 table,
- * the centre point of each province, and the border lines between them.
+ * The map's shapes, worked out once: every province as an SVG path on the table, the centre point
+ * of each province, and the border lines between them.
+ *
+ * Since version 1.7 the table is the whole world on the Miller projection, which keeps the shapes
+ * of countries close to what people know from school atlases. It wraps around: scroll right past
+ * Japan and you reach California. Europe sits in the middle at about the size it had on the old
+ * map of Europe, so the game plays the same up close; zoom out to see the oceans.
  */
-import { geoConicConformal, geoGraticule10, geoPath } from 'd3-geo';
+import { geoGraticule10, geoPath, geoProjection, type GeoRawProjection } from 'd3-geo';
 import { feature, mesh } from 'topojson-client';
-import topo from '../../content/map/europe1936.topo.json';
+import topo from '../../content/map/world1936.topo.json';
 import { PROVINCES } from '../../sim/map';
 import { ZONES } from '../../sim/sea';
 
-export const TABLE_W = 1600;
-export const TABLE_H = 1000;
+/** Width of the table: one trip round the world. */
+export const TABLE_W = 4800;
+/** The longitude in the middle of the table. The wrap-around seam runs half a world away, through the Bering Strait. */
+const CENTRE_LON = 11;
+const NORTH = 84;
+const SOUTH = -57;
+const PAD = 60;
+
+const miller: GeoRawProjection = (lambda, phi) => [lambda, 1.25 * Math.log(Math.tan(Math.PI / 4 + 0.4 * phi))];
+miller.invert = (x, y) => [x, 2.5 * Math.atan(Math.exp(0.8 * y)) - 0.625 * Math.PI];
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const t = topo as any;
 const object = t.objects.provinces;
 const fc = feature(t, object) as any;
-const projection = geoConicConformal().parallels([38, 62]).rotate([-18, 0]).fitExtent([[40, 40], [TABLE_W - 40, TABLE_H - 40]], fc);
+const projection = geoProjection(miller).rotate([-CENTRE_LON, 0]).scale(TABLE_W / (2 * Math.PI)).translate([TABLE_W / 2, 0]);
+const top = (projection([0, NORTH]) as [number, number])[1];
+const bottom = (projection([0, SOUTH]) as [number, number])[1];
+projection.translate([TABLE_W / 2, PAD - top]);
+/** Height of the table, from the Arctic to Cape Horn. */
+export const TABLE_H = Math.round(bottom - top + 2 * PAD);
 const path = geoPath(projection);
+
+/** The copy of `x` (shifted a world's width either way) nearest to `from`: lines across the seam take the short way. */
+export const nearX = (from: number, x: number): number => (x - from > TABLE_W / 2 ? x - TABLE_W : from - x > TABLE_W / 2 ? x + TABLE_W : x);
+/** A point on the table as a string for SVG paths. */
+const xy = (p: [number, number]) => `${p[0].toFixed(1)},${p[1].toFixed(1)}`;
 
 /** Province shapes, by province id. */
 export const SHAPES: string[] = fc.features.map((f: any) => path(f) ?? '');
@@ -61,15 +84,30 @@ export function countryLines(controller: string[]): string {
 }
 /* eslint-enable @typescript-eslint/no-explicit-any */
 
-export const SEAS: { name: string; at: [number, number] }[] = [
-  { name: 'ATLANTIC OCEAN', at: [-12, 49.5] },
-  { name: 'NORTH SEA', at: [3.2, 57.2] },
-  { name: 'NORWEGIAN SEA', at: [3, 65.5] },
-  { name: 'BALTIC SEA', at: [19.3, 56.6] },
-  { name: 'MEDITERRANEAN SEA', at: [18, 34.6] },
-  { name: 'BLACK SEA', at: [34, 43.3] },
-  { name: 'BAY OF BISCAY', at: [-4.8, 45.6] },
-].map((s) => ({ name: s.name, at: project(s.at as [number, number]) }));
+/** Names on the sea. The seas of Europe show once you zoom in; the oceans of the world always. */
+export const SEAS: { name: string; at: [number, number]; near?: boolean }[] = [
+  { name: 'NORTH ATLANTIC OCEAN', at: [-40, 38] },
+  { name: 'SOUTH ATLANTIC OCEAN', at: [-18, -25] },
+  { name: 'INDIAN OCEAN', at: [78, -18] },
+  { name: 'ARABIAN SEA', at: [64, 15] },
+  { name: 'BAY OF BENGAL', at: [88, 14] },
+  { name: 'SOUTH CHINA SEA', at: [114, 14] },
+  { name: 'PACIFIC OCEAN', at: [-150, 22] },
+  { name: 'PACIFIC OCEAN', at: [165, 12] },
+  { name: 'CORAL SEA', at: [155, -17] },
+  { name: 'TASMAN SEA', at: [160, -38] },
+  { name: 'SEA OF JAPAN', at: [135, 40.5] },
+  { name: 'GULF OF MEXICO', at: [-90, 25] },
+  { name: 'CARIBBEAN SEA', at: [-75, 15] },
+  { name: 'ARCTIC OCEAN', at: [80, 79] },
+  { name: 'ATLANTIC OCEAN', at: [-12, 49.5], near: true },
+  { name: 'NORTH SEA', at: [3.2, 57.2], near: true },
+  { name: 'NORWEGIAN SEA', at: [3, 65.5], near: true },
+  { name: 'BALTIC SEA', at: [19.3, 56.6], near: true },
+  { name: 'MEDITERRANEAN SEA', at: [18, 34.6], near: true },
+  { name: 'BLACK SEA', at: [34, 43.3], near: true },
+  { name: 'BAY OF BISCAY', at: [-4.8, 45.6], near: true },
+].map((s) => ({ name: s.name, at: project(s.at as [number, number]), near: s.near }));
 
 /** Where to print each country's name: the centre of its home provinces around the capital, weighted by size. */
 export function countryLabelPoints(): Map<string, [number, number]> {
@@ -90,11 +128,20 @@ export function countryLabelPoints(): Map<string, [number, number]> {
       w += a;
     }
     out.set(cap.owner, [x / w, y / w]);
+    HOME_AREA.set(cap.owner, [...seen].reduce((a, id) => a + PROVINCES[id].areaKm2, 0));
   }
   return out;
 }
+/** The area of each country's home piece around its capital, in km2: the big ones keep their names when you zoom out to the whole world. */
+export const HOME_AREA = new Map<string, number>();
 export const COUNTRY_POINTS = countryLabelPoints();
 
-/** Sea zones: their outlines (drawn under the land) and where their names and fleet counters sit. */
-export const ZONE_SHAPES: string[] = ZONES.map((z) => `M${z.outline.map((pt) => project(pt).map((n) => n.toFixed(1)).join(',')).join('L')}Z`);
+/** Sea zones: their outlines (drawn under the land) and where their names and fleet counters sit. An outline across the seam runs on past the edge of the table, where the next copy of the world picks it up. */
+export const ZONE_SHAPES: string[] = ZONES.map((z) => {
+  const first = project(z.outline[0]);
+  return `M${z.outline.map((pt) => {
+    const [x, y] = project(pt);
+    return xy([nearX(first[0], x), y]);
+  }).join('L')}Z`;
+});
 export const ZONE_POINTS: [number, number][] = ZONES.map((z) => project(z.label));

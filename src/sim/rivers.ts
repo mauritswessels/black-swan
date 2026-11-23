@@ -12,7 +12,7 @@
  * So the front stalls at a river until the crossing is forced, as it did on the Meuse in
  * 1940, the Dnieper in 1943 and the Rhine in 1945.
  */
-import data from '../content/map/europe1936.json';
+import data from '../content/map/world1936.json';
 import { PROVINCES } from './map';
 
 export const RIVER_ATTACK = 0.85;

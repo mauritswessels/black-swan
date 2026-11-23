@@ -12,6 +12,7 @@
  *                          runs for ten years.
  */
 import { AGENDA } from './agenda';
+import { wake } from './diplomacy';
 import { advance } from './game';
 import { Rng, seedFrom } from './rng';
 import { dayOf, FREE_FOR_ALL_DAYS, startStory } from './story';
@@ -43,7 +44,8 @@ function wipe(w: World): World {
 function handOver(w: World, o: GameOptions): World {
   const seed = seedFrom(o.seed);
   const mine = { ...w, player: o.player, seed, rng: new Rng(seed).state, story: { ...w.story, start: '1939' as const } };
-  return o.mode === 'freeForAll' ? wipe(mine) : mine;
+  // Free-for-all wakes the whole world; Story mode keeps the rest of the world out of the war (World.asleep).
+  return o.mode === 'freeForAll' ? wipe(wake(mine, mine.asleep ?? [])) : mine;
 }
 
 /**

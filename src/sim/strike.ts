@@ -35,7 +35,7 @@ import { visibleProvinces } from './intel';
 import { findRoute, PROVINCES, routeDays } from './map';
 import { combatEdges, modsOf } from './mods';
 import { arrived, LANDING_BASE, logForce, SHELL_MAX, SHELL_POWER, shipPlan, type ForceDraft } from './navy';
-import { COAST, isCoastal, SHIP_KINDS, ZONE_INDEX, zonePath, ZONES, DAYS_PER_ZONE, type SeaPicture } from './sea';
+import { COAST, isCoastal, SHIP_KINDS, ZONE_INDEX, zonePath, ZONES, sailDays, type SeaPicture } from './sea';
 import { groundOn } from './seasons';
 import type { Fleet, Order, Strike, Unit, Wing, World } from './types';
 import { atWar, canEnter, enemiesOf } from './war';
@@ -472,7 +472,7 @@ export function attackMenu(w: World, country: string, province: number, ctx: Men
         for (const z of COAST[province]) {
           const path = zonePath(ZONE_INDEX[f.zone], z, (q) => q === z || pics.sea.status(country, q) !== 'enemy');
           if (!path) continue;
-          const d = Math.max(0, f.arrives - w.day) + DAYS_PER_ZONE * (path.length - 1);
+          const d = Math.max(0, f.arrives - w.day) + sailDays(path);
           if (!best || d < best.days) best = { zone: z, days: d };
         }
         return best ? { f, ...best } : null;

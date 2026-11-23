@@ -1,11 +1,17 @@
 # Black Swan
 
-A grand-strategy game set in Europe from 1936. You lead a real country through the 1930s and
+A grand-strategy game set in the world of 1936. You lead a real country through the 1930s and
 the war that followed, and face what its leaders faced: armies, factories, money, allies and
 public support. It is built to teach the history and the economics as you play.
 
+> **Version 1.7: the world map.** The map now covers the whole world, about 600 provinces and
+> 56 sea zones, and wraps around: scroll right past Japan and you reach California. In Story
+> mode the war in Europe plays as before while the rest of the world sits out the war for now
+> (Japan, America and China join in later versions); in Free-for-all every one of the 71
+> countries plays. Games saved before 1.7 still load, as Europe-only games.
+>
 > **Version 1.2.** The finished Mac app, now with a front line that moves inside each province. Lead one of six great powers in Story mode, or any
-> of 31 countries in Free-for-all, from 1936 or September 1939: armies, a navy and air force,
+> country with an army in Free-for-all, from 1936 or September 1939: armies, a navy and air force,
 > factories and war finance, research, diplomacy and 53 history cards. The app updates itself
 > from GitHub, keeps its saves as files, and has a Settings screen. New to the game? Press
 > **Learn to play** on the title screen.
@@ -293,7 +299,7 @@ src/sim/          the game engine: pure TypeScript, no UI, fully testable
   chapters.ts     the three chapters and each country's objectives
   opportunist.ts  Free-for-all: AI countries that look after themselves
   report.ts       the end report: this game beside the real history, and the scoreboard
-  sea.ts          the 17 sea zones, coasts, trade routes and who controls each zone
+  sea.ts          the 56 sea zones, crossing times, coasts, trade routes and who controls each zone
   navy.ts         fleets and missions, naval battles, convoys and blockade, troops by sea
   air.ts          air wings and missions, control of the sky, bombing
   forces.ts       ties the navy and the air force into the day: fire support, paratroopers
@@ -312,7 +318,8 @@ src/sim/          the game engine: pure TypeScript, no UI, fully testable
   game.ts         advance(): one day with a player, the AI leading every other country
   intel.ts        what a country can see (fog of war)
   testwar.ts      AI against AI test wars, used by the balance report
-  map.ts          the provinces, distances, marching speeds and route finding
+  map.ts          the provinces (the 280 of Europe first, then the world), distances,
+                  marching speeds and route finding
   countries.ts    the 31 countries of 1936, their starting armies and their industry
   types.ts        the shapes of all engine data
   rng.ts          seeded random numbers (same seed = same game)
@@ -333,6 +340,7 @@ src-tauri/        the Mac app wrapper (Tauri): save files, the menu, updates, th
 .github/workflows/ checks.yml (every pull request) and release.yml (publishes new versions)
 scripts/          build-map.mjs turns modern map data into 1936 provinces (map-cut.mjs
                   splits the big ones, map-rivers.mjs finds the river borders);
+                  map-world.mjs adds the rest of the world;
                   build-sea.mjs draws the sea zones and works out the coasts;
                   update.mjs is `npm run update`; set-version.mjs is `npm run set-version`;
                   release-notes.mjs takes a version's notes from CHANGELOG.md
@@ -349,8 +357,9 @@ public domain. That data shows today's regions, so `scripts/build-map.mjs` hands
 the country that held it in 1936 and merges regions into provinces. Since version 1.5 the
 biggest provinces near the main fronts are split again, into 280 provinces in all: along
 modern regions where there are several, otherwise with a gently wiggling line across the
-province's long side. Borders that ran through the middle of a modern region, and those cuts,
-are therefore approximate:
+province's long side. Since version 1.7 the rest of the world follows after them, 327 more
+provinces (`scripts/map-world.mjs`), so the ids of the first 280 never change. Borders that ran
+through the middle of a modern region, and those cuts, are therefore approximate:
 
 - The Free City of Danzig is shown as part of Poland.
 - The Polish-Soviet and Polish-German borders follow modern regional lines, so they are a few
@@ -362,6 +371,19 @@ are therefore approximate:
 - Because Danzig and the Sudetenland are not provinces of their own, Germany's demand on
   Poland is Poznań, and Munich costs Czechoslovakia its forts, a fifth of its army and its
   arms works rather than land.
+- Southern Bessarabia and Transnistria follow the modern Moldovan border.
+- Tibet, Sinkiang and the provinces run by regional warlords are shown as part of Nationalist
+  China. The Kwantung Leased Territory (Port Arthur and Dairen) is shown as part of Manchukuo.
+- Tannu Tuva is shown as Soviet; Bhutan and the Indian princely states as part of British India.
+- British Cameroon and Togo are shown as French, the New Hebrides as British, and Iceland as
+  independent (it shared its king with Denmark).
+- The smallest islands, most of the West Indies and of the Indian Ocean, are left off the map.
+- The colonies and the Asian lands of the countries already on the Europe-only map (British
+  India, French Indochina, Soviet Siberia and so on) hold none of their owners' industry or
+  people yet, start without their divisions, and stay with their owner if it surrenders, so
+  that the war in Europe plays as it did in 1.6. The AI fights no war in them, ships its
+  divisions over the European seas only, and supplies them on their own: a colony's depot
+  feeds the colonies, not the homeland.
 - Terrain is a first pass and army sizes are rough; both get tuned in later stages.
 
 ## Plan
@@ -369,10 +391,11 @@ are therefore approximate:
 Version 1.0 completes the plan, 1.1 fixes the war economy, 1.2 makes the front move inside
 each province, 1.3 adds armies with Hold and Push orders, 1.4 the right-click attack menu
 for land, sea and air, 1.4.1 makes Poland hold out about as long as it really did, 1.5
-brings the finer map of 280 provinces and deep attacks, and 1.6 is a balance pass so that the
-war in Europe lasts about as long as it really did (see CHANGELOG.md). Ideas for later versions: playing against
-friends over the internet (the engine is already deterministic, with a fingerprint check for
-it), and the Pacific and the Americas.
+brings the finer map of 280 provinces and deep attacks, 1.6 is a balance pass so that the
+war in Europe lasts about as long as it really did, and 1.7 the world map (see CHANGELOG.md).
+Next: Japan, America and China join the war in Story mode (the rest of Stage M), then playing
+against friends over the internet (the engine is already deterministic, with a fingerprint
+check for it).
 
 ## History and symbols
 

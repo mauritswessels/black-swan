@@ -10,7 +10,7 @@ import { PROVINCES, provinceByName } from '../src/sim/map';
 import { AMPHIBIOUS, combatEdges } from '../src/sim/mods';
 import { LANDING_PREP_DAYS, shipPlan, tradeRoute, TRANSPORT_DAYS } from '../src/sim/navy';
 import { BRANCHES, TECHS } from '../src/sim/research';
-import { COAST, DAYS_PER_ZONE, fleetPower, HOME_ZONES, isCoastal, seaDependence, SHORES, TRADE_ROUTE, ZONE_INDEX, zonePath, ZONES } from '../src/sim/sea';
+import { COAST, EUROPE_ZONES, sailDays, fleetPower, HOME_ZONES, isCoastal, seaDependence, SHORES, TRADE_ROUTE, ZONE_INDEX, zonePath, ZONES } from '../src/sim/sea';
 import { linkedProvinces } from '../src/sim/supply';
 import type { Order, Unit, World } from '../src/sim/types';
 import { atWar } from '../src/sim/war';
@@ -32,8 +32,10 @@ const fleetOf = (w: World, owner: string, zone: string) => w.fleets.find((f) => 
 const unit = (owner: string, at: number, n = 0, type: Unit['type'] = 'infantry'): Unit => ({ id: 9000 + n, owner, type, at, strength: 100, organisation: 100, path: [], progress: 0, dugIn: 0, supply: 1 });
 
 describe('the sea', () => {
-  it('has 17 zones that all connect, and every coast lies on a zone', () => {
-    expect(ZONES).toHaveLength(17);
+  it('has the 17 seas of Europe and the oceans beyond, all connected, and every coast lies on a zone', () => {
+    expect(ZONES.slice(0, EUROPE_ZONES).map((z) => z.id).join(' ')).toBe('barents norwegian north channel approaches biscay iberian westmed tyrrhenian centralmed adriatic aegean eastmed black kattegat baltic bothnia');
+    expect(EUROPE_ZONES).toBe(17);
+    expect(ZONES.length).toBeGreaterThanOrEqual(50);
     for (const a of ZONES) {
       for (const n of a.neighbours) expect(ZONES[n].neighbours, `${a.name} and ${ZONES[n].name}`).toContain(ZONE_INDEX[a.id]);
       expect(zonePath(0, ZONE_INDEX[a.id]), a.name).not.toBeNull();
@@ -101,7 +103,7 @@ describe('control of the sea', () => {
     w = give(w, { type: 'fleet', fleet: med.id, zone: 'centralmed' });
     const moved = w.fleets.find((f) => f.id === med.id)!;
     expect(moved.zone).toBe('centralmed');
-    expect(moved.arrives - w.day).toBe(DAYS_PER_ZONE * (zonePath(z('eastmed'), z('centralmed'))!.length - 1));
+    expect(moved.arrives - w.day).toBe(sailDays(zonePath(z('eastmed'), z('centralmed'))!));
   });
 
   it('lets a player order only their own fleets and wings', () => {

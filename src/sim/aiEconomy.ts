@@ -258,6 +258,6 @@ export function aiEconomyOrders(w: World, country: string, tally?: Tally): Order
 export function allAiEconomyOrders(w: World): Order[] {
   const all = tallies(w);
   const out: Order[] = [];
-  for (const name in w.economies) if (name !== w.player) out.push(...aiEconomyOrders(w, name, all.get(name)));
+  for (const name in w.economies) if (name !== w.player && !w.asleep?.includes(name)) out.push(...aiEconomyOrders(w, name, all.get(name)));
   return out;
 }

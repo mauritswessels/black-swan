@@ -3,6 +3,48 @@
 Versions from 1.0.0 on are numbered. Each one starts with a heading like `## 1.0.1: What it brings`;
 that section becomes the notes on the GitHub release and on the update card in the app.
 
+## 1.7.0: The world map (2026-11-23)
+
+The first part of Stage M. The map now covers the whole world, and the rest of the world is in
+place for Japan, America and China to join the war in the next versions.
+
+- **The whole world.** About 600 provinces (the 280 of Europe, North Africa and the Near East
+  keep their numbers; 327 new ones follow) and 71 countries as they stood on 1 January 1936:
+  the United States, Japan with Korea, Formosa and its Pacific islands, Nationalist China,
+  Manchukuo, the Chinese Communists at Yenan, Mongolia, the British Dominions, Latin America,
+  Iran, Siam and the rest, each with its 1936 army, factories and economy. Japan and the United
+  States have their fleets and air forces. The colonies of the European powers (British India,
+  French Indochina, the Dutch East Indies, the African colonies) and Soviet Siberia are on the
+  map too.
+- **A map that wraps around.** The world is drawn on the Miller projection, the one many
+  school atlases use. Scroll right past Japan and you reach California. Europe looks as it did
+  up close; zoom out to see the whole world, with only the biggest countries named.
+- **The oceans.** 39 new sea zones beside the 17 around Europe, 56 in all. Fleets still take
+  2 days from one European zone to the next; on the oceans a crossing takes the distance at
+  about 450 km a day, so San Diego to Hawaii is 7 days and the Red Sea to India 6. Suez links
+  the Mediterranean to the Red Sea.
+- **Story mode plays the war in Europe as before.** The countries beyond Europe sit out the
+  war for now: they do not run their economies or their diplomacy, and nobody can declare war
+  on them. The colonies and the Asian lands of the European countries hold none of their
+  owners' industry or people yet, and stay with their owner if it surrenders (the Dutch East
+  Indies stay Dutch after May 1940). In a war between countries of the old map, the AI keeps
+  its armies, air forces and transports on the old map, the colonies and Siberia are supplied
+  on their own (a depot in Batavia cannot feed Amsterdam, and Siberia cannot feed Moscow), and
+  Soviet divisions sent to the Far East still leave the map as before. Crossings between two
+  ports of the old map keep to the European seas (no convoys round Africa yet). In
+  **Free-for-all** every country
+  plays: Japan can attack China, or anyone else.
+- **Old saves.** Games saved before 1.7 load as Europe-only games: the rest of the world is
+  added, and stays out of their war for good. Saves are now version 15.
+- **Faster.** Route finding uses a priority queue, supply lines are worked out without
+  repeated searches, and the bonuses from research and plans are kept instead of added up again
+  hundreds of times a day. On a map more than twice the size, a whole game takes about 4%
+  longer than in 1.6, and the busiest days (the summer of 1941) take the same time as before,
+  about 30 ms on the cloud machines. A new test fails if they get 50% slower.
+- **Balance** (docs/balance-stage-m1.md): all 16 whole wars of the balance sweep (8 from 1936,
+  8 from 1939) end exactly as in 1.6, every date the same, and one test game matches 1.6 day for
+  day from 1936 to 1942. The open gap from 1.6 stays: Germany falls about 8 months early.
+
 ## 1.6.0: The war lasts longer (2026-11-22)
 
 A balance pass. Led by the AI, Germany used to fall between July 1943 and April 1944, usually

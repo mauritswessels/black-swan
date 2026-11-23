@@ -15,7 +15,7 @@
  * top of this file. Nothing here is random.
  */
 import { COUNTRIES } from './countries';
-import { PROVINCES } from './map';
+import { beyond, OUTPOST, PROVINCES } from './map';
 import { seaDependence, SHIP_KINDS } from './sea';
 import { modsOf, type Mods } from './mods';
 import { cannotStartPlan, emptyPlan, planById, type Plan } from './plans';
@@ -216,7 +216,8 @@ export const AFTER_A_FALL: Record<Government, Government> = { democracy: 'author
 /** Countries that share a land border on the 1936 map. */
 const NEIGHBOURS: Map<string, Set<string>> = (() => {
   const out = new Map<string, Set<string>>();
-  for (const p of PROVINCES) for (const n of p.neighbours) if (PROVINCES[n].owner !== p.owner) (out.get(p.owner) ?? out.set(p.owner, new Set()).get(p.owner)!).add(PROVINCES[n].owner);
+  // Outposts (map.ts) do not count, so the borders of Europe stay as they were before the world map of 1.7.
+  for (const p of PROVINCES) for (const n of p.neighbours) if (PROVINCES[n].owner !== p.owner && !OUTPOST[p.id] && !OUTPOST[n]) (out.get(p.owner) ?? out.set(p.owner, new Set()).get(p.owner)!).add(PROVINCES[n].owner);
   return out;
 })();
 
@@ -228,8 +229,9 @@ const HOMELAND: boolean[] = (() => {
   for (const capital of PROVINCES.filter((p) => p.capital)) {
     const queue = [capital.id];
     out[capital.id] = true;
-    while (queue.length) for (const n of PROVINCES[queue.pop()!].neighbours) if (!out[n] && PROVINCES[n].owner === capital.owner) (out[n] = true), queue.push(n);
+    while (queue.length) for (const n of PROVINCES[queue.pop()!].neighbours) if (!out[n] && !OUTPOST[n] && PROVINCES[n].owner === capital.owner) (out[n] = true), queue.push(n);
   }
+  // Outposts (map.ts) are not homeland even when joined by land, such as Siberia: for now they hold none of the industry.
   return out;
 })();
 
@@ -243,7 +245,7 @@ const INDUSTRIAL: Record<string, number> = {
 const SITE_WEIGHT: number[] = PROVINCES.map((p) => 1 + p.victoryPoints / 4 + (INDUSTRIAL[p.name] ?? 0));
 
 /** How much of its country's industry and people a province holds, before scaling. */
-const WEIGHT: number[] = PROVINCES.map((p) => (HOMELAND[p.id] ? p.victoryPoints + 1 + (INDUSTRIAL[p.name] ?? 0) : 0.3));
+const WEIGHT: number[] = PROVINCES.map((p) => (OUTPOST[p.id] ? 0 : HOMELAND[p.id] ? p.victoryPoints + 1 + (INDUSTRIAL[p.name] ?? 0) : 0.3));
 
 /** Where the steel and oil come from, as shares of the country's total. Anything not listed is at the capital. */
 const SITES: Record<string, { steel?: Record<string, number>; oil?: Record<string, number> }> = {
@@ -668,7 +670,7 @@ export function musterPoint(controller: string[], country: string, owner?: strin
  * spread over many regions (the Ruhr, Saxony, Silesia, Berlin; the Urals after 1941), so losing
  * one city never stopped a country's whole war production. `planned` are sites already chosen.
  */
-export function factorySite(d: Pick<World, 'controller' | 'factories' | 'wars'> & { owner?: string[] }, country: string, planned: number[] = []): number | null {
+export function factorySite(d: Pick<World, 'controller' | 'factories' | 'wars'> & { owner?: string[]; asleep?: string[] }, country: string, planned: number[] = []): number | null {
   // How many steps from land held by anyone else (a border, or the front): 1 next to it, 2 or more behind it.
   // Planners built away from the borders even in peacetime: the Soviet Union in the Urals and on the Volga in the 1930s.
   const danger = (id: number): number => {
@@ -678,7 +680,7 @@ export function factorySite(d: Pick<World, 'controller' | 'factories' | 'wars'> 
       const next: number[] = [];
       for (const q of ring) for (const n of PROVINCES[q].neighbours) {
         if (seen.has(n)) continue;
-        if (d.controller[n] !== country) return step;
+        if (d.controller[n] !== country && !beyond(n, country, d.controller[n], d.asleep)) return step;
         seen.add(n);
         next.push(n);
       }
@@ -716,7 +718,8 @@ export function formUpPoint(d: Pick<World, 'controller' | 'units'> & { owner?: s
   const linked = linkedProvinces(d.controller, country);
   let best = capital;
   for (const p of PROVINCES) {
-    if ((d.owner ? d.owner[p.id] : p.owner) !== country || d.controller[p.id] !== country || !linked[p.id]) continue;
+    // Not in an outpost (map.ts) such as Siberia or India: new divisions form up where the war of the Europe-only map is.
+    if ((d.owner ? d.owner[p.id] : p.owner) !== country || d.controller[p.id] !== country || !linked[p.id] || OUTPOST[p.id]) continue;
     const better = crowding(p.id) - crowding(best);
     if (better < -1e-9 || (Math.abs(better) <= 1e-9 && p.victoryPoints > PROVINCES[best].victoryPoints)) best = p.id;
   }
@@ -862,6 +865,8 @@ function completePlan(d: EconomyDraft, name: string, e: Economy, plan: Plan, v: 
 export interface EconomyDraft {
   day: number;
   owner?: string[];
+  /** Countries sitting out the war (World.asleep). */
+  asleep?: string[];
   diplomacy?: { tension: number };
   startDate: string;
   fleets?: World['fleets'];

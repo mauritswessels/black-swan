@@ -1,5 +1,7 @@
 /**
- * Builds the game map of Europe on 1 January 1936.
+ * Builds the game map of the world on 1 January 1936: first Europe, North Africa and the Near
+ * East exactly as in version 1.6 (280 provinces), then the rest of the world after them
+ * (map-world.mjs, Stage M1).
  *
  *   npm run build:map
  *
@@ -20,6 +22,7 @@ import { presimplify, simplify, quantile } from 'topojson-simplify';
 import { geoArea, geoCentroid, geoContains, geoDistance } from 'd3-geo';
 import { makeCutter } from './map-cut.mjs';
 import { riverBorders } from './map-rivers.mjs';
+import { buildWorld, WORLD_GAPS } from './map-world.mjs';
 
 const SRC = '.cache/admin1.geojson';
 const URL = 'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_10m_admin_1_states_provinces.geojson';
@@ -115,7 +118,10 @@ const ZONES = [
 ];
 
 const kept = [];
-for (let f of raw) {
+/** Indexes in `raw` of the regions on this map; the rest of the world is built from the others (map-world.mjs). */
+const keptRaw = new Set();
+for (let ri = 0; ri < raw.length; ri++) {
+  let f = raw[ri];
   const p = f.properties;
   if (!inArea(p) || p.name === 'Svalbard') continue;
   const owner = owner1936(p);
@@ -130,6 +136,7 @@ for (let f of raw) {
     geometry = { type: 'MultiPolygon', coordinates: parts };
   }
   f = { ...f, geometry };
+  keptRaw.add(ri);
   kept.push({ type: 'Feature', geometry, properties: { name: p.name_en || p.name, owner, zone, area: geoArea(f), c: geoCentroid(f) } });
 }
 
@@ -474,11 +481,56 @@ const small = quantize(ftopo, 2e4);
 const rivers = await riverBorders(small, fout);
 small.objects.provinces.geometries.forEach((g, i) => { g.id = i; delete g.properties; });
 const splitFrom = fout.map((_, i) => parentOf[i]).map((p, i) => [i, p]).filter(([i, p]) => i !== p);
-fs.writeFileSync('src/content/map/europe1936.json', JSON.stringify({ source: 'Natural Earth (public domain), regrouped to 1936 borders by scripts/build-map.mjs', knownGaps: KNOWN_GAPS, splitFrom, rivers: rivers.map((r) => ({ name: r.name, borders: r.borders.map(([a, b]) => [fout[a].name, fout[b].name]) })), provinces: fout }, null, 1));
-fs.writeFileSync('src/content/map/europe1936.topo.json', JSON.stringify(small));
+// The European map's own drawing, from which build-sea.mjs works out its coasts exactly as in version 1.6.
+fs.writeFileSync('.cache/europe1936.topo.json', JSON.stringify(small));
 const owners = [...new Set(fout.map((p) => p.owner))];
-console.log(`${fout.length} provinces (${out.length} before the split), ${owners.length} countries, drawing data ${(JSON.stringify(small).length / 1024).toFixed(0)} KB`);
-console.log(owners.map((o) => `${o} ${fout.filter((p) => p.owner === o).length}`).join(', '));
+console.log(`Europe: ${fout.length} provinces (${out.length} before the split), ${owners.length} countries`);
 for (const r of rivers) console.log(`${r.name}: ${r.borders.map(([a, b]) => `${fout[a].name}-${fout[b].name}`).join(', ')}`);
 console.log('isolated:', fout.filter((p) => !p.neighbours.length).map((p) => p.name).join(', '));
-console.log('new:', fout.slice(out.length).map((p) => `${p.name} (from ${out[parentOf[p.id]].name}, ${Math.round(p.areaKm2 / 1000)}k)`).join(', '));
+
+// ---------- 6 (Stage M1): the rest of the world, added after the 280 provinces of Europe ----------
+let ws = 1941;
+const wrnd = () => { ws = (ws + 0x6d2b79f5) >>> 0; let t = ws; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+const world = buildWorld({ raw, keptRaw, euroTopo: topo, owner1936, rnd: wrnd, europeNames: [...fout.map((p) => p.name), ...fout.map((p) => p.city).filter(Boolean)] });
+const base = fout.length;
+const oldCountries = new Set(owners);
+// One topology of every province: Europe's shapes as cut above, then the new ones, which were snapped to the same grid so the two meet exactly.
+let wtopo = topology({ provinces: { type: 'GeometryCollection', geometries: [...cutGeoms, ...world.geoms].map((coordinates) => ({ type: 'MultiPolygon', coordinates })) } });
+const wnb = neighbors(wtopo.objects.provinces.geometries);
+const wout = world.provinces.map((p, k) => {
+  const id = base + k;
+  const old = oldCountries.has(p.owner);
+  return { id, name: p.name, owner: p.owner, terrain: p.terrain, centre: p.centre, areaKm2: p.areaKm2, neighbours: [...wnb[id]].sort((a, b) => a - b),
+    // Land of a 1.6 country (its colonies, the Soviet east) counts no victory points yet, so that the war in Europe is fought for what it was.
+    victoryPoints: old ? 0 : p.victoryPoints, city: p.city, capital: !old && p.capital };
+});
+// Neighbours across the old edge of the map (the Urals, Iran, Arabia, the Sahara) join the European provinces' lists.
+for (const p of wout) for (const n of p.neighbours) if (n < base && !fout[n].neighbours.includes(p.id)) fout[n].neighbours.push(p.id);
+for (const p of fout) p.neighbours.sort((a, b) => a - b);
+for (const [a, b] of world.straits) {
+  const at = ([lon, lat]) => base + world.provinces.findIndex((q) => geoContains(q.shape, [lon, lat]));
+  const i = at(a), j = at(b);
+  if (i < base || j < base || i === j) throw new Error(`World strait at ${a}: shores not found`);
+  if (!wout[i - base].neighbours.includes(j)) { wout[i - base].neighbours.push(j); wout[j - base].neighbours.push(i); }
+  wout[i - base].neighbours.sort((x, y) => x - y); wout[j - base].neighbours.sort((x, y) => x - y);
+}
+const provincesAll = [...fout, ...wout];
+const wdup = provincesAll.map((p) => p.name).filter((n, i, a) => a.indexOf(n) !== i);
+if (wdup.length) throw new Error('Duplicate province names: ' + wdup.join(', '));
+// A city's name may only stand for one province.
+for (const p of provincesAll) if (p.city) { const other = provincesAll.find((q) => q.name === p.city && q.id !== p.id); if (other) throw new Error(`City ${p.city} in ${p.name} is also a province's name`); }
+
+wtopo = presimplify(wtopo);
+wtopo = simplify(wtopo, Math.max(MIN_WEIGHT, quantile(wtopo, 0.2)));
+const wsmall = quantize(wtopo, 1e5);
+wsmall.objects.provinces.geometries.forEach((g, i) => { g.id = i; delete g.properties; });
+fs.writeFileSync('src/content/map/world1936.json', JSON.stringify({
+  source: 'Natural Earth (public domain), regrouped to 1936 borders by scripts/build-map.mjs',
+  knownGaps: [...KNOWN_GAPS, ...WORLD_GAPS], europe: base, splitFrom, rivers: rivers.map((r) => ({ name: r.name, borders: r.borders.map(([a, b]) => [fout[a].name, fout[b].name]) })), provinces: provincesAll,
+}, null, 1));
+fs.writeFileSync('src/content/map/world1936.topo.json', JSON.stringify(wsmall));
+const wowners = [...new Set(wout.map((p) => p.owner))];
+console.log(`World: ${provincesAll.length} provinces (${wout.length} new), ${new Set(provincesAll.map((p) => p.owner)).size} countries, drawing data ${(JSON.stringify(wsmall).length / 1024).toFixed(0)} KB`);
+console.log(wowners.map((o) => `${o} ${wout.filter((p) => p.owner === o).length}`).join(', '));
+console.log('isolated:', wout.filter((p) => !p.neighbours.length).map((p) => p.name).join(', '));
+console.log('across the old edge:', wout.filter((p) => p.neighbours.some((n) => n < base)).map((p) => `${p.name} (${p.neighbours.filter((n) => n < base).map((n) => fout[n].name).join(', ')})`).join('; '));

@@ -1,13 +1,34 @@
 /**
- * The map of Europe on 1 January 1936, plus route finding.
+ * The map of the world on 1 January 1936, plus route finding.
  *
- * The data file is built by scripts/build-map.mjs from public-domain Natural Earth data.
+ * The data file is built by scripts/build-map.mjs from public-domain Natural Earth data. The
+ * first 280 provinces are the map of Europe, North Africa and the Near East that versions 1.5
+ * and 1.6 played on, with the same ids; the rest of the world (version 1.7) comes after them.
  */
-import data from '../content/map/europe1936.json';
+import data from '../content/map/world1936.json';
 import type { Province, Terrain, UnitType } from './types';
 import { asin, cos, PI, sin } from './dmath';
 
 export const PROVINCES = data.provinces as unknown as Province[];
+
+/** How many provinces the Europe-only map of versions 1.5 and 1.6 had. Their ids are 0 to EUROPE_SIZE - 1. */
+export const EUROPE_SIZE: number = data.europe;
+/** The countries of the Europe-only map. */
+export const EUROPEAN = new Set(PROVINCES.slice(0, EUROPE_SIZE).map((p) => p.owner));
+/**
+ * Outposts: the new provinces (1.7) of a country that was already on the Europe-only map, such
+ * as British India, French Indochina or Soviet Siberia. For now they hold none of their owner's
+ * industry or people and start without its divisions, so that the war in Europe plays as it did.
+ */
+export const OUTPOST: boolean[] = PROVINCES.map((p) => p.id >= EUROPE_SIZE && EUROPEAN.has(p.owner));
+/**
+ * True when province `p`, held by `b`, lies off the Europe-only map as far as country `a` of that
+ * map is concerned: an outpost of another country of that map, or the land of a country sitting
+ * out the war (World.asleep). A war or a border between them does not reach it there, so their
+ * quarrels play out where they did before 1.7.
+ */
+export const beyond = (p: number, a: string, b: string, asleep?: readonly string[]): boolean =>
+  p >= EUROPE_SIZE && EUROPEAN.has(a) && (EUROPEAN.has(b) || !!asleep?.includes(b));
 
 /**
  * The finer map (version 1.5) cut the biggest of the first 183 provinces into parts. Each cut
@@ -50,22 +71,67 @@ export function daysToEnter(from: number, to: number, type: UnitType): number {
  */
 export function findRoute(from: number, to: number, type: UnitType, canEnter?: (province: number) => boolean): number[] | null {
   if (from === to) return [];
-  const days = new Array<number>(PROVINCES.length).fill(Infinity);
-  const prev = new Array<number>(PROVINCES.length).fill(-1);
-  const done = new Array<boolean>(PROVINCES.length).fill(false);
+  const days = new Float64Array(PROVINCES.length).fill(Infinity);
+  const prev = new Int32Array(PROVINCES.length).fill(-1);
+  const done = new Uint8Array(PROVINCES.length);
   days[from] = 0;
+  // A binary heap of [days, province], cheapest first; equal days go to the lower id, as the old scan did.
+  const heap: number[] = [];
+  const keys: number[] = [];
+  const push = (p: number) => {
+    heap.push(p);
+    keys.push(days[p]);
+    for (let i = heap.length - 1; i > 0; ) {
+      const up = (i - 1) >> 1;
+      if (!(keys[i] < keys[up] || (keys[i] === keys[up] && heap[i] < heap[up]))) break;
+      [heap[i], heap[up]] = [heap[up], heap[i]];
+      [keys[i], keys[up]] = [keys[up], keys[i]];
+      i = up;
+    }
+  };
+  const pop = (): number => {
+    const top = heap[0];
+    const lastP = heap.pop()!;
+    const lastK = keys.pop()!;
+    if (heap.length) {
+      heap[0] = lastP;
+      keys[0] = lastK;
+      for (let i = 0; ; ) {
+        const l = 2 * i + 1;
+        const r = l + 1;
+        let m = i;
+        if (l < heap.length && (keys[l] < keys[m] || (keys[l] === keys[m] && heap[l] < heap[m]))) m = l;
+        if (r < heap.length && (keys[r] < keys[m] || (keys[r] === keys[m] && heap[r] < heap[m]))) m = r;
+        if (m === i) break;
+        [heap[i], heap[m]] = [heap[m], heap[i]];
+        [keys[i], keys[m]] = [keys[m], keys[i]];
+        i = m;
+      }
+    }
+    return top;
+  };
+  push(from);
   for (;;) {
     let here = -1;
-    for (let i = 0; i < days.length; i++) if (!done[i] && days[i] < Infinity && (here < 0 || days[i] < days[here])) here = i;
+    while (heap.length) {
+      const key = keys[0];
+      const p = pop();
+      // An entry left behind by a later, cheaper find of the same province is skipped.
+      if (!done[p] && key === days[p]) {
+        here = p;
+        break;
+      }
+    }
     if (here < 0) return null;
     if (here === to) break;
-    done[here] = true;
+    done[here] = 1;
     for (const next of PROVINCES[here].neighbours) {
       if (canEnter && !canEnter(next)) continue;
       const d = days[here] + daysToEnter(here, next, type);
       if (d < days[next]) {
         days[next] = d;
         prev[next] = here;
+        push(next);
       }
     }
   }

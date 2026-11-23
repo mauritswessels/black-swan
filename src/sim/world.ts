@@ -14,7 +14,7 @@
  * enter their own land, the land of an ally, or the land of a country they are at war with.
  */
 import { DIG_IN_MAX_DAYS, fightBattles, stillHolding, type Draft } from './combat';
-import { COUNTRIES } from './countries';
+import { COUNTRIES, WORLD_COUNTRIES } from './countries';
 import { carryOutAim } from './agenda';
 import { allianceMap, cloneDiplomacy, giveDiplomacyOrder, isDiplomacyOrder, onGovernmentFell, runDiplomacy, startDiplomacy, surrenders, type DipDraft } from './diplomacy';
 import { cloneEconomies, giveEconomyOrder, isEconomyOrder, MEN_PER_DIVISION, monthEnds, moraleOf, onBattleEnded, reinforce, runEconomies, startEconomies, startFactories } from './economy';
@@ -26,7 +26,7 @@ import { combatEdges, isWinter, modsOf, WINTER_LANDS } from './mods';
 import { recordFront, startReplay } from './replay';
 import { GROUND_MARCH, groundMap } from './seasons';
 import type { ForceDraft } from './navy';
-import { daysToEnter, findRoute, PROVINCES } from './map';
+import { beyond, daysToEnter, EUROPE_SIZE, EUROPEAN, findRoute, PROVINCES } from './map';
 import { Rng, seedFrom } from './rng';
 import { cloneStory, runStory, startStory } from './story';
 import { DEPOTS, linkedProvinces, supplyCapacity, supplyLevels } from './supply';
@@ -50,8 +50,9 @@ const OVERSEAS_SHARE = 0.15;
  * than half of what it can supply while there is room elsewhere. A few garrison its other territories, the richest first.
  * Uses the seeded generator for the order.
  */
-function startingUnits(rng: Rng): Unit[] {
+function startingUnits(mainRng: Rng, farRng: Rng): Unit[] {
   const units: Unit[] = [];
+  let rng = mainRng;
   const shuffle = (ids: number[]): number[] => {
     for (let i = ids.length - 1; i > 0; i--) {
       const j = Math.floor(rng.next() * (i + 1));
@@ -60,7 +61,13 @@ function startingUnits(rng: Rng): Unit[] {
     return ids;
   };
   for (const country of COUNTRIES) {
-    const home = PROVINCES.filter((p) => p.owner === country.name);
+    // The countries of the Europe-only map stand where they did before 1.7: on their older lands
+    // only, placed with the game's own random numbers, so the war in Europe starts as it did. The
+    // rest of the world uses numbers of its own.
+    const old = EUROPEAN.has(country.name);
+    const seen = old ? (p: number) => p < EUROPE_SIZE : () => true;
+    if (!old) rng = farRng;
+    const home = PROVINCES.filter((p) => p.owner === country.name && seen(p.id));
     const capitalDepot = home.find((p) => p.capital)?.id;
     // The homeland: every home province linked by land to the capital.
     const linked = linkedProvinces(PROVINCES.map((p) => p.owner), country.name);
@@ -68,13 +75,13 @@ function startingUnits(rng: Rng): Unit[] {
     if (capitalDepot !== undefined) {
       const queue = [capitalDepot];
       inHomeland.add(capitalDepot);
-      while (queue.length) for (const n of PROVINCES[queue.pop()!].neighbours) if (linked[n] && !inHomeland.has(n)) (inHomeland.add(n), queue.push(n));
+      while (queue.length) for (const n of PROVINCES[queue.pop()!].neighbours) if (linked[n] && seen(n) && !inHomeland.has(n)) (inHomeland.add(n), queue.push(n));
     }
     const homeland = home.filter((p) => inHomeland.has(p.id));
-    const priority = homeland.filter((p) => p.capital || p.neighbours.some((n) => PROVINCES[n].owner !== country.name));
+    const priority = homeland.filter((p) => p.capital || p.neighbours.some((n) => seen(n) && PROVINCES[n].owner !== country.name));
     const order = shuffle((priority.length ? priority : homeland.length ? homeland : home).map((p) => p.id));
     const rest = shuffle(homeland.filter((p) => !order.includes(p.id)).map((p) => p.id));
-    const overseas = (DEPOTS[country.name] ?? []).filter((d) => !inHomeland.has(d)).sort((a, b) => PROVINCES[b].victoryPoints - PROVINCES[a].victoryPoints || a - b);
+    const overseas = (DEPOTS[country.name] ?? []).filter((d) => seen(d) && !inHomeland.has(d)).sort((a, b) => PROVINCES[b].victoryPoints - PROVINCES[a].victoryPoints || a - b);
     const total = country.startArmy[0] + country.startArmy[1] + country.startArmy[2];
     const abroad = overseas.length ? Math.round(total * OVERSEAS_SHARE) : 0;
 
@@ -107,12 +114,13 @@ function startingUnits(rng: Rng): Unit[] {
 export function newWorld(mode: Mode, seedText: string, startDate = '1936-01-01', player: string | null = null): World {
   const seed = seedFrom(seedText);
   const rng = new Rng(seed);
-  const units = startingUnits(rng);
+  const units = startingUnits(rng, new Rng(seedFrom(`${seedText}:world`)));
   const controller = PROVINCES.map((p) => p.owner);
   const factories = startFactories();
   const forces = startForces();
   const economies = startEconomies({ controller, factories, units, wars: [], fleets: forces.fleets, wings: forces.wings });
-  return { mode, player, seed, rng: rng.state, day: 0, startDate, units, nextUnitId: units.length, controller, owner: [...controller], diplomacy: startDiplomacy(economies), wars: [], declaredBy: {}, capitulated: [], battles: [], nextBattleId: 0, reports: [], economies, factories, ...forces, story: startStory('1936', 'close', seed), replay: startReplay(controller, 0), armies: [], nextArmyId: 0, strikes: [], nextStrikeId: 0 };
+  const asleep = mode === 'story' ? [...WORLD_COUNTRIES] : [];
+  return { mode, player, seed, rng: rng.state, day: 0, startDate, units, nextUnitId: units.length, controller, owner: [...controller], diplomacy: startDiplomacy(economies, asleep), wars: [], declaredBy: {}, capitulated: [], asleep, battles: [], nextBattleId: 0, reports: [], economies, factories, ...forces, story: startStory('1936', 'close', seed), replay: startReplay(controller, 0), armies: [], nextArmyId: 0, strikes: [], nextStrikeId: 0 };
 }
 
 /** Organisation regained per day of rest with full supply. */
@@ -147,7 +155,7 @@ function draftOf(world: World): StepDraft {
     clashes: world.clashes, forceLog: world.forceLog, nextForceEventId: world.nextForceEventId,
     day: world.day, startDate: world.startDate, mode: world.mode, player: world.player,
     units: world.units.map((u) => ({ ...u, path: [...u.path] })), nextUnitId: world.nextUnitId,
-    controller: [...world.controller], owner: [...world.owner], wars: [...world.wars], declaredBy: { ...world.declaredBy }, capitulated: [...world.capitulated],
+    controller: [...world.controller], owner: [...world.owner], wars: [...world.wars], declaredBy: { ...world.declaredBy }, capitulated: [...world.capitulated], asleep: world.asleep,
     economies: cloneEconomies(world.economies), factories: { civ: [...world.factories.civ], mil: [...world.factories.mil] }, diplomacy: cloneDiplomacy(world.diplomacy), story: cloneStory(world.story),
   };
 }
@@ -254,7 +262,7 @@ export function step(world: World, orders: Order[] = []): World {
 
   // 1b. The economy: taxes and bills, production lines, construction, training. New divisions appear.
   const fallen = new Map(Object.entries(dd.economies).map(([name, e]) => [name, [e.governmentsFallen, e.government] as const]));
-  const oil = runEconomies(dd, dd.capitulated);
+  const oil = runEconomies(dd, world.asleep?.length ? [...dd.capitulated, ...world.asleep] : dd.capitulated);
   for (const [name, [n, was]] of fallen) if (dd.economies[name].governmentsFallen > n) onGovernmentFell(dd, name, was);
 
   const d: Draft = {
@@ -287,7 +295,7 @@ export function step(world: World, orders: Order[] = []): World {
   }
 
   // 2. Supply, from where everyone stands this morning.
-  const levels = supplyLevels(d, friends, seen.sea);
+  const levels = supplyLevels({ ...d, asleep: world.asleep }, friends, seen.sea);
   d.units.forEach((u, i) => {
     u.supply = levels[i];
     // Tanks without fuel: a country short of oil cannot keep its armour fully supplied.
@@ -400,7 +408,7 @@ export function step(world: World, orders: Order[] = []): World {
   const atFront = (u: Unit): boolean => {
     const k = `${u.owner}@${u.at}`;
     let x = front.get(k);
-    if (x === undefined) front.set(k, (x = PROVINCES[u.at].neighbours.some((n) => atWar(d, u.owner, d.controller[n]))));
+    if (x === undefined) front.set(k, (x = PROVINCES[u.at].neighbours.some((n) => atWar(d, u.owner, d.controller[n]) && !beyond(n, u.owner, d.controller[n]))));
     return x;
   };
   for (const u of d.units) {

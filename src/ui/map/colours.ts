@@ -5,11 +5,14 @@ import type { Terrain } from '../../sim/types';
 const MAJOR: Record<string, string> = {
   France: '#5b9bff', Germany: '#aab4c2', 'United Kingdom': '#ff8fa0', Italy: '#5ee6b0', 'Soviet Union': '#ff8266', Poland: '#c29bff',
 };
+/** The great powers of the wider world (1.7), drawn as strongly as the six of Europe. */
+const WORLD_POWERS: Record<string, string> = { 'United States': '#7ad7ff', Japan: '#ffd34d', China: '#e8a05c' };
+const STRONG: Record<string, string> = { ...MAJOR, ...WORLD_POWERS };
 const MINOR = ['#8fb3c9', '#c9b98f', '#9fc98f', '#c99fb8', '#8f9fc9', '#c9a58f', '#8fc9c0'];
 
 /** The bright colour of a country, for counters and labels. */
 export function countryColour(name: string): string {
-  return MAJOR[name] ?? MINOR[COUNTRIES.findIndex((c) => c.name === name) % MINOR.length];
+  return STRONG[name] ?? MINOR[COUNTRIES.findIndex((c) => c.name === name) % MINOR.length];
 }
 
 /** Mix a colour into the dark table, for filling land. */
@@ -20,7 +23,7 @@ export function tint(hex: string, share: number): string {
   return `rgb(${m[0]},${m[1]},${m[2]})`;
 }
 
-export const landColour = (name: string, mine: boolean): string => tint(countryColour(name), MAJOR[name] ? (mine ? 0.42 : 0.3) : 0.14);
+export const landColour = (name: string, mine: boolean): string => tint(countryColour(name), STRONG[name] ? (mine ? 0.42 : 0.3) : 0.14);
 
 export const TERRAIN_COLOUR: Record<Terrain, string> = { plains: '#2c4a36', forest: '#17382a', hills: '#55492f', mountains: '#6b6672', marsh: '#1f4650', desert: '#7a6636' };
 export const TERRAIN_NOTE: Record<Terrain, string> = {

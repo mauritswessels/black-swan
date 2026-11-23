@@ -26,7 +26,7 @@ import {
   owedBy, sendHome, startWar, strengths, warScore, type DipDraft,
 } from './diplomacy';
 import { monthEnds } from './economy';
-import { PROVINCES } from './map';
+import { beyond, PROVINCES } from './map';
 import type { Demand, Government, Order, World } from './types';
 import { warKey } from './war';
 
@@ -290,7 +290,7 @@ export const SURPRISE_LANDING_DAYS = 30;
 export const SURPRISE_LANDING_POWER = 0.6;
 export function surpriseLanding(d: DipDraft, by: string, province: number, divisions: number): number {
   const front = new Set<number>();
-  for (const p of PROVINCES) if (d.controller[p.id] === by && p.neighbours.some((n) => d.wars.includes(warKey(by, d.controller[n])))) front.add(p.id);
+  for (const p of PROVINCES) if (d.controller[p.id] === by && p.neighbours.some((n) => d.wars.includes(warKey(by, d.controller[n])) && !beyond(n, by, d.controller[n]))) front.add(p.id);
   const picked = d.units
     .filter((u) => u.owner === by && u.type === 'infantry' && !u.path.length && !u.sea && !u.landing && u.organisation >= 60 && PROVINCES[u.at].owner === by && d.controller[u.at] === by && !front.has(u.at))
     .sort((a, b) => b.organisation - a.organisation || a.id - b.id)

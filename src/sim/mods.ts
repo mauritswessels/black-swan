@@ -127,10 +127,26 @@ export const noMods = (): Mods => {
 const TECH_EFFECTS = new Map(TECHS.map((t) => [t.id, t.effects]));
 const PLAN_EFFECTS = new Map(PLANS.map((p) => [p.id, p.effects]));
 
-/** A country's totals: every finished technology and plan added together. */
+/** modsOf's answers, kept while the country finishes no new technology or plan. */
+const MODS_CACHE = new WeakMap<object, { done: string[]; n: number; plans: string[]; m: number; mods: Mods }>();
+const NO_MODS: Mods = Object.freeze(noMods());
+
+/**
+ * A country's totals: every finished technology and plan added together. Asked for many times a
+ * day, so the answer is kept until the lists of finished technologies and plans change. The
+ * answer is shared: never change it.
+ */
 export function modsOf(e: Pick<Economy, 'research' | 'plan'> | undefined): Mods {
+  if (!e) return NO_MODS;
+  const hit = MODS_CACHE.get(e);
+  if (hit && hit.done === e.research.done && hit.n === e.research.done.length && hit.plans === e.plan.done && hit.m === e.plan.done.length) return hit.mods;
+  const mods = Object.freeze(sumMods(e));
+  MODS_CACHE.set(e, { done: e.research.done, n: e.research.done.length, plans: e.plan.done, m: e.plan.done.length, mods });
+  return mods;
+}
+
+function sumMods(e: Pick<Economy, 'research' | 'plan'>): Mods {
   const out = noMods();
-  if (!e) return out;
   const add = (effects: Effects | undefined) => {
     if (effects) for (const k of KEYS) out[k] += effects[k] ?? 0;
   };

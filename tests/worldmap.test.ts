@@ -155,6 +155,17 @@ describe('the oceans', () => {
   });
 });
 
+describe('saves from 1.7, before the war in China', () => {
+  it('keep East Asia out of their war for good, as it was when they were saved', () => {
+    const saved: World = { ...newWorld('story', 'save-1.7'), asleep: [...WORLD_COUNTRIES] };
+    let w = upgradeWorld(saved);
+    for (let d = 0; d < 40; d++) w = step(w);
+    expect(w.asleep).toContain('Japan');
+    expect(w.economies.Japan.treasury).toBe(saved.economies.Japan.treasury);
+    expect(w.wars.some((k) => k.includes('Japan'))).toBe(false);
+  });
+});
+
 describe('saves from before the world map (1.6 and earlier)', () => {
   it('load as Europe-only games: the rest of the world is added asleep', () => {
     const now = newWorld('story', 'europe-save');

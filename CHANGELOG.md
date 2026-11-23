@@ -3,6 +3,58 @@
 Versions from 1.0.0 on are numbered. Each one starts with a heading like `## 1.0.1: What it brings`;
 that section becomes the notes on the GitHub release and on the update card in the app.
 
+## 1.8.0: The war in China (2026-11-23)
+
+The second part of Stage M. In Story mode Japan, China, the Chinese Communists, Manchukuo and
+Mongolia now play their part from 1936, and the Soviet Far East army stands on the map.
+
+- **East Asia joins Story mode.** Japan and Manchukuo are allies, and so are the Soviet Union
+  and Mongolia. Japan's Kwantung Army starts in Manchukuo and keeps watch on the Soviet and
+  Mongolian borders (up to 18 divisions) for the whole war. The United States and the rest of
+  the world still sit out the war.
+- **The real timetable.** The Xi'an Incident (December 1936) makes China's Nationalists and
+  Communists allies. Japan goes to war after the Marco Polo Bridge (7 July 1937), lands at
+  Shanghai in August 1937 and near Canton in October 1938, and signs a neutrality pact with
+  the Soviet Union in April 1941. An AI Japan takes the provinces it really took, in the order
+  it took them (the north China plain and the lower Yangtze in 1937, Wuhan and Canton in 1938,
+  a push south in 1944), and does not march into the empty west. A player Japan goes where it
+  likes.
+- **China fights on.** Its divisions hit at 40% and hold at 75% of a European division's
+  strength, and it gets Soviet arms from late 1937 until June 1941 and American Lend-Lease from
+  May 1941. In Story mode it gives up only when Japan holds 90% of its victory points, the
+  Communists fight on as long as it does, and Chiang Kai-shek's government does not fall. In
+  the bot runs Japan holds Peking, Shanghai, Nanjing and Wuhan by 1939 or early 1940 and
+  China never surrenders.
+- **Border incidents.** Lake Khasan (July 1938) and Khalkhin Gol (May to September 1939) are
+  fought as undeclared wars over one border province each: no calls to allies, no world
+  crisis, no home front at war, and a ceasefire on the real date.
+- **China pays with the printing press.** China's government lived on customs duties and
+  the salt tax, collected in the ports, and on the banks of Shanghai. As Japan takes the
+  ports it loses up to 70% of its taxes and 90% of its bond buyers (from July 1941 the grain
+  tax wins back a little), so it prints money: prices about double by 1940 and rise 35 to 90
+  times by 1945, the worst inflation in the game. Chinese divisions cost less to keep: poorly
+  armed, paid a pittance and fed from the land.
+- **The Soviet Far East army is on the map**, on the border with Manchukuo and in Mongolia,
+  instead of off it. It fights Lake Khasan and Khalkhin Gol, and the Siberian divisions still
+  come west in the autumn of 1941.
+- **Europe plays as before.** Battles, fleets and air wings beyond Europe roll their own dice,
+  so the war in China does not change the luck of the war in Europe, and a European country
+  fights a war in Asia only with the divisions it has there. In 16 AI-only wars Moscow never
+  falls and the Soviet Union never surrenders, as in 1.6, and Poland, France, Yugoslavia,
+  Greece and Italy fall within the same weeks; Germany's surrender moves by a few months either
+  way (docs/balance-stage-m2.md).
+- **11 new history cards**: the Xi'an Incident, the Marco Polo Bridge, Shanghai, the Nanjing
+  Massacre, the Yellow River flood, Lake Khasan, Wuhan and Canton, Khalkhin Gol, China's
+  inflation and the Soviet-Japanese neutrality pact. The Nanjing and Yellow River cards say
+  honestly what happened and where the numbers are disputed. **4 new codex terms**: border
+  incident, customs revenue, United Front, Kwantung Army.
+- **Speed.** With about 200 more divisions to command, the war years run about a third
+  slower: the busiest, 1943, takes about 35 ms a game day on the cloud machine, inside the
+  60 ms the fastest speed allows.
+- **Saves.** The save format is unchanged (version 15). Story games saved in 1.7 keep East
+  Asia out of their war, as it was when they were saved; start a new game for the war in
+  China.
+
 ## 1.7.0: The world map (2026-11-23)
 
 The first part of Stage M. The map now covers the whole world, and the rest of the world is in

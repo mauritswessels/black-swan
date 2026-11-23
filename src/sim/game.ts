@@ -9,7 +9,8 @@
  * The player's armies (armies.ts) give their divisions orders every day, the AI's front code included.
  */
 import { aiDiplomacyOrders, plannedWars } from './agenda';
-import { aiOrders } from './ai';
+import { aiOrders, foeInTheatre, splitTheatres } from './ai';
+import { enemiesOf } from './war';
 import { aiForceOrders } from './aiForces';
 import { allianceMap, isDiplomacyOrder } from './diplomacy';
 import { pictures } from './forces';
@@ -53,8 +54,11 @@ export function advance(w: World, playerOrders: Order[] = []): World {
   // Control of the sea and the sky today, worked out once for every AI commander.
   const friends = commanded.length ? allianceMap(w.diplomacy) : null;
   const seen = friends ? pictures(w, friends) : undefined;
+  // A country of Europe with a war beyond it too (the Soviet Union against Japan) fights each war with the army that stands there (ai.ts Theatre).
+  const farWar = (c: string) => splitTheatres(w, c) && [...enemiesOf(w, c), ...(planned.get(c) ?? [])].some((x) => foeInTheatre('world', x));
   const ai = commanded.flatMap((c) => [
     ...aiOrders(w, c, { sea: seen?.sea, air: seen?.air.battle, planned: planned.get(c) }),
+    ...(farWar(c) ? aiOrders(w, c, { sea: seen?.sea, air: seen?.air.battle, planned: planned.get(c), theatre: 'world' }) : []),
     ...(seen && friends && fighting.includes(c) ? [...aiForceOrders(w, c, seen.sea, friends), ...aiDropOrders(w, c, friends, seen)] : []),
   ]);
   // The player's armies carry out their orders (armies.ts). Orders the player gives by hand today come after, so they win.

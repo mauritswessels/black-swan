@@ -657,7 +657,8 @@ export interface Diplomacy {
   /** Truces after a peace, by "A|B" key: the day each one ends. */
   truces: Record<string, number>;
   /** Wars fought for a limited aim, by "A|B" key: the provinces the attacker wants. */
-  aims: Record<string, { by: string; provinces: number[] }>;
+  aims: Record<string, { by: string; provinces: number[]; incident?: number }>;
+  // incident: a border incident (diplomacy.ts startIncident, 1.8) that ends on this day.
   /** The day each war started, and wars that were joined to honour a pact, by "A|B" key. */
   warStart: Record<string, number>;
   honour: string[];

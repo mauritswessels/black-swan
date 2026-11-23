@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { quiet } from '../src/sim/agenda';
 import { aiOrders } from '../src/sim/ai';
 import { attackPower, defencePower, outlook, STATS } from '../src/sim/combat';
-import { noCapitalShare, SURRENDER_SHARE, SURRENDER_SHARE_NO_CAPITAL } from '../src/sim/diplomacy';
+import { allianceMap, noCapitalShare, SURRENDER_SHARE, SURRENDER_SHARE_NO_CAPITAL } from '../src/sim/diplomacy';
 import { FORTRESS_ATTACK, fortressAt } from '../src/sim/fortresses';
 import { riverBetween } from '../src/sim/rivers';
 import { PROVINCES, provinceByName } from '../src/sim/map';
@@ -143,7 +143,7 @@ describe('supply', () => {
 
   it('starts every division fully supplied', () => {
     const w = newWorld('story', 'supply');
-    expect(Math.min(...supplyLevels(w))).toBe(1);
+    expect(Math.min(...supplyLevels(w, allianceMap(w.diplomacy)))).toBe(1);
   });
 
   it('feeds fewer divisions in mountains than around a capital', () => {

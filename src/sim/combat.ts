@@ -46,7 +46,7 @@
  * defenders still stand, they are pushed out. Walking into empty enemy land works the same
  * way, drawn from how far the division has walked.
  */
-import { distanceKm, PROVINCES } from './map';
+import { distanceKm, EUROPE_SIZE, PROVINCES } from './map';
 import { combatEdges, type Edges } from './mods';
 import { Rng } from './rng';
 import type { Battle, BattleReport, BattleTally, Cause, Economy, Terrain, Unit, UnitType, World } from './types';
@@ -358,8 +358,12 @@ export function forecast(o: Outlook, line = 0): Forecast {
   };
 }
 
-/** Fight one day of every battle. Returns the ids of the units that took part today. */
-export function fightBattles(d: Draft, rng: Rng): Set<number> {
+/**
+ * Fight one day of every battle. Returns the ids of the units that took part today. Battles
+ * beyond the Europe-only map take their luck from `far` (1.8), so that a battle in China does
+ * not change the dice for one in Europe.
+ */
+export function fightBattles(d: Draft, rng: Rng, far: Rng = rng): Set<number> {
   const busy = new Set<number>();
   const at = new Map<number, Unit[]>();
   for (const u of d.units) {
@@ -409,8 +413,9 @@ export function fightBattles(d: Draft, rng: Rng): Set<number> {
     const fire = d.fire?.(province, battle.attackers, battle.defenders);
     if (fire) for (const f of fire.fleets) d.shelled?.add(f);
     const { directions, front, holding, digInKept, attackEach, attackSum, defenceSum, attackerEdge, defenderEdge, riverShare } = lineUp(attackers, defenders, province, d.edges, sky, fire);
-    const attackDamage = attackSum * (0.9 + 0.2 * rng.next());
-    const defenceDamage = defenceSum * (0.9 + 0.2 * rng.next());
+    const dice = province >= EUROPE_SIZE ? far : rng;
+    const attackDamage = attackSum * (0.9 + 0.2 * dice.next());
+    const defenceDamage = defenceSum * (0.9 + 0.2 * dice.next());
 
     const hit = (units: Unit[], damage: number): number => {
       let lost = 0;

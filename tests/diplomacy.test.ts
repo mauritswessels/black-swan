@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { AGENDA, aimStatus, quiet } from '../src/sim/agenda';
 import { allied, alliesOf, cannotDeclare, cannotGuarantee, cannotJustify, causeFor, hasPact, pactAnswer, peaceAnswer, protectorsOf, relation, relationReasons, restingRelation, warScore } from '../src/sim/diplomacy';
 import { advance, ownOrders } from '../src/sim/game';
-import { PROVINCES, provinceByName } from '../src/sim/map';
+import { EUROPEAN, PROVINCES, provinceByName } from '../src/sim/map';
 import { linkedProvinces } from '../src/sim/supply';
 import type { Order, World } from '../src/sim/types';
 import { atWar, enemiesOf } from '../src/sim/war';
@@ -265,7 +265,8 @@ describe('the butterfly effect (bot playtests)', () => {
     const w = until(as('Germany', 'story', 'butterfly'), '1939-10-01');
     expect(w.capitulated).toEqual(['Albania']); // Italy still follows its own plans
     expect(w.owner[id('Vienna')]).toBe('Austria');
-    expect(w.wars).toEqual([]);
+    // The war in China (1.8) goes on far away.
+    expect(w.wars.filter((k) => k.split('|').every((c) => EUROPEAN.has(c)))).toEqual([]);
     expect(w.diplomacy.tension).toBeLessThan(25);
     expect(hasPact(w.diplomacy, 'guarantee', 'United Kingdom', 'Poland')).toBe(false);
   });

@@ -100,6 +100,19 @@ export const OPERATIONS: Operation[] = [
     needs: (w) => first(!atWar(w, 'United Kingdom', 'Germany') && 'it is not at war with Germany'),
     history: 'On 15 August 1944 American and French troops landed in Provence and advanced up the Rhône valley.',
   },
+  // ----- East Asia (1.8) -----
+  {
+    id: 'op-shanghai', by: 'Japan', kind: 'landing', date: '1937-08-13', until: '1939-12-31',
+    targets: [P('Shanghai'), P('Northern Chekiang'), P('Northern Kiangsu')], area: named('Shanghai', 'Kiangsu', 'Northern Chekiang', 'Chekiang', 'Northern Kiangsu', 'Southern Anhwei', 'Anhwei', 'Hupeh', 'Northern Kiangsi'), size: 5, follow: 14,
+    needs: (w) => first(!atWar(w, 'Japan', 'China') && 'it is not at war with China'),
+    history: 'Chiang Kai-shek opened a second front at Shanghai on 13 August 1937 with his best German-trained divisions, to draw Japan away from the north and show the world that China would fight. Japan landed army after army; Shanghai fell in November after three months, and Nanking on 13 December.',
+  },
+  {
+    id: 'op-canton', by: 'Japan', kind: 'landing', date: '1938-10-12', until: '1941-12-31',
+    targets: [P('Eastern Kwangtung'), P('Kwangtung')], area: named('Kwangtung', 'Eastern Kwangtung', 'Eastern Kwangsi', 'Kwangsi', 'Southern Hunan'), size: 4, follow: 8,
+    needs: (w) => first(!atWar(w, 'Japan', 'China') && 'it is not at war with China'),
+    history: 'On 12 October 1938 Japanese troops landed at Bias Bay and took Canton nine days later, closing China\'s last big port. Wuhan fell the same week, and the government moved to Chungking.',
+  },
 ];
 
 /** Friendly ground for this country: its own, or an ally's. */
@@ -141,5 +154,54 @@ export function laterLandings(w: World, country: string): Set<number> {
   // it, and a lucky landing that walked into an empty Berlin in 1941 (or from Jutland in 1943) ended the war in weeks.
   const overlord = OPERATIONS.find((o) => o.id === 'op-overlord')!;
   if (country === overlord.by && w.day < dayOf(w.startDate, overlord.date)) for (const p of PROVINCES) if (p.owner === 'Germany' || p.owner === 'Denmark') out.add(p.id);
+  return out;
+}
+
+/**
+ * How far Japan's armies go into China, by date (1.8). In 1937 and 1938 Japan took the north China
+ * plain, the lower Yangtze, Wuhan and Canton, the cities, railways and ports, and then stopped: its
+ * generals knew they could not hold the empty west, and China fought on from Chungking. Ichi-Go, in
+ * 1944, was the one great push after that, to open a railway to Indochina. The mountains of Shansi
+ * and the far north-west are left out: Japan held a few towns and railways there, never the land.
+ *
+ * An army commander (ai.ts) of Japan or Manchukuo attacks China and the Communists only in the provinces
+ * whose date has come. In Story mode only, and not for a player, who goes where they like.
+ */
+export const JAPAN_REACH: [string, string[]][] = [
+  ['1937-07-07', ['Peiping', 'Hopeh', 'Northern Hopeh', 'Chahar', 'Shantung', 'Shanghai', 'Kiangsu', 'Northern Chekiang', 'Northern Kiangsu', 'Southern Anhwei']],
+  ['1938-01-01', ['Western Shantung', 'Anhwei', 'Eastern Honan']],
+  ['1938-06-01', ['Hupeh', 'Northern Kiangsi', 'Northern Shansi']],
+  ['1938-10-12', ['Kwangtung', 'Eastern Kwangtung']],
+  ['1939-02-10', ['Hainan']],
+  ['1944-04-17', ['Honan', 'Hunan', 'Southern Hunan', 'Eastern Kwangsi', 'Kwangsi']],
+];
+const REACH_SIDE = ['Japan', 'Manchukuo'];
+const REACH_FOES = ['China', 'Chinese Communists'];
+const REACH_IDS: [string, number[]][] = JAPAN_REACH.map(([date, names]) => [date, named(...names)]);
+
+/** The provinces this country's armies may attack in a war on `foe` today, or null when nothing limits them. */
+export function reachOf(w: World, country: string, foe: string): Set<number> | null {
+  if (w.mode !== 'story' || country === w.player || w.story.lesson || !REACH_SIDE.includes(country) || !REACH_FOES.includes(foe)) return null;
+  const out = new Set<number>();
+  for (const [date, ids] of REACH_IDS) if (w.day >= dayOf(w.startDate, date)) for (const p of ids) out.add(p);
+  return out;
+}
+
+/**
+ * Borders an AI country keeps watch on without a war (1.8): Japan's Kwantung Army stood guard in
+ * Manchuria against the Red Army throughout the war in China, with about a dozen divisions in the
+ * late 1930s and many more in 1941. The army commander (ai.ts) deploys up to `divisions` there, as
+ * for a war it is planning, but plans no attack.
+ */
+export const WATCH: { by: string; foe: string; divisions: number }[] = [
+  { by: 'Japan', foe: 'Soviet Union', divisions: 15 },
+  { by: 'Japan', foe: 'Mongolia', divisions: 3 },
+];
+
+/** The borders this country watches today, with the most divisions it puts on each. */
+export function watchOf(w: World, country: string): Map<string, number> {
+  const out = new Map<string, number>();
+  if (w.mode !== 'story' || country === w.player || w.story.lesson) return out;
+  for (const x of WATCH) if (x.by === country) out.set(x.foe, x.divisions);
   return out;
 }

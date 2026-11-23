@@ -85,9 +85,9 @@ export function giveForceOrder(d: ForceDraft, o: ForceOrder, friends: Map<string
 }
 
 /** One day of the war at sea and in the air. */
-export function runForces(d: ForceDraft, rng: Rng, p: Pictures, friends: Map<string, Set<string>>): void {
-  runNavy(d, rng, p.sea, friends);
-  runAir(d, rng, p.air, friends, p.sea);
+export function runForces(d: ForceDraft, rng: Rng, p: Pictures, friends: Map<string, Set<string>>, far: Rng = rng): void {
+  runNavy(d, rng, p.sea, friends, far);
+  runAir(d, rng, p.air, friends, p.sea, far);
   runShipping(d, p.sea, friends);
   runDrops(d, p.air, friends);
 }

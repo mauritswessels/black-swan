@@ -33,12 +33,12 @@ describe('the world', () => {
     expect(JSON.parse(JSON.stringify(w))).toEqual(w);
   });
 
-  it('gives each country its divisions, standing on its own land', () => {
+  it('gives each country its divisions, standing on its own land (Japan\'s Kwantung Army in Manchukuo)', () => {
     const w = newWorld('story', 'test');
     for (const c of COUNTRIES) {
       const mine = w.units.filter((u) => u.owner === c.name);
       expect(mine.length, c.name).toBe(c.startArmy[0] + c.startArmy[1] + c.startArmy[2]);
-      for (const u of mine) expect(PROVINCES[u.at].owner).toBe(c.name);
+      for (const u of mine) expect(PROVINCES[u.at].owner).toBe(c.name === 'Japan' && PROVINCES[u.at].owner === 'Manchukuo' ? 'Manchukuo' : c.name);
     }
     expect(w.controller).toEqual(PROVINCES.map((p) => p.owner));
   });

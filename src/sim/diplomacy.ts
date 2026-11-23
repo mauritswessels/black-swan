@@ -21,7 +21,7 @@
  */
 import { COUNTRIES } from './countries';
 import { DECLARATION_COST } from './economy';
-import { OUTPOST, partsOf, PROVINCES } from './map';
+import { afar, EUROPEAN, OUTPOST, partsOf, PROVINCES } from './map';
 import type { Decision, Demand, DipEvent, Diplomacy, Economy, Government, Mode, Order, Pact, PactKind, PeaceTerms, StoryState, Ultimatum, Unit, UnitType, World } from './types';
 import { warKey } from './war';
 
@@ -76,6 +76,10 @@ const HISTORY: [string, string, number][] = [
   ['Italy', 'Albania', 15], ['Germany', 'Austria', -15], ['Germany', 'Italy', -10], ['Poland', 'Lithuania', -30], ['Poland', 'Czechoslovakia', -20], ['Hungary', 'Yugoslavia', -20],
   ['Bulgaria', 'Yugoslavia', -15], ['France', 'Italy', -5], ['Sweden', 'Norway', 25], ['Sweden', 'Denmark', 25], ['Sweden', 'Finland', 25], ['Norway', 'Denmark', 25], ['Finland', 'Estonia', 20],
   ['Estonia', 'Latvia', 30], ['Latvia', 'Lithuania', 20], ['Belgium', 'Netherlands', 20], ['Belgium', 'Luxembourg', 25], ['Germany', 'Poland', 10],
+  // East Asia (1.8): Japan had taken Manchuria in 1931 and wanted north China; China's Nationalists
+  // had fought the Communists since 1927; the Soviet Union and Japan had a long border and a long quarrel.
+  ['Japan', 'China', -45], ['Manchukuo', 'China', -40], ['China', 'Chinese Communists', -40], ['Japan', 'Soviet Union', -25], ['Manchukuo', 'Soviet Union', -20],
+  ['Japan', 'Mongolia', -20], ['Manchukuo', 'Mongolia', -20], ['Japan', 'Chinese Communists', -30],
 ];
 const HISTORY_OF = new Map(HISTORY.map(([a, b, x]) => [warKey(a, b), x]));
 
@@ -126,6 +130,13 @@ export const SURRENDER_SHARE_NO_CAPITAL = 0.4;
  * (0.75 before 1.6: in about one run in eight the Soviet Union gave up the day Moscow fell, in the winter of 1941.)
  */
 export const LAST_STAND_SHARE = 0.85;
+/**
+ * China against Japan (1.8): when Nanking fell in December 1937 the government moved up the
+ * Yangtze to Wuhan, and from 1938 to Chungking behind the gorges. It lost the coast, the great
+ * cities and most of its industry, and never gave in. In Story mode it surrenders to Japan only
+ * when the enemy holds this share of its victory points: Chungking or Xi'an as well as the east.
+ */
+export const CHINA_STAND_SHARE = 0.9;
 
 /** A standing claim: a cause for war that never runs out, and (when it names a demand) the right to send an ultimatum. */
 export interface Claim {
@@ -187,6 +198,10 @@ const START_PACTS: [PactKind, string, string][] = [
   ['nonAggression', 'Germany', 'Poland'],
   ['nonAggression', 'Soviet Union', 'Poland'],
   ['nonAggression', 'Soviet Union', 'Finland'],
+  // East Asia (1.8): Manchukuo was Japan's puppet state, and the Soviet Union signed a protocol of
+  // mutual help with Mongolia in March 1936 and stationed troops there from 1937.
+  ['alliance', 'Japan', 'Manchukuo'],
+  ['alliance', 'Soviet Union', 'Mongolia'],
 ];
 
 export const MAJORS = new Set(COUNTRIES.filter((c) => c.major).map((c) => c.name));
@@ -249,7 +264,8 @@ const WEIGHT: Record<UnitType, number> = { infantry: 1, armour: 2.5, artillery: 
 /** A rough measure of each army: divisions weighted by type and by how much of their strength is left. */
 export function strengths(units: Unit[]): Map<string, number> {
   const out = new Map<string, number>();
-  for (const u of units) out.set(u.owner, (out.get(u.owner) ?? 0) + (WEIGHT[u.type] * u.strength) / 100);
+  // The Soviet Far East army in Siberia (1.8) does not count in Europe's sums: it was not there to be feared.
+  for (const u of units) if (!afar(u.owner, u.at)) out.set(u.owner, (out.get(u.owner) ?? 0) + (WEIGHT[u.type] * u.strength) / 100);
   return out;
 }
 
@@ -603,7 +619,9 @@ export function startWar(d: DipDraft, by: string, on: string, kind: 'attack' | '
     // The country that declares loses stability if its people are not behind it; twice as much with no cause.
     if (a) a.stability = clamp(a.stability - (cause ? 1 : 2) * DECLARATION_COST[a.government] * Math.max(0, 50 - a.warSupport), 0, 100);
     if (b) b.warSupport = clamp(b.warSupport + 10, 0, 100);
-    raiseTension(d, (isMajor(on) ? TENSION.warOnMajor : TENSION.warOnMinor) + (cause ? 0 : TENSION.noCause));
+    // A war in East Asia between countries beyond the Europe-only map (1.8) does not raise the
+    // tension of Europe: its governments watched Japan's war in China, but did not see their own danger in it.
+    if (EUROPEAN.has(by) || EUROPEAN.has(on)) raiseTension(d, (isMajor(on) ? TENSION.warOnMajor : TENSION.warOnMinor) + (cause ? 0 : TENSION.noCause));
     blame(d, by, cause ? -10 : -20);
     if (hasPact(dip, 'nonAggression', by, on)) {
       blame(d, by, -10);
@@ -628,6 +646,8 @@ export function startWar(d: DipDraft, by: string, on: string, kind: 'attack' | '
   // Everyone who promised to defend the country attacked is now asked to keep that promise.
   for (const protector of protectorsOf(dip, on).sort()) {
     if (protector === by || !alive(d, protector) || fighting(d, protector, by)) continue;
+    // A country beyond the Europe-only map is not drawn into a war of Europe by its pacts (1.8): Mongolia did not fight Germany.
+    if (!EUROPEAN.has(protector) && EUROPEAN.has(by) && EUROPEAN.has(on)) continue;
     if (allied(dip, protector, by)) {
       // Allied to both sides: it stays out, and its promise to the victim is worth nothing now.
       dropPacts(d, (p) => between(protector, on)(p));
@@ -1157,6 +1177,7 @@ export function runDiplomacy(d: DipDraft, monthEnd: boolean): void {
     for (const p of Object.keys(u.stances)) if (u.stances[p] === null) u.stances[p] = false;
     if (!resolveUltimatum(d, u)) resolveUltimatum(d, u, false);
   }
+  endIncidents(d);
   if (!monthEnd) return;
   for (let i = 0; i < NAMES.length; i++) {
     if (asleep(d, NAMES[i])) continue;
@@ -1169,7 +1190,7 @@ export function runDiplomacy(d: DipDraft, monthEnd: boolean): void {
     }
   }
   // Tension eases slowly while no great power is at war.
-  if (!d.wars.some((k) => k.split('|').some(isMajor))) raiseTension(d, -TENSION.monthlyDecay);
+  if (!d.wars.some((k) => !dip.aims[k]?.incident && k.split('|').some(isMajor))) raiseTension(d, -TENSION.monthlyDecay);
   for (const m of dip.missions) {
     const [from] = m.split('>');
     const e = d.economies[from];
@@ -1246,11 +1267,57 @@ export function surrenders(d: DipDraft): void {
     }
     const lost = [...held.values()].reduce((a, b) => a + b, 0);
     const lastStand = d.mode === 'story' && loser === 'Soviet Union' && [...held.keys()].some((h) => governmentOf(d, h) === 'fascist');
-    if (!total || lost / total < (lastStand ? LAST_STAND_SHARE : capitalLost ? noCapitalShare(loser, total) : SURRENDER_SHARE)) continue;
+    const byJapan = d.mode === 'story' && [...held.keys()].some((h) => h === 'Japan' || h === 'Manchukuo');
+    const chinaStand = byJapan && loser === 'China';
+    // The Communists fought on in the hills behind the Japanese lines for as long as China did.
+    if (byJapan && loser === 'Chinese Communists' && alive(d, 'China')) continue;
+    if (!total || lost / total < (chinaStand ? CHINA_STAND_SHARE : lastStand ? LAST_STAND_SHARE : capitalLost ? noCapitalShare(loser, total) : SURRENDER_SHARE)) continue;
     if (fightsOn(d, loser)) continue;
     // A government that has already deposed its dictator is negotiating an armistice instead (story.ts).
     if (d.story.effects.some((x) => x.id === 'italy-fall' && x.country === loser && x.until >= d.day)) continue;
     const victor = [...held.entries()].sort((x, y) => y[1] - x[1] || (x[0] < y[0] ? -1 : 1))[0][0];
     capitulate(d, loser, victor);
+  }
+}
+
+// ---------- border incidents (1.8) ----------
+
+/**
+ * A border incident: an undeclared war for a few border provinces, fought by the divisions that
+ * stand near, which ends on a fixed day (Lake Khasan in 1938, Khalkhin Gol in 1939). Every country
+ * of `attackers` is at war with every country of `defenders`, but nobody declares anything: there
+ * are no calls to allies, world tension does not rise, and the home fronts do not go to war
+ * (economy.ts). The army commanders (ai.ts) fight it for the `provinces` only. On the last day the
+ * attackers keep the provinces if they hold them all, and otherwise everything goes back.
+ */
+export function startIncident(d: DipDraft, attackers: string[], defenders: string[], provinces: number[], days: number, news: string): void {
+  const dip = d.diplomacy;
+  const started: string[] = [];
+  for (const a of attackers) for (const b of defenders) {
+    const key = warKey(a, b);
+    if (a === b || !alive(d, a) || !alive(d, b) || d.wars.includes(key) || allied(dip, a, b)) continue;
+    d.wars.push(key);
+    dip.warStart[key] = d.day;
+    d.declaredBy[key] = a;
+    dip.aims[key] = { by: a, provinces, incident: d.day + days };
+    shift(dip, a, b, -20);
+    started.push(a, b);
+  }
+  if (started.length) note(d, 'war', news, [...new Set(started)]);
+}
+
+/** Is this war (by its "A|B" key) a border incident? */
+export const isIncident = (dip: Pick<Diplomacy, 'aims'>, key: string): boolean => dip.aims[key]?.incident !== undefined;
+
+
+/** Border incidents whose day has come end: the attacker keeps what it holds of the provinces it wanted only if it holds them all. */
+function endIncidents(d: DipDraft): void {
+  const dip = d.diplomacy;
+  for (const key of [...d.wars]) {
+    const aim = dip.aims[key];
+    if (!aim || aim.incident === undefined || aim.incident > d.day) continue;
+    const [a, b] = key.split('|');
+    const won = aim.provinces.every((p) => d.controller[p] === aim.by);
+    endWar(d, a, b, won ? 'asHeld' : 'white');
   }
 }

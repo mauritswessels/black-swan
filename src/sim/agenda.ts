@@ -23,7 +23,7 @@
 import { COUNTRIES } from './countries';
 import {
   addPact, alive, isolated, allied, alliesOf, ask, cannotGuarantee, claimOf, CLAIMS, CONTAIN_AGGRESSION, CONTAIN_TENSION, governmentOf, hasPact, isMajor, note, oddsAgainst, peaceAnswer, raiseTension, sendUltimatum, shift,
-  owedBy, sendHome, startWar, strengths, warScore, type DipDraft,
+  owedBy, sendHome, startIncident, startWar, strengths, warScore, type DipDraft,
 } from './diplomacy';
 import { monthEnds } from './economy';
 import { beyond, PROVINCES } from './map';
@@ -36,7 +36,9 @@ type Act =
   | { do: 'war'; on: string; limited?: number[]; cause?: string; surprise?: { province: number; divisions: number } }
   /** Germany, as the strongest power on the continent, makes `from` hand these provinces to the country of the aim. */
   | { do: 'award'; from: string; provinces: number[] }
-  | { do: 'pact'; kind: 'alliance' | 'nonAggression'; with: string };
+  | { do: 'pact'; kind: 'alliance' | 'nonAggression'; with: string }
+  /** A border incident (diplomacy.ts startIncident): `with` against `against`, for these provinces, ending after `days`. */
+  | { do: 'incident'; with: string[]; against: string[]; provinces: number[]; days: number };
 
 export interface Aim {
   id: string;
@@ -221,6 +223,36 @@ export const AGENDA: Aim[] = [
     needs: (w) => first(fighting(w, 'Soviet Union', 'Finland') && 'Finland comes first', !hasPact(w.diplomacy, 'nonAggression', 'Germany', 'Soviet Union') && !fighting(w, 'Germany', 'France') && 'it fears Germany'),
     history: 'Romania gave up Bessarabia to a Soviet ultimatum on 28 June 1940, and turned to Germany for protection.',
   },
+  // ----- East Asia (1.8) -----
+  {
+    id: 'xian', country: 'China', date: '1936-12-24', regime: 'authoritarian', news: 'After the Xi\'an Incident, China\'s Nationalists and Communists stop their civil war and agree to stand together against Japan',
+    act: { do: 'pact', kind: 'alliance', with: 'Chinese Communists' },
+    needs: (w) => first(fighting(w, 'China', 'Chinese Communists') && 'they are at war'),
+    history: 'On 12 December 1936 two of his own generals arrested Chiang Kai-shek at Xi\'an and held him until he agreed to end the civil war and resist Japan beside the Communists. He was freed on 25 December; the "Second United Front" was made formal in September 1937.',
+  },
+  {
+    id: 'marco-polo', country: 'Japan', date: '1937-07-07', regime: 'authoritarian', news: 'Shots at the Marco Polo Bridge outside Peiping: Japan goes to war with China',
+    act: { do: 'war', on: 'China', cause: 'a clash between Japanese and Chinese troops at the Marco Polo Bridge' },
+    history: 'On the night of 7 July 1937 Japanese troops on manoeuvres and Chinese troops exchanged fire at the Marco Polo Bridge near Peiping. Neither side backed down. Japan took Peiping and Tientsin within a month and the war spread to Shanghai in August. Japan called it the "China Incident"; neither side declared war until 1941.',
+  },
+  {
+    id: 'khasan', country: 'Japan', date: '1938-07-29', regime: 'authoritarian', news: 'Japanese and Soviet troops fight at Lake Khasan, where Korea, Manchukuo and the Soviet Union meet',
+    act: { do: 'incident', with: ['Japan'], against: ['Soviet Union'], provinces: [P('Primorye')], days: 14 },
+    needs: (w) => first(governmentOf(w, 'Soviet Union') !== 'communist' && 'the Soviet Union has a new government'),
+    history: 'From 29 July to 11 August 1938 Japan tested the Soviet border at Lake Khasan, near Vladivostok. The Red Army threw the Japanese off the hills they had taken, and a ceasefire restored the old border.',
+  },
+  {
+    id: 'khalkhin-gol', country: 'Manchukuo', date: '1939-05-11', regime: 'authoritarian', news: 'Manchurian and Japanese troops clash with the Mongolian army on the Khalkhin Gol river, and the Red Army comes to Mongolia\'s aid',
+    act: { do: 'incident', with: ['Manchukuo', 'Japan'], against: ['Mongolia', 'Soviet Union'], provinces: [P('Eastern Mongolia')], days: 128 },
+    needs: (w) => first(governmentOf(w, 'Soviet Union') !== 'communist' && 'the Soviet Union has a new government', !allied(w.diplomacy, 'Soviet Union', 'Mongolia') && 'Mongolia has no Soviet protector'),
+    history: 'From May to September 1939 Japan\'s Kwantung Army fought the Soviet and Mongolian armies over a strip of grassland on the Khalkhin Gol river. In August General Zhukov encircled the Japanese with tanks and aircraft. The defeat turned Japan away from the Soviet Union and towards the south.',
+  },
+  {
+    id: 'neutrality-pact', country: 'Japan', date: '1941-04-13', regime: 'authoritarian', news: 'Japan and the Soviet Union sign a neutrality pact',
+    act: { do: 'pact', kind: 'nonAggression', with: 'Soviet Union' },
+    needs: (w) => first(fighting(w, 'Japan', 'Soviet Union') && 'they are at war'),
+    history: 'Signed in Moscow on 13 April 1941. Each side could now face the other way: Japan towards Southeast Asia, the Soviet Union towards Germany. It held until August 1945.',
+  },
   // ----- The smaller Axis countries -----
   {
     id: 'vienna-1', country: 'Hungary', date: '1938-11-02', regime: 'authoritarian', news: 'The First Vienna Award: Germany and Italy give Hungary the south of Slovakia and Ruthenia',
@@ -321,7 +353,7 @@ export function aimStatus(w: World, aim: Aim): { state: 'done' | 'dropped' | 'ea
     const more = aim.needs?.(w);
     return more ? { state: 'waiting', why: more } : { state: 'ready' };
   }
-  const target = aim.act.do === 'event' ? null : aim.act.do === 'pact' ? aim.act.with : aim.act.on;
+  const target = aim.act.do === 'event' ? null : aim.act.do === 'pact' ? aim.act.with : aim.act.do === 'incident' ? aim.act.against[0] : aim.act.on;
   if (target && !alive(w, target)) return { state: 'dropped' };
   // A country that has signed an armistice is left alone by those it signed with.
   if (target && aim.act.do !== 'pact' && w.story.armistice.includes(target)) return { state: 'dropped' };
@@ -336,7 +368,7 @@ export function aimStatus(w: World, aim: Aim): { state: 'done' | 'dropped' | 'ea
 /** Is this aim pointless now (the country or its target is gone, or the government has changed)? */
 function aimStatusDropped(d: DipDraft, aim: Aim): boolean {
   if (aim.act.do === 'award') return !alive(d, aim.country) || governmentOf(d, aim.country) !== aim.regime || !alive(d, aim.act.from) || d.day - aimDay(d, aim) > 365;
-  const target = aim.act.do === 'event' ? null : aim.act.do === 'pact' ? aim.act.with : aim.act.on;
+  const target = aim.act.do === 'event' ? null : aim.act.do === 'pact' ? aim.act.with : aim.act.do === 'incident' ? aim.act.against[0] : aim.act.on;
   return !alive(d, aim.country) || governmentOf(d, aim.country) !== aim.regime || (!!target && !alive(d, target)) || (!!target && aim.act.do !== 'pact' && (d.wars.includes(warKey(aim.country, target)) || allied(d.diplomacy, aim.country, target)));
 }
 
@@ -372,6 +404,9 @@ export function carryOutAim(d: DipDraft, id: string, go: boolean): void {
       startWar(d, aim.country, act.on, 'attack');
       if (act.limited?.length) dip.aims[warKey(aim.country, act.on)] = { by: aim.country, provinces: act.limited };
       if (act.surprise && d.wars.includes(warKey(aim.country, act.on))) surpriseLanding(d, aim.country, act.surprise.province, act.surprise.divisions);
+      break;
+    case 'incident':
+      startIncident(d, act.with, act.against, act.provinces, act.days, aim.news);
       break;
     case 'award': {
       for (const p of act.provinces) {
@@ -440,8 +475,12 @@ export function plannedWars(w: World): [string, string][] {
  */
 export function toTheEnd(w: Pick<World, 'mode' | 'economies' | 'capitulated' | 'diplomacy'>, a: string, b: string): boolean {
   if (w.mode !== 'story' || w.diplomacy.aims[warKey(a, b)]) return false;
+  // Nor between Japan's side and China's while Japan's army rules in Tokyo (1.8): Japan's terms meant the end of China, and Chiang refused them for eight years.
+  if ([a, b].some((x) => JAPAN_SIDE.includes(x)) && [a, b].some((x) => CHINA_SIDE.includes(x)) && alive(w, 'Japan') && governmentOf(w, 'Japan') === 'authoritarian') return true;
   return [a, b].some((x) => (x === 'Germany' || x === 'Italy') && alive(w, x) && governmentOf(w, x) === 'fascist');
 }
+const JAPAN_SIDE = ['Japan', 'Manchukuo'];
+const CHINA_SIDE = ['China', 'Chinese Communists'];
 
 /** Today's diplomatic orders for every country the AI leads. */
 export function aiDiplomacyOrders(w: World): Order[] {

@@ -42,7 +42,7 @@ import { COUNTRIES } from './countries';
 import { EUROPE_SIZE, EUROPEAN, PROVINCES } from './map';
 import { modsOf, type Mods } from './mods';
 import { Rng } from './rng';
-import { COAST, europeanSeas, sailDays, fleetPower, HOME_ZONES, seaPicture, seaRoute, shipCount, SHIP_KINDS, TRADE_ROUTE, ZONE_INDEX, zonePath, ZONES, type SeaPicture } from './sea';
+import { COAST, EUROPE_ZONES, europeanSeas, sailDays, fleetPower, HOME_ZONES, seaPicture, seaRoute, shipCount, SHIP_KINDS, TRADE_ROUTE, ZONE_INDEX, zonePath, ZONES, type SeaPicture } from './sea';
 import type { Economy, Fleet, FleetMission, ForceEvent, Order, ShipKind, Strike, Unit, World } from './types';
 import { atWar, enemiesOf } from './war';
 
@@ -218,7 +218,7 @@ const shipWord = (n: number, kind: ShipKind): string => `${n} ${kind === 'capita
 export const describeFleet = (f: Pick<Fleet, 'ships'>): string => SHIP_KINDS.filter((k) => Math.round(f.ships[k]) > 0).map((k) => shipWord(Math.round(f.ships[k]), k)).join(', ') || 'no ships fit for sea';
 
 /** One day of the war at sea. */
-export function runNavy(d: ForceDraft, rng: Rng, sea: SeaPicture, friends: Map<string, Set<string>>): void {
+export function runNavy(d: ForceDraft, europe: Rng, sea: SeaPicture, friends: Map<string, Set<string>>, far: Rng = europe): void {
   const mods = modCache(d.economies);
   const clashes: string[] = [];
   if (d.wars.length) {
@@ -226,6 +226,8 @@ export function runNavy(d: ForceDraft, rng: Rng, sea: SeaPicture, friends: Map<s
     for (let z = 0; z < ZONES.length; z++) {
       const here = d.fleets.filter((f) => ZONE_INDEX[f.zone] === z && arrived(f, d.day) && f.mission !== 'port');
       if (!here.length) continue;
+      // The oceans beyond Europe have dice of their own (1.8), like the battles on land.
+      const rng = z >= EUROPE_ZONES ? far : europe;
       const owners = [...new Set(here.map((f) => f.owner))].sort();
       const fighting = new Set<string>();
       for (const c of owners) {

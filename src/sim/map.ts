@@ -22,6 +22,12 @@ export const EUROPEAN = new Set(PROVINCES.slice(0, EUROPE_SIZE).map((p) => p.own
  */
 export const OUTPOST: boolean[] = PROVINCES.map((p) => p.id >= EUROPE_SIZE && EUROPEAN.has(p.owner));
 /**
+ * A division of a country of the Europe-only map standing beyond that map: the Soviet Far East
+ * army in Siberia (1.8), say. It plays no part in the quarrels of Europe, which count only the
+ * divisions that stand there (diplomacy.ts `strengths`, the army commander's theatres in ai.ts).
+ */
+export const afar = (owner: string, at: number): boolean => at >= EUROPE_SIZE && EUROPEAN.has(owner);
+/**
  * True when province `p`, held by `b`, lies off the Europe-only map as far as country `a` of that
  * map is concerned: an outpost of another country of that map, or the land of a country sitting
  * out the war (World.asleep). A war or a border between them does not reach it there, so their

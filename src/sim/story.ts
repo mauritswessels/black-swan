@@ -27,7 +27,7 @@ import { AGENDA, aimDay, dayOf, surpriseLanding } from './agenda';
 import { CHAPTERS } from './chapters';
 import { COUNTRIES } from './countries';
 import { addPact, alive, allied, ask, between, capitulate, dropPacts, endWar, governmentOf, hasPact, isMajor, note, raiseTension, relation, restore, setEventHook, shift, startWar, type DipDraft } from './diplomacy';
-import { beyond, OUTPOST, partsOf, PROVINCES } from './map';
+import { afar, beyond, OUTPOST, partsOf, PROVINCES } from './map';
 import { Rng, seedFrom } from './rng';
 import type { ArmyEffect, Decision, LineKind, StartId, StoryState } from './types';
 import { warKey } from './war';
@@ -45,6 +45,11 @@ export const FREE_FOR_ALL_DAYS = 3653;
 export const DRIFT_DAYS: [number, number] = [-45, 150];
 /** Marching into the Rhineland in 1936 sets every later German move back by this long. */
 export const RHINELAND_DELAY = 300;
+/** How well the armies of China could fight (1.8): their divisions hit and hold at these shares of a European division. */
+export const CHINA_ARMIES: [string, { attack: number; defence: number; why: string }][] = [
+  ['China', { attack: 0.4, defence: 0.75, why: 'few guns, too few rifles, little ammunition, and many divisions loyal to their own warlords' }],
+  ['Chinese Communists', { attack: 0.4, defence: 0.8, why: 'a guerrilla army of light infantry, with almost no artillery' }],
+];
 /** The Red Army after the Terror, from June 1937 to the middle of 1942. */
 export const PURGE = { from: '1937-06-11', to: '1942-06-30', attack: 0.85, defence: 0.9 };
 /** France in the weeks after Germany attacks through the Low Countries. */
@@ -73,6 +78,17 @@ export const LEND_LEASE_GOODS: Record<string, Partial<Record<LineKind, number>>>
   'United Kingdom': { infantry: 0.6, artillery: 0.2, armour: 0.2, fighter: 0.3, bomber: 0.15, escort: 0.3 },
   'Soviet Union': { infantry: 0.6, armour: 0.3, fighter: 0.3 },
 };
+/**
+ * Arms for China (1.8), in sets of equipment a month: from the Soviet Union from late 1937 until
+ * Germany invaded it (about 900 aircraft, 1,100 guns and tens of thousands of machine guns, with
+ * Soviet volunteer pilots), and from the United States under Lend-Lease from May 1941, over the
+ * Burma Road and later by air over "the Hump" of the Himalayas. China's own arsenals were small,
+ * and most of them stood in the cities Japan took.
+ */
+export const CHINA_AID: { by: string; from: string; until: string; goods: Partial<Record<LineKind, number>> }[] = [
+  { by: 'Soviet Union', from: '1937-11-01', until: '1941-06-22', goods: { infantry: 1, artillery: 0.3, fighter: 0.2 } },
+  { by: 'United States', from: '1941-05-06', until: '1946-01-01', goods: { infantry: 1.2, artillery: 0.3, fighter: 0.2 } },
+];
 /**
  * Italy changes sides. From 25 July 1943, once the Allies stand on Italian soil in Europe (or
  * Italy has lost Libya and its people have had enough), the King dismisses Mussolini. Six weeks
@@ -152,6 +168,8 @@ const eastFront = (d: DipDraft): string =>
       : d.capitulated.includes('Soviet Union')
         ? 'The Soviet Union has already been beaten.'
         : 'Germany and the Soviet Union are not at war.';
+/** Soviet divisions in the Far East (1.8): on the map beyond the old one. */
+const farEastCount = (d: DipDraft): number => d.units.filter((u) => u.owner === 'Soviet Union' && afar(u.owner, u.at)).length;
 const spainLine = (d: DipDraft): string =>
   ({ peace: 'There is no civil war in Spain.', war: `The war in Spain is being fought, and ${d.story.spain.balance > 0 ? 'the Nationalists are' : 'the Republic is'} ahead.`, nationalist: 'Franco has won the war in Spain.', republic: 'The Spanish Republic has survived.' })[d.story.spain.state];
 const finance = (d: DipDraft, name: string): string => {
@@ -206,9 +224,19 @@ const COMPARE: Record<string, Compare> = {
   'lend-lease': (d) => (fighting(d, 'Germany', 'United Kingdom') ? 'American equipment now reaches Britain every month.' : 'Britain is not at war with Germany, so no American aid is flowing.'),
   balkans: (d) => `${status(d, 'Yugoslavia')}${fighting(d, 'Germany', 'Yugoslavia') ? ' and at war with Germany' : ''}; ${status(d, 'Greece').replace(/^Greece/, 'Greece')}${fighting(d, 'Germany', 'Greece') ? ' and at war with Germany' : ''}.`,
   barbarossa: eastFront,
-  'atlantic-charter': () => 'The United States is not on this game\'s map. Its help reaches Britain and the Soviet Union as Lend-Lease while they fight Germany.',
+  xian: (d) => also(allied(d.diplomacy, 'China', 'Chinese Communists'), 'The Nationalists and the Communists are allies against Japan too.', d.capitulated.includes('China') ? 'China has already been beaten.' : 'The Nationalists and the Communists have not joined forces.'),
+  'marco-polo': (d) => (fighting(d, 'Japan', 'China') ? `Japan and China are at war too. Peking is held by ${holder(d, P('Peiping'))}.` : d.capitulated.includes('China') ? 'China has already been beaten.' : 'Japan and China are at peace.'),
+  shanghai: (d) => (fighting(d, 'Japan', 'China') ? `Japan and China are at war. Shanghai is held by ${holder(d, P('Shanghai'))}.` : 'Japan and China are not at war.'),
+  nanjing: (d) => `Nanjing is held by ${holder(d, P('Kiangsu'))}. ${ATROCITY_LINE}`,
+  'yellow-river': () => ATROCITY_LINE,
+  khasan: (d) => (fighting(d, 'Japan', 'Soviet Union') ? 'Japanese and Soviet troops are fighting on the border too.' : `The Soviet Far East army has ${farEastCount(d)} divisions on the map.`),
+  wuhan: (d) => (fighting(d, 'Japan', 'China') ? `Japan and its allies hold ${pct(lostShare(d, 'China'))} of China's victory points. Wuhan is held by ${holder(d, P('Hupeh'))} and Canton by ${holder(d, P('Kwangtung'))}.` : d.capitulated.includes('China') ? 'China has already been beaten.' : 'Japan and China are not at war.'),
+  'khalkhin-gol': (d) => (fighting(d, 'Japan', 'Mongolia') || fighting(d, 'Manchukuo', 'Mongolia') ? 'The battle on the Khalkhin Gol is being fought too.' : `Eastern Mongolia is held by ${holder(d, P('Eastern Mongolia'))}.`),
+  'china-inflation': (d) => (d.capitulated.includes('China') ? 'China has already been beaten.' : `${finance(d, 'China')} Its prices are ${Math.round(d.economies.China?.priceLevel ?? 100)} against 100 at the start.`),
+  'neutrality-pact': (d) => also(hasPact(d.diplomacy, 'nonAggression', 'Japan', 'Soviet Union'), 'Japan and the Soviet Union have signed their pact too.', fighting(d, 'Japan', 'Soviet Union') ? 'Japan and the Soviet Union are at war.' : 'There is no pact between Japan and the Soviet Union.'),
+  'atlantic-charter': () => 'In Story mode the United States sits out the war in this version. Its help reaches Britain and the Soviet Union as Lend-Lease while they fight Germany.',
   moscow: eastFront,
-  usa: (d) => (d.capitulated.includes('Germany') ? 'Germany has already surrendered.' : 'The United States is not on this game\'s map, so no American army will arrive. Lend-Lease continues.'),
+  usa: (d) => (d.capitulated.includes('Germany') ? 'Germany has already surrendered.' : 'In Story mode the United States sits out the war in this version, so no American army will arrive. Lend-Lease continues.'),
   stalingrad: eastFront,
   'italy-armistice': (d) => (d.capitulated.includes('Italy') ? 'Italy has been beaten too.' : fighting(d, 'Italy', 'United Kingdom') ? `Italy is still in the war. Enemies hold ${pct(lostShare(d, 'Italy'))} of its victory points.` : 'Italy is not at war with Britain.'),
   'd-day': (d) => `Paris is held by ${holder(d, capitalOf('France'))} and Normandy by ${holder(d, P('Normandy'))}.`,
@@ -579,6 +607,10 @@ export function runStory(d: DipDraft, monthEnd: boolean, seed: number): void {
     s.fired = [...s.fired, 'balkan-blitz'];
     for (const name of ['Greece', 'Yugoslavia']) if (alive(d, name) && fighting(d, 'Germany', name)) effect(d, { id: 'shock', country: name, until: d.day + BALKAN_SHOCK.days, attack: BALKAN_SHOCK.power, defence: BALKAN_SHOCK.power, why: name === 'Greece' ? 'most of its army was in Albania facing Italy, and the German armour came round through Yugoslavia' : 'its army was spread along every border, and was cut to pieces in days' });
   }
+  // China's army (1.8): huge, but short of everything. Most divisions had no artillery to speak of,
+  // too few rifles and little ammunition, and many were warlord armies loyal to their own generals.
+  if (on('1936-01-01') && alive(d, 'China')) for (const [name, x] of CHINA_ARMIES) if (alive(d, name)) effect(d, { id: 'ill-armed', country: name, until: dayOf(d.startDate, '1946-01-01'), attack: x.attack, defence: x.defence, why: x.why });
+
   // The Red Army after the Terror.
   if (on(PURGE.from) && alive(d, 'Soviet Union') && governmentOf(d, 'Soviet Union') === 'communist')
     effect(d, { id: 'purge', country: 'Soviet Union', until: dayOf(d.startDate, PURGE.to), attack: PURGE.attack, defence: PURGE.defence, why: 'most senior commanders were shot or dismissed in 1937 and 1938' });
@@ -622,6 +654,18 @@ export function runStory(d: DipDraft, monthEnd: boolean, seed: number): void {
       if (!s.fired.includes(`lend-lease:${name}`)) {
         s.fired = [...s.fired, `lend-lease:${name}`];
         note(d, 'info', `Lend-Lease: American equipment begins to reach ${name} every month`, [name]);
+      }
+    }
+  }
+
+  // Arms for China, once a month, while it fights Japan.
+  if (monthEnd && d.economies.China && alive(d, 'China') && fighting(d, 'China', 'Japan')) {
+    for (const aid of CHINA_AID) {
+      if (d.day < dayOf(d.startDate, aid.from) || d.day >= dayOf(d.startDate, aid.until) || !alive(d, aid.by) || fighting(d, aid.by, 'China')) continue;
+      for (const [k, n] of Object.entries(aid.goods) as [LineKind, number][]) d.economies.China.stock[k] += n;
+      if (!s.fired.includes(`china-aid:${aid.by}`)) {
+        s.fired = [...s.fired, `china-aid:${aid.by}`];
+        note(d, 'info', `${aid.by === 'Soviet Union' ? 'Soviet' : 'American'} arms begin to reach China every month`, ['China']);
       }
     }
   }
@@ -777,13 +821,37 @@ function italyChangesSides(d: DipDraft): void {
   }
 }
 
-/** Once a month: Soviet divisions go east to face Japan, or come back west (see FAR_EAST). */
+/**
+ * Where the Soviet Far East army stands once Japan is on the map (1.8): along the borders of
+ * Manchukuo and Korea, and (while Mongolia is an ally) in eastern Mongolia, as the 57th Special
+ * Corps did from 1937. Each new division goes to the place with the most room for its share.
+ */
+const FAR_EAST_POSTS: [string, number][] = [['Primorye', 0.3], ['Khabarovsk', 0.2], ['Chita', 0.25], ['Buryatia', 0.1], ['Eastern Mongolia', 0.15]];
+function farEastPost(d: DipDraft, name: string): number | null {
+  let best: number | null = null;
+  let bestScore = Infinity;
+  for (const [place, share] of FAR_EAST_POSTS) {
+    const p = P(place);
+    if (d.controller[p] !== name && !(d.controller[p] === 'Mongolia' && allied(d.diplomacy, name, 'Mongolia'))) continue;
+    const score = d.units.filter((u) => u.at === p).length / share;
+    if (score < bestScore) (bestScore = score), (best = p);
+  }
+  return best;
+}
+
+/**
+ * Once a month: Soviet divisions go east to face Japan, or come back west (see FAR_EAST). With
+ * Japan on the map (1.8) they go to Siberia and Mongolia (FAR_EAST_POSTS) and stand there, where
+ * Japan can attack them, and those that come back west in 1941 are taken from there.
+ */
 function farEast(d: DipDraft): void {
   const s = d.story;
   const name = 'Soviet Union';
   if (!alive(d, name) || governmentOf(d, name) !== 'communist' || d.day < dayOf(d.startDate, FAR_EAST.from)) return;
-  const away = s.farEast ?? 0;
-  const mine = d.units.filter((u) => u.owner === name);
+  const onMap = alive(d, 'Japan');
+  const east = onMap ? d.units.filter((u) => u.owner === name && afar(name, u.at)) : [];
+  const away = onMap ? east.length : s.farEast ?? 0;
+  const mine = d.units.filter((u) => u.owner === name && !afar(name, u.at));
   const fightingMajor = d.wars.some((k) => k.split('|').includes(name) && k.split('|').some((x) => x !== name && isMajor(x)));
   if (d.day < dayOf(d.startDate, FAR_EAST.until)) {
     const want = Math.floor(FAR_EAST.share * (mine.length + away)) - away;
@@ -795,6 +863,25 @@ function farEast(d: DipDraft): void {
       .sort((a, b) => b.id - a.id)
       .slice(0, want);
     if (!going.length) return;
+    if (onMap) {
+      // By the Trans-Siberian railway to the borders of Manchukuo and Mongolia.
+      let sent = 0;
+      for (const u of going) {
+        const to = farEastPost(d, name);
+        if (to === null) break;
+        u.at = to;
+        u.path = [];
+        u.progress = 0;
+        u.dugIn = 0;
+        u.via = undefined;
+        sent++;
+      }
+      if (sent && !s.fired.includes('far-east')) {
+        s.fired = [...s.fired, 'far-east'];
+        note(d, 'info', `After the fighting with Japan at Lake Khasan, the Soviet Union keeps a quarter of its army in the Far East, facing Manchukuo (${away + sent} divisions so far)`, [name]);
+      }
+      return;
+    }
     const ids = new Set(going.map((u) => u.id));
     d.units = d.units.filter((u) => !ids.has(u.id));
     s.farEast = away + going.length;
@@ -806,6 +893,8 @@ function farEast(d: DipDraft): void {
   }
   // From the autumn of 1941: the Siberian divisions come west in two halves, if there is a great war to fight. The rest stay.
   if (!away || !fightingMajor || s.fired.includes('siberians-2')) return;
+  // Not while Japan is fighting the Soviet Union itself.
+  if (onMap && fighting(d, name, 'Japan')) return;
   const at = musterOf(d, name);
   if (at === null) return;
   // Each half is a fifth of the Far East army as it stood before the first left.
@@ -814,6 +903,24 @@ function farEast(d: DipDraft): void {
   const n = Math.min(away, Math.round(first ? half * away : (half / (1 - half)) * away));
   s.fired = [...s.fired, first ? 'siberians-1' : 'siberians-2'];
   if (!n) return;
+  if (onMap) {
+    // The rested ones, from the posts with the most divisions, come west by the railway in time for Moscow.
+    const count = new Map<number, number>();
+    for (const u of east) count.set(u.at, (count.get(u.at) ?? 0) + 1);
+    const coming = east
+      .filter((u) => !u.path.length && !u.sea && !u.landing && u.type === 'infantry')
+      .sort((a, b) => (count.get(b.at) ?? 0) - (count.get(a.at) ?? 0) || b.organisation - a.organisation || a.id - b.id)
+      .slice(0, n);
+    for (const u of coming) {
+      u.at = at;
+      u.path = [];
+      u.progress = 0;
+      u.dugIn = 0;
+      u.via = undefined;
+    }
+    note(d, 'info', `Siberian divisions reach ${PROVINCES[at].name}: Japan will not attack, so ${coming.length} divisions of the Far East army come west`, [name]);
+    return;
+  }
   for (let i = 0; i < n; i++) d.units.push({ id: d.nextUnitId++, owner: name, type: 'infantry', at, strength: 100, organisation: 100, path: [], progress: 0, dugIn: 0, supply: 1 });
   s.farEast = away - n;
   note(d, 'info', `Siberian divisions reach ${PROVINCES[at].name}: Japan will not attack, so ${n} divisions of the Far East army come west`, [name]);

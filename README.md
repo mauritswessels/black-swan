@@ -4,11 +4,16 @@ A grand-strategy game set in the world of 1936. You lead a real country through 
 the war that followed, and face what its leaders faced: armies, factories, money, allies and
 public support. It is built to teach the history and the economics as you play.
 
+> **Version 1.8: the war in China.** In Story mode Japan, China, the Chinese Communists,
+> Manchukuo and Mongolia now play their part: the Xi'an Incident, the Marco Polo Bridge, the
+> landings at Shanghai and Canton, the border battles with the Red Army at Lake Khasan and
+> Khalkhin Gol, and China's war paid for with the printing press. The Soviet Far East army
+> stands on the map facing Japan. America and the Pacific join in a later version.
+>
 > **Version 1.7: the world map.** The map now covers the whole world, about 600 provinces and
-> 56 sea zones, and wraps around: scroll right past Japan and you reach California. In Story
-> mode the war in Europe plays as before while the rest of the world sits out the war for now
-> (Japan, America and China join in later versions); in Free-for-all every one of the 71
-> countries plays. Games saved before 1.7 still load, as Europe-only games.
+> 56 sea zones, and wraps around: scroll right past Japan and you reach California. In
+> Free-for-all every one of the 71 countries plays. Games saved before 1.7 still load, as
+> Europe-only games.
 >
 > **Version 1.2.** The finished Mac app, now with a front line that moves inside each province. Lead one of six great powers in Story mode, or any
 > country with an army in Free-for-all, from 1936 or September 1939: armies, a navy and air force,
@@ -293,8 +298,9 @@ src/sim/          the game engine: pure TypeScript, no UI, fully testable
                   and the conditions that let the player change it
   story.ts        Story mode: history cards, decisions on real dates, Spain, Vichy,
                   Lend-Lease, surprise and the purge, the Far East army, Italy's change
-                  of sides, chapters, how a game ends
-  operations.ts   the timetable of real expeditions and landings an AI Britain carries out
+                  of sides, arms for China, chapters, how a game ends
+  operations.ts   the timetable of real expeditions and landings an AI country carries out,
+                  how far Japan's armies go into China by date, and the borders Japan watches
   scenario.ts     starting a game: the 1936 and September 1939 starts, and Free-for-all
   chapters.ts     the three chapters and each country's objectives
   opportunist.ts  Free-for-all: AI countries that look after themselves
@@ -320,7 +326,7 @@ src/sim/          the game engine: pure TypeScript, no UI, fully testable
   testwar.ts      AI against AI test wars, used by the balance report
   map.ts          the provinces (the 280 of Europe first, then the world), distances,
                   marching speeds and route finding
-  countries.ts    the 31 countries of 1936, their starting armies and their industry
+  countries.ts    the 71 countries of 1936, their starting armies and their industry
   types.ts        the shapes of all engine data
   rng.ts          seeded random numbers (same seed = same game)
 src/content/map/  the 1936 map data (built by scripts/build-map.mjs)
@@ -381,9 +387,11 @@ through the middle of a modern region, and those cuts, are therefore approximate
 - The colonies and the Asian lands of the countries already on the Europe-only map (British
   India, French Indochina, Soviet Siberia and so on) hold none of their owners' industry or
   people yet, start without their divisions, and stay with their owner if it surrenders, so
-  that the war in Europe plays as it did in 1.6. The AI fights no war in them, ships its
-  divisions over the European seas only, and supplies them on their own: a colony's depot
-  feeds the colonies, not the homeland.
+  that the war in Europe plays as it did in 1.6. In a war between European countries the AI
+  fights no war in them, ships its divisions over the European seas only, and supplies them on
+  their own: a colony's depot feeds the colonies, not the homeland. Since 1.8 a European
+  country at war with an Asian one (the Soviet Union against Japan) fights that war with the
+  divisions it has beyond the old map, and its war in Europe with the rest.
 - Terrain is a first pass and army sizes are rough; both get tuned in later stages.
 
 ## Plan
@@ -392,8 +400,8 @@ Version 1.0 completes the plan, 1.1 fixes the war economy, 1.2 makes the front m
 each province, 1.3 adds armies with Hold and Push orders, 1.4 the right-click attack menu
 for land, sea and air, 1.4.1 makes Poland hold out about as long as it really did, 1.5
 brings the finer map of 280 provinces and deep attacks, 1.6 is a balance pass so that the
-war in Europe lasts about as long as it really did, and 1.7 the world map (see CHANGELOG.md).
-Next: Japan, America and China join the war in Story mode (the rest of Stage M), then playing
+war in Europe lasts about as long as it really did, 1.7 the world map and 1.8 the war in China
+(see CHANGELOG.md). Next: America and the Pacific join the war in Story mode (the rest of Stage M), then playing
 against friends over the internet (the engine is already deterministic, with a fingerprint
 check for it).
 

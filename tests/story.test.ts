@@ -4,7 +4,7 @@ import { AGENDA } from '../src/sim/agenda';
 import { CHAPTERS } from '../src/sim/chapters';
 import { hasPact } from '../src/sim/diplomacy';
 import { advance } from '../src/sim/game';
-import { provinceByName } from '../src/sim/map';
+import { afar, provinceByName } from '../src/sim/map';
 import { combatEdges, WINTER_ATTACK } from '../src/sim/mods';
 import { report, scores } from '../src/sim/report';
 import { newGame, PRELUDE_DAYS } from '../src/sim/scenario';
@@ -163,12 +163,29 @@ describe('the story led by the AI (bot playtest, 1936 to the end of 1941)', () =
     expect(news(end).some((t) => /Lend-Lease: American equipment begins to reach the United Kingdom/.test(t))).toBe(true);
   });
 
-  it('keeps a quarter of the Red Army in the Far East until the autumn of 1941, then brings some of it west', () => {
+  it('keeps a quarter of the Red Army in the Far East, on the map facing Japan, until the autumn of 1941, then brings some of it west', () => {
     const red = (w: World) => w.units.filter((u) => u.owner === 'Soviet Union').length;
-    expect(mid.story.farEast ?? 0).toBeGreaterThan(0.2 * red(mid));
+    const east = (w: World) => w.units.filter((u) => u.owner === 'Soviet Union' && afar(u.owner, u.at)).length;
+    expect(mid.story.farEast ?? 0).toBe(0);
+    expect(east(mid)).toBeGreaterThan(0.2 * red(mid));
     expect(red(mid)).toBeLessThan(380);
     expect(news(end).some((t) => /Siberian divisions reach Moscow/.test(t))).toBe(true);
-    expect(end.story.farEast ?? 0).toBeLessThan(mid.story.farEast ?? 0);
+    expect(east(end)).toBeLessThan(east(mid));
+  });
+
+  it('fights the war in China: Japan takes the coast, China fights on from the interior and prints money', () => {
+    expect(news(end).some((t) => /Xi'an Incident/.test(t))).toBe(true);
+    expect(atWar(end, 'Japan', 'China')).toBe(true);
+    expect(end.capitulated).not.toContain('China');
+    expect(end.capitulated).not.toContain('Chinese Communists');
+    for (const p of ['Peiping', 'Shanghai', 'Kiangsu']) expect(end.controller[id(p)], p).toBe('Japan');
+    expect(end.controller[id('Chungking')]).toBe('China');
+    expect(end.economies.China.priceLevel).toBeGreaterThan(250);
+    // The border wars with the Soviet Union ended in a ceasefire, and in 1941 the two signed a neutrality pact.
+    expect(news(end).some((t) => /Lake Khasan/.test(t))).toBe(true);
+    expect(news(end).some((t) => /Khalkhin Gol/.test(t))).toBe(true);
+    expect(atWar(end, 'Japan', 'Soviet Union')).toBe(false);
+    expect(hasPact(end.diplomacy, 'nonAggression', 'Japan', 'Soviet Union')).toBe(true);
   });
 
   it('Norway holds out for weeks with British help, and the Soviet Union fights on through 1941', () => {

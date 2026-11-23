@@ -55,8 +55,8 @@ export const COUNTRIES: Country[] = [
   c('LIT', 'Lithuania', 'Lithuanian', 'authoritarian', [3, 0, 0], [1, 1, 2.5, 0, 0]),
   c('EGY', 'Egypt', 'Egyptian', 'authoritarian', [2, 0, 0], [2, 1, 16, 0, 0]),
   c('IRQ', 'Iraq', 'Iraqi', 'authoritarian', [2, 0, 0], [1, 1, 3.5, 0, 5]),
-  // The rest of the world (1.7). In Story mode they sit out the war for now ("asleep", world.ts);
-  // in Free-for-all they play like everyone else. America's huge peacetime industry had almost no
+  // The rest of the world (1.7). In Story mode most of them sit out the war for now ("asleep",
+  // world.ts), all but the five of East Asia (EAST_ASIA, 1.8); in Free-for-all they play like everyone else. America's huge peacetime industry had almost no
   // arms factories; Japan's army was small but its war industry large for its size; China had
   // half a billion people and very little industry.
   c('USA', 'United States', 'American', 'democracy', [10, 0, 1], [66, 4, 128, 50, 70]),
@@ -105,6 +105,13 @@ export const COUNTRIES: Country[] = [
 export const EUROPE_COUNTRIES = 31;
 /** The countries that joined with the world map of version 1.7. */
 export const WORLD_COUNTRIES: string[] = COUNTRIES.slice(EUROPE_COUNTRIES).map((c) => c.name);
+/**
+ * The countries of the war in China and on the Soviet border (version 1.8): in Story mode they
+ * are awake from the start. The rest of the world still sits out the war (World.asleep).
+ */
+export const EAST_ASIA: string[] = ['Japan', 'China', 'Manchukuo', 'Chinese Communists', 'Mongolia'];
+/** The countries asleep at the start of a new Story game. */
+export const STORY_ASLEEP: string[] = WORLD_COUNTRIES.filter((c) => !EAST_ASIA.includes(c));
 
 export const countryByName = (name: string): Country => {
   const found = COUNTRIES.find((k) => k.name === name);

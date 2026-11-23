@@ -12,12 +12,12 @@
  * game: until world tension reaches 50).
  */
 import { cannotRaiseWing } from './air';
-import { BUILDERS_PER_PROJECT, cannotRaise, conscriptionBlocked, CONSCRIPTION, economyView, factorySite, FORCE_UPKEEP, LINE_KINDS, MEN_PER_DIVISION, monthEnds, payLevel, PLANE_KINDS, tallies, TAX_MIN, UNIT_TYPES, UPKEEP, WAR_UPKEEP, type Tally } from './economy';
+import { BUILDERS_PER_PROJECT, cannotRaise, CUSTOMS_STATE, conscriptionBlocked, CONSCRIPTION, economyView, factorySite, FORCE_UPKEEP, LINE_KINDS, MEN_PER_DIVISION, monthEnds, payLevel, PLANE_KINDS, tallies, TAX_MIN, UNIT_TYPES, UPKEEP, WAR_UPKEEP, type Tally } from './economy';
 import { isMajor, MAJORS } from './diplomacy';
-import { PROVINCES } from './map';
+import { afar, PROVINCES } from './map';
 import { HOME_ZONES } from './sea';
 import { supplyCapacity } from './supply';
-import { atWar, enemiesOf, warKey } from './war';
+import { atWar, enemiesOf, realEnemiesOf, warKey } from './war';
 import { cannotStartPlan, plansFor } from './plans';
 import { cannotResearch, TECHS, yearAt, type Branch, type Tech } from './research';
 import type { Government, LineKind, Order, UnitType, World } from './types';
@@ -42,7 +42,7 @@ const totalWar = (w: World, country: string, t: Tally): boolean =>
   w.economies[country]?.government === 'communist' &&
   t.homeLost >= TOTAL_WAR_LOST &&
   // ...but only up to what its land can feed: beyond that, new divisions would only starve in the crowd.
-  w.units.filter((u) => u.owner === country).length < TOTAL_WAR_FEED * PROVINCES.reduce((a, p) => a + (w.controller[p.id] === country ? supplyCapacity(p.id) : 0), 0);
+  w.units.filter((u) => u.owner === country && !afar(country, u.at)).length < TOTAL_WAR_FEED * PROVINCES.reduce((a, p) => a + (w.controller[p.id] === country ? supplyCapacity(p.id) : 0), 0);
 /** Share of the supply capacity of its land (supply.ts) up to which a country at total war forms divisions. */
 const TOTAL_WAR_FEED = 0.9;
 /** Share of its home victory points in enemy hands that makes a war one for survival: a border province or two is not enough. */
@@ -119,7 +119,10 @@ export function aiEconomyOrders(w: World, country: string, tally?: Tally): Order
 
   // New divisions, as long as there are men for them and money to keep them.
   const total = v.atWar && totalWar(w, country, t);
-  const prudence = Math.max(0, Math.min(1, 1 - (e.inflation - CAREFUL_INFLATION) / (RECKLESS_INFLATION - CAREFUL_INFLATION)));
+  // A government that has lost its ports and its taxes with them (economy.ts CUSTOMS_STATE) keeps raising divisions whatever
+  // it does to prices, as China's did: it had nothing else to fight with.
+  const desperate = !!CUSTOMS_STATE[country] && v.atWar && t.homeLost > 0;
+  const prudence = desperate ? 1 : Math.max(0, Math.min(1, 1 - (e.inflation - CAREFUL_INFLATION) / (RECKLESS_INFLATION - CAREFUL_INFLATION)));
   const armyLimit = (total ? TOTAL_WAR_DEFICIT : v.atWar ? WAR_ARMY_DEFICIT : peaceDeficit) * v.nominalGDP * prudence;
   // The divisions already in the field come first: new ones are raised only from men their refits
   // do not need (REFIT_FIRST of what it would take to bring every division back to full strength).
@@ -130,7 +133,8 @@ export function aiEconomyOrders(w: World, country: string, tally?: Tally): Order
   let refit = 0;
   let strength = 0;
   let count = 0;
-  for (const u of w.units) if (u.owner === country) (refit += ((100 - u.strength) / 100) * MEN_PER_DIVISION), (strength += u.strength), count++;
+  // The Soviet Far East army (1.8) is not part of the army that fights in Europe.
+  for (const u of w.units) if (u.owner === country && !afar(country, u.at)) (refit += ((100 - u.strength) / 100) * MEN_PER_DIVISION), (strength += u.strength), count++;
   // A country fighting for its own soil raises every division it can instead, as the Soviet Union did in 1941.
   const worn = count && t.homeLost === 0 ? Math.max(0, Math.min(1, (REFIT_FROM[0] - strength / count) / (REFIT_FROM[0] - REFIT_FROM[1]))) : 0;
   let manpower = e.manpower - REFIT_FIRST * worn * refit;
@@ -168,7 +172,7 @@ export function aiEconomyOrders(w: World, country: string, tally?: Tally): Order
 
   // Rationing when the shops are emptying or prices are running away; lifted once things are calm.
   // A war against a great power means rationing from the start, as in every warring country after 1939.
-  const greatWar = enemiesOf(w, country).some(isMajor);
+  const greatWar = realEnemiesOf(w, country).some(isMajor);
   if (!e.rationing && (v.shortage > 0.1 || (v.atWar && (e.inflation > 15 || greatWar)))) orders.push({ type: 'setRationing', country, on: true });
   else if (e.rationing && !v.atWar && v.shortage === 0 && e.inflation < 5) orders.push({ type: 'setRationing', country, on: false });
 
@@ -183,7 +187,7 @@ export function aiEconomyOrders(w: World, country: string, tally?: Tally): Order
     return home.filter((p) => w.controller[p.id] === x).length >= 0.7 * home.length;
   };
   const invaded = PROVINCES.some((p) => w.owner[p.id] === country && w.controller[p.id] !== country && atWar(w, country, w.controller[p.id]));
-  const longWar = invaded || enemiesOf(w, country).some((x) => (isMajor(x) && standing(x)) || w.day - (w.diplomacy.warStart[warKey(country, x)] ?? w.day) >= LONG_WAR);
+  const longWar = invaded || realEnemiesOf(w, country).some((x) => (isMajor(x) && standing(x)) || w.day - (w.diplomacy.warStart[warKey(country, x)] ?? w.day) >= LONG_WAR);
   // Armed neutrality: once the great powers are at war with each other, a country at peace
   // calls up its reserves too, as Belgium, the Netherlands, Switzerland, Sweden and Norway did in
   // September 1939.

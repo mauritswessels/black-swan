@@ -264,6 +264,12 @@ export interface SeaPlan {
 
 /** Share of its army a country will send overseas. */
 export const EXPEDITION_SHARE = 0.12;
+/**
+ * Island empires whose army fights overseas as a matter of course (1.8): Japan's army was raised
+ * to fight in Manchuria and China, and from 1937 nearly all of it was on the mainland.
+ */
+export const OVERSEAS_SHARE: Record<string, number> = { Japan: 0.8 };
+export const expeditionShare = (country: string): number => OVERSEAS_SHARE[country] ?? EXPEDITION_SHARE;
 /** Divisions sent by sea in one day, at most. */
 const SHIPPED_PER_DAY = 3;
 
@@ -279,7 +285,7 @@ export function seaOrders(plan: SeaPlan): Order[] {
   const mine = w.units.filter((u) => u.owner === country);
   // At most an eighth of the army goes overseas, and never the last division in a province.
   const abroad = mine.filter((u) => u.sea || u.landing || w.owner[u.at] !== country).length;
-  const room = (plan.abroadCap ?? Math.floor(EXPEDITION_SHARE * mine.length)) - abroad;
+  const room = (plan.abroadCap ?? Math.floor(expeditionShare(country) * mine.length)) - abroad;
   // A planned landing goes ahead even when other expeditions have used up the share.
   const planned = Math.max(0, ...(plan.landings ?? []).map((o) => o.size), ...(plan.helps ?? []).map((o) => o.follow));
   if (room <= 0 && !planned) return orders;

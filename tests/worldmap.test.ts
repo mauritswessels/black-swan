@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COUNTRIES, EUROPE_COUNTRIES, WORLD_COUNTRIES } from '../src/sim/countries';
+import { COUNTRIES, EUROPE_COUNTRIES, STORY_ASLEEP, WORLD_COUNTRIES } from '../src/sim/countries';
 import { cannotDeclare, capitulate, wake } from '../src/sim/diplomacy';
 import { daysToEnter, EUROPE_SIZE, findRoute, OUTPOST, PROVINCES, provinceByName } from '../src/sim/map';
 import { newGame } from '../src/sim/scenario';
@@ -47,17 +47,20 @@ describe('the world map (1.7)', () => {
     expect(OUTPOST[id('Tokyo')]).toBe(false);
   });
 
-  it('places the new countries with their 1936 armies, and in Story mode keeps them out of the war', () => {
+  it('places the new countries with their 1936 armies, and in Story mode keeps all but East Asia out of the war', () => {
     const w = newWorld('story', 'asleep');
-    expect(w.asleep).toEqual(WORLD_COUNTRIES);
+    expect(w.asleep).toEqual(STORY_ASLEEP);
+    expect(w.asleep).not.toContain('Japan');
+    expect(w.asleep).toContain('United States');
     expect(w.units.filter((u) => u.owner === 'Japan')).toHaveLength(24);
     expect(w.units.filter((u) => u.owner === 'China')).toHaveLength(83);
     expect(w.fleets.some((f) => f.owner === 'Japan' && f.zone === 'japanwaters')).toBe(true);
-    expect(cannotDeclare(w, 'Soviet Union', 'Japan')).toMatch(/stays out of the war/);
+    expect(cannotDeclare(w, 'Soviet Union', 'United States')).toMatch(/stays out of the war/);
     // Asleep countries do not run their economies.
     let later = w;
     for (let d = 0; d < 40; d++) later = step(later);
-    expect(later.economies.Japan.treasury).toBe(w.economies.Japan.treasury);
+    expect(later.economies['United States'].treasury).toBe(w.economies['United States'].treasury);
+    expect(later.economies.Japan.treasury).not.toBe(w.economies.Japan.treasury);
     expect(later.economies.Germany.treasury).not.toBe(w.economies.Germany.treasury);
   });
 

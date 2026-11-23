@@ -45,7 +45,7 @@
  *                                some of them down: 0.15 x fighters / (1 + fighters) a day.
  */
 import { COUNTRIES } from './countries';
-import { distanceKm, PROVINCES } from './map';
+import { distanceKm, EUROPE_SIZE, PROVINCES } from './map';
 import { modsOf, type Mods } from './mods';
 import { logForce, type ForceDraft } from './navy';
 import { Rng } from './rng';
@@ -266,7 +266,7 @@ export function bombTarget(w: AirView & Pick<World, 'factories' | 'bombed'>, win
 }
 
 /** One day of the war in the air. Call it before the land battles; `air` is today's picture. */
-export function runAir(d: ForceDraft, rng: Rng, air: AirPicture, friends: Map<string, Set<string>>, sea: { power: Map<string, number>[] }): void {
+export function runAir(d: ForceDraft, europe: Rng, air: AirPicture, friends: Map<string, Set<string>>, sea: { power: Map<string, number>[] }, far: Rng = europe): void {
   const mods = modCache(d.economies);
   // Repairs to bombed factories.
   for (const key of Object.keys(d.bombed)) {
@@ -307,6 +307,8 @@ export function runAir(d: ForceDraft, rng: Rng, air: AirPicture, friends: Map<st
           if (apart <= range + reach) threat += eff(f);
         } else if ((f.owner === wing.owner || friends.get(wing.owner)?.has(f.owner)) && apart <= reach) cover += eff(f);
       }
+      // Air wings based beyond the Europe-only map have dice of their own (1.8).
+      const rng = wing.base >= EUROPE_SIZE ? far : europe;
       let lost = threat > 0 ? (AIR_LOSS * threat * (0.7 + 0.6 * rng.next())) / (1 + threat + cover) : 0;
 
       if (wing.mission === 'strategic') {

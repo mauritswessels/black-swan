@@ -35,17 +35,17 @@
  *      division about to be overrun on a foreign shore is taken off by sea.
  */
 import { ATTACK_WIDTH, ATTACK_WIDTH_PER_EXTRA_DIRECTION, attackPower, defencePower, DEFENCE_WIDTH, STATS } from './combat';
-import { daysToEnter, distanceKm, EUROPEAN, OUTPOST, PROVINCES } from './map';
+import { daysToEnter, distanceKm, EUROPE_SIZE, EUROPEAN, OUTPOST, PROVINCES } from './map';
 import { combatEdges } from './mods';
 import { linkedProvinces, supplyCapacity } from './supply';
 import type { Order, Unit, World } from './types';
-import { EXPEDITION_SHARE, seaOrders } from './aiForces';
+import { expeditionShare, OVERSEAS_SHARE, seaOrders } from './aiForces';
 import { allianceMap, isMajor } from './diplomacy';
 import { musterPoint } from './economy';
 import { navalPicture } from './navy';
 import { COAST, europeanSeas, seaRoute, type SeaPicture } from './sea';
-import { enemiesOf } from './war';
-import { activeOperations, endedOperations, landedOperations, type Operation } from './operations';
+import { enemiesOf, warKey } from './war';
+import { activeOperations, endedOperations, landedOperations, reachOf, watchOf, type Operation } from './operations';
 
 export interface AiOptions {
   /** Attack when the estimated odds of outlasting the defenders are at least this. */
@@ -58,7 +58,24 @@ export interface AiOptions {
   planned?: string[];
   /** Command one army (armies.ts) instead of the whole country: only its divisions, on its one front. */
   army?: ArmyCommand;
+  /** Story mode, a country of the Europe-only map: which of its two wars to fight (see Theatre). Europe if not given. */
+  theatre?: Theatre;
 }
+
+/**
+ * In Story mode a country of the Europe-only map fights two separate wars (1.8): the war in
+ * Europe, with the divisions on that map, and a war beyond it (the Soviet Union against Japan),
+ * with the divisions that stand there. Neither army is sent to the other's war: the Soviet Far
+ * East army stays in Siberia and the army in Europe stays in Europe, as they did until 1945.
+ * In Free-for-all, and for the countries beyond Europe, there is one war, as before.
+ */
+export type Theatre = 'europe' | 'world';
+export const splitTheatres = (w: Pick<World, 'mode'>, country: string): boolean => w.mode === 'story' && EUROPEAN.has(country);
+/** Is this province, or this enemy, part of that theatre? (No theatre: everything is.) */
+export const inTheatre = (t: Theatre | undefined, p: number): boolean => t === undefined || (t === 'europe') === p < EUROPE_SIZE;
+export const foeInTheatre = (t: Theatre | undefined, foe: string): boolean => t === undefined || (t === 'europe') === EUROPEAN.has(foe);
+/** The theatre of a war against this enemy, for a country whose wars are split. */
+export const theatreOf = (foe: string): Theatre => (EUROPEAN.has(foe) ? 'europe' : 'world');
 
 /** What an army pushing toward a target (armies.ts) asks of the commander. */
 export interface ArmyCommand {
@@ -133,21 +150,37 @@ export interface Front {
   share: number;
 }
 
-/** The fronts a country has today, and how its army is shared between them. Exported for tests and the reports. */
-export function frontsOf(w: World, country: string, planned: string[] = []): Front[] {
-  const enemies = new Set(enemiesOf(w, country));
+/**
+ * The fronts a country has today, and how its army is shared between them. Exported for tests and
+ * the reports. With `theatre`, only the fronts of that theatre; a country whose wars are split
+ * (splitTheatres) gets both theatres' fronts when it is not given, each shared out on its own.
+ */
+export function frontsOf(w: World, country: string, planned: string[] = [], theatre?: Theatre): Front[] {
+  if (!splitTheatres(w, country)) return theatreFronts(w, country, planned, undefined);
+  return theatre ? theatreFronts(w, country, planned, theatre) : [...theatreFronts(w, country, planned, 'europe'), ...theatreFronts(w, country, planned, 'world')];
+}
+
+function theatreFronts(w: World, country: string, plannedAll: string[], theatre: Theatre | undefined): Front[] {
+  const enemies = new Set(enemiesOf(w, country).filter((x) => foeInTheatre(theatre, x)));
+  const planned = plannedAll.filter((x) => foeInTheatre(theatre, x));
   const allies = allianceMap(w.diplomacy).get(country);
   // As in aiOrders: in a war of the Europe-only map, outposts take no part.
-  const walled = EUROPEAN.has(country) && [...enemies, ...planned].every((x) => EUROPEAN.has(x));
-  const friendly = (p: number) => (w.controller[p] === country || !!allies?.has(w.controller[p])) && !(walled && OUTPOST[p]);
+  const walled = theatre ? theatre === 'europe' : EUROPEAN.has(country) && [...enemies, ...planned].every((x) => EUROPEAN.has(x));
+  const friendly = (p: number) => (w.controller[p] === country || !!allies?.has(w.controller[p])) && !(walled && OUTPOST[p]) && inTheatre(theatre, p);
   const hostile = (owner: string) => enemies.has(owner);
   const at = unitsByProvince(w);
-  const foes = [...new Set([...enemies, ...planned.filter((x) => !enemies.has(x) && x !== country && !allies?.has(x))])].sort();
+  // Borders it keeps watch on (operations.ts WATCH) are deployed to like a planned war, with a cap.
+  const watch = watchOf(w, country);
+  const watched = [...watch.keys()].filter((x) => foeInTheatre(theatre, x) && !w.capitulated.includes(x));
+  const foes = [...new Set([...enemies, ...[...planned, ...watched].filter((x) => !enemies.has(x) && x !== country && !allies?.has(x))])].sort();
   const waiting = country === 'Germany' && w.story.effects.some((x) => x.id === 'phoney' && x.country === country && x.until >= w.day);
   const fronts: Front[] = [];
   for (const foe of foes) {
     const isPlanned = !enemies.has(foe);
     const oldWar = EUROPEAN.has(country) && EUROPEAN.has(foe);
+    // A border incident (diplomacy.ts) is fought for its few provinces only, by the divisions that stand near.
+    const incident = w.diplomacy.aims[warKey(country, foe)];
+    const wanted = incident?.incident !== undefined ? new Set(incident.provinces) : reachOf(w, country, foe);
     const line: number[] = [];
     const targets = new Set<number>();
     for (const p of PROVINCES) {
@@ -155,9 +188,9 @@ export function frontsOf(w: World, country: string, planned: string[] = []): Fro
       let touches = false;
       for (const n of p.neighbours) {
         // Between two countries of the Europe-only map the AI fights that map's war, as before 1.7: no fronts in their outposts (map.ts), such as British and Italian East Africa.
-        if (w.controller[n] !== foe || (oldWar && (OUTPOST[p.id] || OUTPOST[n]))) continue;
+        if (w.controller[n] !== foe || (oldWar && (OUTPOST[p.id] || OUTPOST[n])) || !inTheatre(theatre, n)) continue;
         touches = true;
-        if (!isPlanned) targets.add(n);
+        if (!isPlanned && (!wanted || wanted.has(n))) targets.add(n);
       }
       if (touches) line.push(p.id);
     }
@@ -183,7 +216,8 @@ export function frontsOf(w: World, country: string, planned: string[] = []): Fro
     // A great power's front takes as many as the line and the provinces behind it can feed, and half as many again in reserve further back.
     // In the phoney war (story.ts) Germany keeps only a screen in the West while it beats Poland, as it did: about 30 divisions.
     const screen = waiting && (foe === 'France' || foe === 'United Kingdom');
-    const want = screen ? guard : Math.max(guard, isMajor(foe) ? Math.round(MAJOR_FRONT_ROOM * room) - helpers : Math.min(room - helpers, Math.ceil(MINOR_FRONT_RATIO * near) + 2 - helpers));
+    let want = screen ? guard : Math.max(guard, isMajor(foe) && !wanted ? Math.round(MAJOR_FRONT_ROOM * room) - helpers : Math.min(room - helpers, Math.ceil(MINOR_FRONT_RATIO * near) + 2 - helpers));
+    if (isPlanned && watch.has(foe) && !planned.includes(foe)) want = Math.min(want, watch.get(foe)!);
     const invaded = [...targets].some((t) => PROVINCES[t].owner === country && w.owner[t] === country);
     fronts.push({ foe, planned: isPlanned, provinces: line, targets: [...targets].sort((a, b) => a - b), depth, near, touching, helpers, room, guard, want, invaded, share: 0 });
   }
@@ -191,7 +225,7 @@ export function frontsOf(w: World, country: string, planned: string[] = []): Fro
   // behind it. Giving the main Soviet front first call made it starve the southern fronts in 1941 and the Caucasus fell.
   const main = fronts.filter((f) => isMajor(f.foe)).sort((a, b) => b.near - a.near)[0];
   if (main) (main.homeFront = main.invaded), (main.invaded = false);
-  share(fronts, w.units.filter((u) => u.owner === country && !u.sea && !u.landing && !u.drop).length);
+  share(fronts, w.units.filter((u) => u.owner === country && !u.sea && !u.landing && !u.drop && inTheatre(theatre, u.at)).length);
   return fronts;
 }
 
@@ -245,12 +279,14 @@ function unitsByProvince(w: World): Map<number, Unit[]> {
 
 export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order[] {
   const boldness = opts.boldness ?? 1.3;
-  const enemies = new Set(enemiesOf(w, country));
   const army = opts.army;
-  const planned = army ? (enemies.has(army.foe) ? [] : [army.foe]) : opts.planned ?? [];
+  // Which of its wars it fights (see Theatre): an army fights the war of its foe.
+  const theatre = splitTheatres(w, country) ? (army ? theatreOf(army.foe) : opts.theatre ?? 'europe') : undefined;
+  const enemies = new Set(enemiesOf(w, country).filter((x) => foeInTheatre(theatre, x)));
+  const planned = (army ? (enemies.has(army.foe) ? [] : [army.foe]) : opts.planned ?? []).filter((x) => foeInTheatre(theatre, x));
   if (!enemies.size && !planned.length) return [];
   const orders: Order[] = [];
-  const everyone = w.units.filter((u) => u.owner === country && (!army || army.units.has(u.id)));
+  const everyone = w.units.filter((u) => u.owner === country && (!army || army.units.has(u.id)) && inTheatre(theatre, u.at));
   if (!everyone.length) return [];
   // Divisions getting ready to sail, or coming ashore, already have their orders.
   const mine = everyone.filter((u) => !u.sea && !u.landing && !u.drop);
@@ -263,8 +299,8 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
   const enemyAt = (p: number) => unitsAt(p).filter((u) => enemies.has(u.owner));
   const mineAt = (p: number) => unitsAt(p).filter((u) => u.owner === country && (!army || army.units.has(u.id)));
   // In a war between countries of the Europe-only map, their outposts (map.ts: Siberia, India...) take no part: the AI fights where it did before 1.7.
-  const walled = EUROPEAN.has(country) && [...enemies, ...planned].every((x) => EUROPEAN.has(x));
-  const friendly = (p: number) => (w.controller[p] === country || !!allies?.has(w.controller[p])) && !(walled && OUTPOST[p]);
+  const walled = theatre ? theatre === 'europe' : EUROPEAN.has(country) && [...enemies, ...planned].every((x) => EUROPEAN.has(x));
+  const friendly = (p: number) => (w.controller[p] === country || !!allies?.has(w.controller[p])) && !(walled && OUTPOST[p]) && inTheatre(theatre, p);
   const phoney = w.story.effects.some((x) => x.id === 'phoney' && x.country === country && x.until >= w.day);
 
   // In a war of the Europe-only map the AI ships its divisions over that map's seas only (sea.ts).
@@ -272,7 +308,7 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
   const sea = () => (seaToday ??= walled ? europeanSeas(navalPicture(w, friends)) : navalPicture(w, friends));
 
   // 1. The fronts.
-  const fronts = frontsOf(w, country, planned).filter((f) => !army || f.foe === army.foe);
+  const fronts = frontsOf(w, country, planned, theatre).filter((f) => !army || f.foe === army.foe);
   // An army has one front, and all of it goes there.
   if (army) for (const f of fronts) f.share = f.want = mine.length;
   const fighting = fronts.filter((f) => !f.planned);
@@ -301,7 +337,7 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
   const inArea = (o: Operation) => mine.filter((u) => o.area.includes(u.sea ? u.sea.to : u.at)).length;
   const abroadNow = mine.filter(isAbroad).length;
   const elsewhere = mine.filter((u) => isAbroad(u) && !opsUnderWay.some((o) => o.area.includes(u.sea ? u.sea.to : u.at))).length;
-  const abroadCap = abroadNow + Math.max(0, Math.floor(EXPEDITION_SHARE * mine.length) - elsewhere) + opsUnderWay.reduce((a, o) => a + Math.max(0, o.follow - inArea(o)), 0);
+  const abroadCap = abroadNow + Math.max(0, Math.floor(expeditionShare(country) * mine.length) - elsewhere) + opsUnderWay.reduce((a, o) => a + Math.max(0, o.follow - inArea(o)), 0);
 
   if (army && !fronts.length) return [];
   if (!fighting.length && enemies.size && !fronts.length) {
@@ -365,7 +401,9 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
     if (ended.some((o) => touches(f, o))) f.share = 0;
     else {
       const o = [...ops, ...ashore].filter((x) => touches(f, x));
-      f.share = Math.min(f.share, o.length ? Math.max(...o.map((x) => x.follow)) : Math.floor(EXPEDITION_SHARE * mine.length));
+      const cap = Math.floor(expeditionShare(country) * mine.length);
+      // An island empire (aiForces.ts OVERSEAS_SHARE) sends its whole share, whatever the operation's own size.
+      f.share = Math.min(f.share, o.length ? Math.max(OVERSEAS_SHARE[country] ? cap : 0, ...o.map((x) => x.follow)) : cap);
     }
   }
   // An expedition called home sails for home.

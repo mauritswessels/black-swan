@@ -14,7 +14,7 @@
  * enter their own land, the land of an ally, or the land of a country they are at war with.
  */
 import { DIG_IN_MAX_DAYS, fightBattles, stillHolding, type Draft } from './combat';
-import { COUNTRIES, WORLD_COUNTRIES } from './countries';
+import { COUNTRIES, STORY_ASLEEP } from './countries';
 import { carryOutAim } from './agenda';
 import { allianceMap, cloneDiplomacy, giveDiplomacyOrder, isDiplomacyOrder, onGovernmentFell, runDiplomacy, startDiplomacy, surrenders, type DipDraft } from './diplomacy';
 import { cloneEconomies, giveEconomyOrder, isEconomyOrder, MEN_PER_DIVISION, monthEnds, moraleOf, onBattleEnded, reinforce, runEconomies, startEconomies, startFactories } from './economy';
@@ -43,6 +43,13 @@ const TYPES: UnitType[] = ['infantry', 'armour', 'artillery'];
 
 /** Share of a country's army that starts overseas (colonies and islands), one division per territory. */
 const OVERSEAS_SHARE = 0.15;
+/**
+ * Divisions that start in an ally's land (1.8): Japan's Kwantung Army in Manchukuo, which Japan
+ * had conquered in 1931 and ruled through a puppet emperor. Infantry, by province name.
+ */
+const START_ABROAD: Record<string, [string, number][]> = {
+  Japan: [['Kirin', 2], ['Fengtien', 2], ['Heilungkiang', 1]],
+};
 
 /**
  * Where a country's divisions start. Most stand in the homeland (the piece of its territory
@@ -85,6 +92,7 @@ function startingUnits(mainRng: Rng, farRng: Rng): Unit[] {
     const total = country.startArmy[0] + country.startArmy[1] + country.startArmy[2];
     const abroad = overseas.length ? Math.round(total * OVERSEAS_SHARE) : 0;
 
+    const kwantung = (START_ABROAD[country.name] ?? []).flatMap(([name, n]) => new Array<number>(n).fill(PROVINCES.find((p) => p.name === name)!.id));
     const placed = new Map<number, number>();
     let k = 0;
     const nextSpot = (): number => {
@@ -101,7 +109,7 @@ function startingUnits(mainRng: Rng, farRng: Rng): Unit[] {
       for (let n = 0; n < count; n++) {
         // Garrisons overseas are infantry, taken from the end of the infantry list.
         const garrison = t === 0 && abroad > 0 && n >= count - abroad;
-        const at = garrison ? overseas[(count - 1 - n) % overseas.length] : nextSpot();
+        const at = t === 0 && n < kwantung.length ? kwantung[n] : garrison ? overseas[(count - 1 - n) % overseas.length] : nextSpot();
         placed.set(at, (placed.get(at) ?? 0) + 1);
         units.push({ id: units.length, owner: country.name, type: TYPES[t], at, strength: 100, organisation: 100, path: [], progress: 0, dugIn: DIG_IN_MAX_DAYS, supply: 1 });
       }
@@ -119,7 +127,8 @@ export function newWorld(mode: Mode, seedText: string, startDate = '1936-01-01',
   const factories = startFactories();
   const forces = startForces();
   const economies = startEconomies({ controller, factories, units, wars: [], fleets: forces.fleets, wings: forces.wings });
-  const asleep = mode === 'story' ? [...WORLD_COUNTRIES] : [];
+  // In Story mode the rest of the world sits out the war, all but East Asia (countries.ts, 1.8).
+  const asleep = mode === 'story' ? [...STORY_ASLEEP] : [];
   return { mode, player, seed, rng: rng.state, day: 0, startDate, units, nextUnitId: units.length, controller, owner: [...controller], diplomacy: startDiplomacy(economies, asleep), wars: [], declaredBy: {}, capitulated: [], asleep, battles: [], nextBattleId: 0, reports: [], economies, factories, ...forces, story: startStory('1936', 'close', seed), replay: startReplay(controller, 0), armies: [], nextArmyId: 0, strikes: [], nextStrikeId: 0 };
 }
 
@@ -249,6 +258,9 @@ export function applyOrders(world: World, orders: Order[]): World {
 /** Advance the world by one day, after applying the orders given today. */
 export function step(world: World, orders: Order[] = []): World {
   const rng = new Rng(world.rng);
+  // The dice for battles beyond the Europe-only map (1.8): their own, made fresh each day from the
+  // seed, so that the war in China cannot change the luck of a battle in Europe.
+  const far = new Rng(seedFrom(`${world.seed}:far:${world.day}`));
   const dd = draftOf(world);
 
   // 1. Orders, then the day's diplomacy: deadlines, cases for war, and once a month the drift of relations.
@@ -284,7 +296,7 @@ export function step(world: World, orders: Order[] = []): World {
   // convoys, air losses, bombing, and divisions sailing.
   dd.forceLog = [...dd.forceLog];
   const seen = pictures(dd, friends);
-  runForces(dd, rng, seen, friends);
+  runForces(dd, rng, seen, friends, far);
   d.units = dd.units;
   d.air = seen.air.battle;
   // Fire support in battles: aimed bombers and ships shelling the coast (forces.ts).
@@ -306,7 +318,7 @@ export function step(world: World, orders: Order[] = []): World {
   d.edges = combatEdges(economies, { effects: dd.story.effects, day: world.day, startDate: world.startDate, armies: dd.armies });
   const known = new Set(d.reports.map((r) => r.id));
   const before = new Map(d.units.map((u) => [u.id, u.strength]));
-  const fought = fightBattles(d, rng);
+  const fought = fightBattles(d, rng, far);
   // Many of the men a battle costs are wounded, not killed or taken prisoner: they come back to the pool from hospital.
   for (const u of d.units) {
     const lost = (before.get(u.id) ?? u.strength) - u.strength;

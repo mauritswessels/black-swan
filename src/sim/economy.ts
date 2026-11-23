@@ -15,14 +15,14 @@
  * top of this file. Nothing here is random.
  */
 import { COUNTRIES } from './countries';
-import { beyond, OUTPOST, PROVINCES } from './map';
-import { seaDependence, SHIP_KINDS } from './sea';
+import { beyond, EUROPEAN, OUTPOST, PROVINCES } from './map';
+import { COAST, seaDependence, SHIP_KINDS } from './sea';
 import { modsOf, type Mods } from './mods';
 import { cannotStartPlan, emptyPlan, planById, type Plan } from './plans';
 import { cannotResearch, emptyResearch, researchSlots, runResearch, techById, yearAt } from './research';
-import type { Economy, FactoryKind, Government, InflationCauses, LineKind, MonthRecord, Order, PlaneKind, ShipKind, Unit, UnitType, World } from './types';
+import type { Economy, FactoryKind, Province, Government, InflationCauses, LineKind, MonthRecord, Order, PlaneKind, ShipKind, Unit, UnitType, World } from './types';
 import { linkedProvinces, supplyCapacity } from './supply';
-import { enemiesOf, warKey } from './war';
+import { enemiesOf, realEnemiesOf, warKey } from './war';
 
 export const UNIT_TYPES: UnitType[] = ['infantry', 'armour', 'artillery', 'airborne'];
 /** The kinds of division a country starts with, in the order of `startArmy` (countries.ts). Nobody had paratroopers in 1936. */
@@ -325,9 +325,27 @@ export interface Tally {
   ships: Record<ShipKind, number>;
   /** Share of its factories put out of action by bombing. */
   bombed: number;
+  /** For a country that lives on its customs (CUSTOMS_STATE): share of its home ports, by victory points, that it no longer holds. */
+  portsLost?: number;
 }
 
-type Holdings = Pick<World, 'controller' | 'factories' | 'units' | 'wars'> & { declaredBy?: World['declaredBy']; owner?: string[]; diplomacy?: { tension: number }; fleets?: World['fleets']; wings?: World['wings']; bombed?: World['bombed']; story?: { farEast?: number } };
+/**
+ * Governments that lived on the ports (1.8). China's government collected little of what the
+ * country produced: the land tax went to the provinces, and most of its own income was customs
+ * duty and the salt tax, collected in the ports, while its bond market was the banks of Shanghai.
+ * Once Japan held the coast, taxes fell by up to `share` and lenders by up to `bonds`, and the
+ * government paid for the war with the printing press: prices rose about 1,500 times between 1937
+ * and 1945, the worst inflation of the war.
+ */
+export const CUSTOMS_STATE: Record<string, { share: number; bonds: number }> = { China: { share: 0.7, bonds: 0.9 } };
+const PORT_CACHE = new Map<string, Province[]>();
+const PORTS_OF = (name: string): Province[] => {
+  let out = PORT_CACHE.get(name);
+  if (!out) PORT_CACHE.set(name, (out = PROVINCES.filter((p) => p.owner === name && COAST[p.id].length > 0)));
+  return out;
+};
+
+type Holdings = Pick<World, 'controller' | 'factories' | 'units' | 'wars'> & { declaredBy?: World['declaredBy']; owner?: string[]; diplomacy?: { tension: number; aims?: Record<string, { incident?: number }> }; fleets?: World['fleets']; wings?: World['wings']; bombed?: World['bombed']; story?: { farEast?: number } };
 
 export function tallies(w: Holdings): Map<string, Tally> {
   const out = new Map<string, Tally>();
@@ -359,6 +377,12 @@ export function tallies(w: Holdings): Map<string, Tally> {
     if (!own) vpLost.set(owner, (vpLost.get(owner) ?? 0) + p.victoryPoints);
   }
   for (const [name, total] of vpHome) get(name).homeLost = total ? (vpLost.get(name) ?? 0) / total : 0;
+  for (const name in CUSTOMS_STATE) {
+    let all = 0;
+    let lost = 0;
+    for (const p of PORTS_OF(name)) (all += p.victoryPoints), (lost += w.controller[p.id] !== name ? p.victoryPoints : 0);
+    if (out.has(name)) get(name).portsLost = all ? lost / all : 0;
+  }
   for (const u of w.units) get(u.owner).divisions[u.type]++;
   // The Soviet army in the Far East is off the map, but it is still paid for (story.ts).
   if (w.story?.farEast) get('Soviet Union').divisions.infantry += w.story.farEast;
@@ -452,7 +476,8 @@ export const moraleOf = (warSupport: number, atWar: boolean): number => (atWar &
 export function economyView(w: Holdings & Pick<World, 'economies'>, country: string, tally?: Tally): EconomyView {
   const e = w.economies[country];
   const t = tally ?? tallies(w).get(country)!;
-  const enemies = enemiesOf(w, country);
+  // A border incident (diplomacy.ts) is not a war the country's people or its treasury know about.
+  const enemies = realEnemiesOf(w, country);
   const atWar = enemies.length > 0;
   const p = e.priceLevel / 100;
   const m = modsOf(e);
@@ -484,7 +509,9 @@ export function economyView(w: Holdings & Pick<World, 'economies'>, country: str
   const imports = e.imports ? (gap(t.steel, steelNeed) * PRICE.steel + gap(t.oil, oilNeed) * PRICE.oil) * p : 0;
   const exports = (gap(steelNeed, t.steel) * PRICE.steel + gap(oilNeed, t.oil) * PRICE.oil) * Math.min(1, EXPORT_SHARE + m.exportShare) * p;
 
-  const taxes = e.taxRate * nominalGDP * (e.rationing ? 1 - BLACK_MARKET_TAX_LOSS * (1 + m.rationingCost) : 1) * (1 + m.taxRevenue);
+  const customs = CUSTOMS_STATE[country];
+  const portsLost = customs ? t.portsLost ?? 0 : 0;
+  const taxes = e.taxRate * nominalGDP * (e.rationing ? 1 - BLACK_MARKET_TAX_LOSS * (1 + m.rationingCost) : 1) * (1 + m.taxRevenue) * (1 - (customs?.share ?? 0) * portsLost);
   const government = GOVERNMENT_SHARE * nominalGDP;
   const upkeep = (UNIT_TYPES.reduce((a, k) => a + t.divisions[k] * UPKEEP[k], 0) + PLANE_KINDS.reduce((a, k) => a + t.wings[k] * FORCE_UPKEEP[k], 0) + SHIP_KINDS.reduce((a, k) => a + t.ships[k] * FORCE_UPKEEP[k], 0)) * (atWar ? WAR_UPKEEP : 1) * payLevel(country) * p;
   const military = FACTORY_COST * milUsed * p;
@@ -510,7 +537,7 @@ export function economyView(w: Holdings & Pick<World, 'economies'>, country: str
   // In wartime bonds sell on patriotism as well as on trust.
   const patriotism = atWar ? 0.7 + (0.6 * e.warSupport) / 100 : 1;
   const forcedSaving = atWar && e.rationing ? FORCED_SAVING * nominalGDP * clamp(1 - Math.max(0, e.inflation - FORCED_SAVING_FROM) / (FORCED_SAVING_GONE_AT - FORCED_SAVING_FROM), 0, 1) : 0;
-  const bondCapacity = BOND_APPETITE * nominalGDP * confidence * (1 + m.bondAppetite) * patriotism + forcedSaving;
+  const bondCapacity = (BOND_APPETITE * nominalGDP * confidence * (1 + m.bondAppetite) * patriotism + forcedSaving) * (1 - (customs?.bonds ?? 0) * portsLost);
 
   const manpowerCap = t.population * 1000 * law.share * (1 + m.manpower);
   const lineRate = {} as Record<LineKind, number>;
@@ -527,7 +554,9 @@ export function economyView(w: Holdings & Pick<World, 'economies'>, country: str
   if (attacked) support('the country was attacked', ATTACKED_SUPPORT);
   if (aggressor) support('a war this country started', AGGRESSOR_SUPPORT[regime]);
   if (!atWar) {
-    const fighting = new Set(w.wars.flatMap((k) => k.split('|')));
+    // Only the wars of Europe alarm a country of Europe (1.8): not Japan's war in China, nor a border incident.
+    const near = EUROPEAN.has(country);
+    const fighting = new Set(w.wars.filter((k) => !w.diplomacy?.aims?.[k]?.incident).flatMap((k) => k.split('|')).filter((c) => !near || EUROPEAN.has(c)));
     support('war elsewhere in Europe', Math.min(ALARM_MAX, ALARM_PER_COUNTRY * fighting.size));
     support('world tension', TENSION_SUPPORT * (w.diplomacy?.tension ?? 0));
     if ([...(NEIGHBOURS.get(country) ?? [])].some((n) => fighting.has(n))) support('a neighbour is at war', ALARM_NEIGHBOUR);
@@ -867,7 +896,7 @@ export interface EconomyDraft {
   owner?: string[];
   /** Countries sitting out the war (World.asleep). */
   asleep?: string[];
-  diplomacy?: { tension: number };
+  diplomacy?: { tension: number; aims?: Record<string, { incident?: number }> };
   startDate: string;
   fleets?: World['fleets'];
   wings?: World['wings'];
@@ -880,7 +909,16 @@ export interface EconomyDraft {
   economies: Record<string, Economy>;
   factories: World['factories'];
   story?: { farEast?: number };
+  mode?: World['mode'];
+  player?: string | null;
 }
+
+/**
+ * Governments that held on through every crisis of the war (1.8). Chiang Kai-shek's government
+ * lost its capital, its ports and its money, and was never overthrown before 1945. In Story mode
+ * the government of an AI country on this list does not fall; a player's still can.
+ */
+export const STEADY_GOVERNMENTS = ['China'];
 
 /** Is the day after `day` the first of a month? */
 export function monthEnds(startDate: string, day: number): boolean {
@@ -1028,7 +1066,8 @@ function closeMonth(d: EconomyDraft, name: string, e: Economy, v: EconomyView): 
   // Three months of crisis and the government falls. Its successor starts with some goodwill,
   // but the national plan is abandoned and the will to fight takes a knock.
   e.crisisMonths = e.stability < CRISIS_STABILITY ? e.crisisMonths + 1 : 0;
-  if (e.crisisMonths >= CRISIS_MONTHS) {
+  const steady = d.mode === 'story' && name !== d.player && STEADY_GOVERNMENTS.includes(name);
+  if (e.crisisMonths >= CRISIS_MONTHS && !steady) {
     e.crisisMonths = 0;
     e.governmentsFallen++;
     e.government = AFTER_A_FALL[e.government];

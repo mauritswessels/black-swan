@@ -61,6 +61,12 @@ export const CARDS: HistoryCard[] = [
     why: 'Austria lost its only protector, and the two dictatorships began to act together.',
   },
   {
+    id: 'xian', date: '1936-12-12', kind: 'event', title: 'The Xi\'an Incident',
+    text: 'Chiang Kai-shek, leader of China\'s Nationalist government, flew to Xi\'an to push his generals into a new attack on the Communists in the north-west. Instead the generals arrested him. After two weeks of talks, in which the Communists took part, he was set free on Christmas Day and the civil war was stopped.',
+    why: 'Japan had taken Manchuria in 1931 and was pressing on north China. From now on the Nationalists and the Communists stood together against Japan, at least on paper: the "United Front".',
+    note: 'In this game the two Chinese governments become allies on 24 December 1936. They stay rivals, and their alliance does not outlast the war with Japan.',
+  },
+  {
     id: 'guernica', date: '1937-04-26', kind: 'atrocity', title: 'The bombing of Guernica',
     text: 'On a market day, German and Italian aircraft fighting for Franco bombed the Basque town of Guernica for about three hours and destroyed most of it. Picasso painted his "Guernica" in the weeks that followed.',
     why: 'It showed the world what bombing a town from the air meant, three years before the Blitz.',
@@ -73,14 +79,47 @@ export const CARDS: HistoryCard[] = [
     note: 'In this game the Terror is not something you can order or prevent. Its effect on the Red Army (a weaker officer corps until 1942) applies whoever leads the Soviet Union.',
   },
   {
+    id: 'marco-polo', date: '1937-07-07', kind: 'event', title: 'Fighting at the Marco Polo Bridge',
+    text: 'Japanese troops on night exercises near the Marco Polo Bridge outside Peking exchanged shots with Chinese soldiers. Both sides sent more troops. This time Chiang Kai-shek decided not to give way, and within weeks the fighting had become a full war, although neither side ever declared it.',
+    why: 'It was the start of the Second World War in Asia, more than two years before Germany invaded Poland. Japan expected to win in three months. The war lasted eight years.',
+    note: 'Historians count the deaths in China between 1937 and 1945 at somewhere between 14 and 20 million, most of them civilians.',
+  },
+  {
+    id: 'shanghai', date: '1937-08-13', kind: 'event', title: 'The battle of Shanghai',
+    text: 'Chiang Kai-shek opened a second front at Shanghai, China\'s greatest city and port, with his best German-trained divisions. Japan landed army after army behind them. After three months of street fighting the Chinese lines broke, and Shanghai fell in November.',
+    why: 'Chiang wanted the world, fighting on its doorstep in the foreign quarters of Shanghai, to see that China would resist. The world watched, but did not help, and China lost its best troops.',
+  },
+  {
+    id: 'nanjing', date: '1937-12-13', kind: 'atrocity', title: 'The Nanjing Massacre',
+    text: 'Japanese troops took Nanjing, China\'s capital. For about six weeks afterwards they killed Chinese prisoners of war and civilians in their tens of thousands and raped tens of thousands of women and girls, while their officers allowed it. A handful of foreigners set up a safety zone in the city and sheltered about 250,000 people.',
+    why: 'It is one of the worst crimes of the war against civilians. It still divides China and Japan today, and some in Japan still deny it.',
+    note: 'The number killed is disputed. The post-war Tokyo tribunal put it at over 200,000, and the Chinese government gives 300,000. Many historians give figures between 100,000 and 200,000; some Japanese historians give lower ones. In the game the capital province is called Kiangsu.',
+  },
+  {
     id: 'anschluss', date: '1938-03-12', kind: 'event', title: 'Germany annexes Austria',
     text: 'After weeks of threats, German troops crossed into Austria without a shot being fired. Austria was declared part of Germany the next day. Attacks on Austrian Jews, and the seizure of their property, began at once.',
     why: 'Germany gained seven million people, Austria\'s gold and its army, and now surrounded Czechoslovakia on three sides.',
   },
   {
+    id: 'yellow-river', date: '1938-06-09', kind: 'atrocity', title: 'The Yellow River flood',
+    text: 'To stop the Japanese advance on Wuhan, Nationalist troops on Chiang Kai-shek\'s orders blew up the dikes of the Yellow River at Huayuankou. The water flooded thousands of villages across three provinces. It held up the Japanese for a few months. No warning was given to the people living there.',
+    why: 'It shows how desperate China\'s leaders were, and how the war\'s heaviest costs fell on ordinary farmers, here at the hands of their own government.',
+    note: 'Estimates of the dead range from about 400,000 to over 800,000, and several million people lost their homes. The flood is not part of the game.',
+  },
+  {
+    id: 'khasan', date: '1938-07-29', kind: 'event', title: 'Lake Khasan',
+    text: 'Japanese and Soviet troops fought for two weeks over a pair of hills by Lake Khasan, where Korea, Manchuria and the Soviet Union meet. The Red Army, though badly led after the purges, threw the Japanese back, and both sides agreed a ceasefire on 11 August.',
+    why: 'Neither side declared war. Japan wanted to test the Soviet Union while it was busy with China; it learned that the Red Army would fight.',
+  },
+  {
     id: 'munich', date: '1938-09-30', kind: 'event', title: 'The Munich agreement',
     text: 'Britain, France, Italy and Germany agreed at Munich that Czechoslovakia must hand Germany the Sudetenland, its German-speaking border districts. Czechoslovakia was not invited. It lost its border forts and much of its industry. The British prime minister, Neville Chamberlain, came home promising "peace for our time".',
     why: 'This is what "appeasement" means: giving a dictator what he demands in the hope that he will then stop. Britain and France also bought a year to rearm. Historians still argue about who gained more from that year.',
+  },
+  {
+    id: 'wuhan', date: '1938-10-25', kind: 'event', title: 'Wuhan and Canton fall',
+    text: 'After a five-month battle on the Yangtze, Japan took Wuhan, China\'s temporary capital, and a few days earlier its troops had landed near Canton and taken China\'s last big port. The Nationalist government moved up the river to Chungking, behind the gorges of the Yangtze.',
+    why: 'Japan now held China\'s coast, its biggest cities and most of its railways and factories. But China did not surrender, and Japan had no more men to go further. The war stuck fast for six years.',
   },
   {
     id: 'vienna-1', date: '1938-11-02', kind: 'event', title: 'The First Vienna Award',
@@ -120,6 +159,11 @@ export const CARDS: HistoryCard[] = [
     why: 'When war came three months later, Italy stayed out until France was almost beaten.',
   },
   {
+    id: 'khalkhin-gol', date: '1939-08-20', kind: 'event', title: 'Khalkhin Gol',
+    text: 'In May 1939 Japan\'s army in Manchuria began fighting the Mongolian army, and the Red Army that protected it, over a stretch of grassland by the Khalkhin Gol river. On 20 August the Soviet general Georgy Zhukov attacked with tanks, guns and aircraft and surrounded the Japanese. A ceasefire was signed on 15 September 1939.',
+    why: 'Japan\'s army gave up the idea of a war with the Soviet Union and looked south instead, to the oil of the Dutch East Indies. Stalin could keep his eyes on Europe, and Zhukov became the general who later defended Moscow.',
+  },
+  {
     id: 'pact', date: '1939-08-23', kind: 'event', title: 'The German-Soviet pact',
     text: 'The foreign ministers of Germany and the Soviet Union, Ribbentrop and Molotov, signed a non-aggression pact in Moscow. A secret protocol divided Poland, the Baltic states, Finland and part of Romania between the two. Britain and France had been negotiating with Stalin all summer and were taken by surprise.',
     why: 'Hitler was now free to attack Poland without fearing a war on two fronts. Stalin gained land and, he hoped, time.',
@@ -150,6 +194,12 @@ export const CARDS: HistoryCard[] = [
     text: 'The Soviet Union attacked Finland after it refused to give up land near Leningrad. A Finnish army a fraction of the size held the Red Army for 105 days in deep snow and bitter cold. In March 1940 Finland gave up about a tenth of its territory and kept its independence.',
     why: 'The Red Army\'s poor showing, after Stalin had killed so many of its officers, convinced Hitler that the Soviet Union would be easy to beat.',
     note: 'About 25,000 Finnish soldiers died. Soviet dead are usually put at well over 100,000.',
+  },
+  {
+    id: 'china-inflation', date: '1940-01-01', kind: 'economy', title: 'China pays for the war with the printing press',
+    text: 'China\'s Nationalist government had always lived on customs duties and the salt tax, collected in the ports, and borrowed from the banks of Shanghai. With the coast in Japanese hands most of that income was gone. Taxes now paid for only a small part of the war, and the government printed banknotes for the rest. Prices in free China were about three times as high as in 1937, and rising faster every year.',
+    why: 'It is a textbook case of inflation: the government spends far more than it collects, prints money to cover the gap, and as people expect prices to rise they spend their money as soon as they get it, which pushes prices up faster still. Officers and teachers on fixed pay grew poor, and many lost faith in Chiang\'s government.',
+    note: 'Price indexes differ by city and by source. By August 1945 prices in Chungking were roughly 2,000 times their level of mid-1937.',
   },
   {
     id: 'rationing', date: '1940-01-08', kind: 'economy', title: 'Britain starts rationing food',
@@ -212,7 +262,7 @@ export const CARDS: HistoryCard[] = [
     id: 'tripartite', date: '1940-09-27', kind: 'event', title: 'The Tripartite Pact',
     text: 'Germany, Italy and Japan promised to help each other if any of them was attacked by a power not yet in the war, which meant the United States. Hungary, Romania and Slovakia joined in November, Bulgaria in March 1941.',
     why: 'The wars in Europe and in Asia were now tied together.',
-    note: 'Japan and the war in Asia are not in this version of the game.',
+    note: 'Since version 1.8 the war in China is played out on the map. The war in the Pacific is not in the game yet.',
   },
   {
     id: 'greece', date: '1940-10-28', kind: 'event', title: 'Italy invades Greece',
@@ -233,6 +283,11 @@ export const CARDS: HistoryCard[] = [
     id: 'balkans', date: '1941-04-06', kind: 'event', title: 'Germany invades Yugoslavia and Greece',
     text: 'After a coup in Belgrade against the government that had just joined the Axis, Germany attacked Yugoslavia and Greece on the same day. Yugoslavia gave up in eleven days. Athens fell on 27 April, and in May German paratroops took Crete.',
     why: 'Germany secured its southern flank before turning on the Soviet Union. The occupations that followed were brutal, and resistance in the mountains never stopped.',
+  },
+  {
+    id: 'neutrality-pact', date: '1941-04-13', kind: 'event', title: 'The Soviet-Japanese neutrality pact',
+    text: 'Japan\'s foreign minister signed a pact in Moscow: the Soviet Union and Japan would stay out of any war the other fought. Stalin came to the railway station himself to see him off.',
+    why: 'Each side made its back safe. Japan could turn south against Britain, the Netherlands and the United States; Stalin, in the autumn of 1941, could move divisions from Siberia to defend Moscow. The pact held until August 1945.',
   },
   {
     id: 'barbarossa', date: '1941-06-22', kind: 'event', title: 'Germany invades the Soviet Union',
@@ -266,7 +321,7 @@ export const CARDS: HistoryCard[] = [
     id: 'usa', date: '1941-12-07', kind: 'event', title: 'The United States enters the war',
     text: 'Japan attacked the American fleet at Pearl Harbor in Hawaii. Four days later Hitler declared war on the United States, although his pact with Japan did not oblige him to.',
     why: 'The world\'s largest economy joined the war against Germany. From then on the Allies could out-produce the Axis several times over.',
-    note: 'The United States and Japan are not on this game\'s map yet. American help reaches you as Lend-Lease.',
+    note: 'In Story mode the United States sits out the war in this version, and the war in the Pacific is not played. American help reaches you as Lend-Lease.',
   },
   {
     id: 'wannsee', date: '1942-01-20', kind: 'atrocity', title: 'The Wannsee conference',

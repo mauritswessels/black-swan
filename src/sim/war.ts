@@ -16,6 +16,21 @@ export function enemiesOf(w: Pick<World, 'wars'>, country: string): string[] {
   return out;
 }
 
+/**
+ * The countries this one is at war with, leaving out border incidents (diplomacy.ts
+ * startIncident, 1.8): the wars its people and its finance ministry know about.
+ */
+export function realEnemiesOf(w: Pick<World, 'wars'> & { diplomacy?: { aims?: Record<string, { incident?: number }> } }, country: string): string[] {
+  const out: string[] = [];
+  for (const key of w.wars) {
+    if (w.diplomacy?.aims?.[key]?.incident !== undefined) continue;
+    const [a, b] = key.split('|');
+    if (a === country) out.push(b);
+    else if (b === country) out.push(a);
+  }
+  return out;
+}
+
 /** May a division of this country walk into this province? Only its own land, an enemy's, or an ally's (`friends`). */
 export const canEnter = (w: Pick<World, 'wars' | 'controller'>, country: string, province: number, friends?: Set<string>): boolean =>
   w.controller[province] === country || atWar(w, country, w.controller[province]) || !!friends?.has(w.controller[province]);

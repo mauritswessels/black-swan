@@ -1,4 +1,4 @@
-/** Choose the country you will lead. Story mode offers the six major powers; Free-for-all offers everyone. */
+/** Choose the country you will lead. Story mode offers the great powers; Free-for-all offers everyone. */
 import { useState } from 'react';
 import { COUNTRIES } from '../../sim/countries';
 import type { StartId } from '../../sim/types';
@@ -15,7 +15,7 @@ const NOTE: Record<string, string> = {
   'Soviet Union': 'By far the most divisions, spread over huge distances.',
   Poland: 'Flat country between two great powers.',
   Japan: 'An island empire with a strong navy, a war industry and an army already in China.',
-  'United States': 'The largest economy on Earth, with almost no army yet.',
+  'United States': 'The largest economy on Earth, with almost no army, and a people who want to stay out of the war.',
   China: 'Half a billion people and very little industry.',
 };
 

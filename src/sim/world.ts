@@ -29,6 +29,7 @@ import type { ForceDraft } from './navy';
 import { beyond, daysToEnter, EUROPE_SIZE, EUROPEAN, findRoute, PROVINCES } from './map';
 import { Rng, seedFrom } from './rng';
 import { cloneStory, runStory, startStory } from './story';
+import { runAmerica, shipAid } from './america';
 import { DEPOTS, linkedProvinces, supplyCapacity, supplyLevels } from './supply';
 import type { Economy, Mode, Order, Unit, UnitType, World } from './types';
 import { atWar, canEnter, enemiesOf } from './war';
@@ -271,6 +272,8 @@ export function step(world: World, orders: Order[] = []): World {
   runDiplomacy(dd, monthEnd);
   // 1a. The story: history cards, events with choices, chapters and the end of the game (story.ts).
   runStory(dd, monthEnd, world.seed);
+  // America and the Dominions (1.9, america.ts): neutrality, Lend-Lease, going to war, Torch.
+  runAmerica(dd, monthEnd);
 
   // 1b. The economy: taxes and bills, production lines, construction, training. New divisions appear.
   const fallen = new Map(Object.entries(dd.economies).map(([name, e]) => [name, [e.governmentsFallen, e.government] as const]));
@@ -297,6 +300,8 @@ export function step(world: World, orders: Order[] = []): World {
   dd.forceLog = [...dd.forceLog];
   const seen = pictures(dd, friends);
   runForces(dd, rng, seen, friends, far);
+  // The month's Lend-Lease convoys cross the ocean (america.ts).
+  if (monthEnd) shipAid(dd, seen.sea, friends);
   d.units = dd.units;
   d.air = seen.air.battle;
   // Fire support in battles: aimed bombers and ships shelling the coast (forces.ts).

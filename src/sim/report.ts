@@ -54,6 +54,7 @@ const REAL_FATE: Record<string, string> = {
   Italy: 'Changed sides in September 1943',
   'Soviet Union': 'Invaded in 1941; took Berlin in 1945',
   Poland: 'Occupied from 1939; under Soviet control after 1945',
+  'United States': 'Neutral until Pearl Harbor; among the victors',
 };
 
 const MAJORS = COUNTRIES.filter((c) => c.major).map((c) => c.name);

@@ -12,6 +12,8 @@
  * game: until world tension reaches 50).
  */
 import { cannotRaiseWing } from './air';
+import { aiLendLeaseOrder, US } from './america';
+import { ATLANTIC } from './countries';
 import { BUILDERS_PER_PROJECT, cannotRaise, CUSTOMS_STATE, conscriptionBlocked, CONSCRIPTION, economyView, factorySite, FORCE_UPKEEP, LINE_KINDS, MEN_PER_DIVISION, monthEnds, payLevel, PLANE_KINDS, tallies, TAX_MIN, UNIT_TYPES, UPKEEP, WAR_UPKEEP, type Tally } from './economy';
 import { isMajor, MAJORS } from './diplomacy';
 import { afar, PROVINCES } from './map';
@@ -61,6 +63,14 @@ export const REFIT_FIRST = 0.5;
 export const REFIT_FROM: [number, number] = [85, 75];
 /** The conscription law a country at peace moves to once the great powers are at war with each other. */
 export const ARMED_NEUTRALITY = 2;
+/**
+ * The widest conscription law an AI America or Dominion brings in, in Story mode (1.9). Only
+ * volunteers were sent overseas from Australia and South Africa until late in the war, and in
+ * Canada conscription for service abroad nearly broke the country in 1944. America's army was
+ * raised by the Selective Service Act alone, and most of its men went to the navy, the air forces
+ * and the Pacific, which is not on the map yet.
+ */
+export const STORY_LAW_CAP: Record<string, number> = { 'United States': 1, Canada: 1, Australia: 1, 'New Zealand': 1, 'South Africa': 0 };
 /** Days a war must last before the AI widens conscription for it (unless the enemy is on its soil). */
 const LONG_WAR = 90;
 const WAR_TAX_MAX = 0.45;
@@ -73,9 +83,12 @@ const NAVY_MIX: Record<string, Partial<Record<LineKind, number>>> = {
   Italy: { escort: 0.02, submarine: 0.01 },
   France: { escort: 0.02, capital: 0.01 },
   'Soviet Union': { submarine: 0.02, escort: 0.01 },
+  // 1.9: the United States built escorts for the Atlantic and Lend-Lease; Canada's corvettes guarded a large part of the convoys.
+  'United States': { escort: 0.04, capital: 0.01 },
+  Canada: { escort: 0.08 },
 };
 /** Share of military factories building [fighters, bombers]. Germany built the biggest air force of the late 1930s; Britain put fighters first. */
-const AIR_MIX: Record<string, [number, number]> = { Germany: [0.05, 0.04], 'United Kingdom': [0.06, 0.03], 'Soviet Union': [0.05, 0.03], France: [0.05, 0.03], Italy: [0.05, 0.03], Poland: [0.05, 0.02] };
+const AIR_MIX: Record<string, [number, number]> = { Germany: [0.05, 0.04], 'United Kingdom': [0.06, 0.03], 'Soviet Union': [0.05, 0.03], France: [0.05, 0.03], Italy: [0.05, 0.03], Poland: [0.05, 0.02], 'United States': [0.07, 0.06] };
 /**
  * The great powers that built paratroopers: the Soviet Union first, then Germany, Italy and
  * Britain. Once they know Airborne forces they put this share of the army's factories on them.
@@ -196,8 +209,10 @@ export function aiEconomyOrders(w: World, country: string, tally?: Tally): Order
   // calls up its reserves too, as Belgium, the Netherlands, Switzerland, Sweden and Norway did in
   // September 1939.
   const greatPowersAtWar = [...MAJORS].some((x) => enemiesOf(w, x).some(isMajor));
-  if (!v.atWar && greatPowersAtWar && e.conscription < ARMED_NEUTRALITY && !conscriptionBlocked(e, country, e.conscription + 1)) orders.push({ type: 'setConscription', country, level: e.conscription + 1 });
-  else if (v.atWar && longWar && e.manpower + (e.callUp ?? 0) < Math.max(3, waiting) * MEN_PER_DIVISION && (e.callUp ?? 0) < 0.1 * v.manpowerCap && e.conscription < CONSCRIPTION.length - 2 && !conscriptionBlocked(e, country, e.conscription + 1)) orders.push({ type: 'setConscription', country, level: e.conscription + 1 });
+  // Not America or the Dominions in Story mode (1.9): their call-ups came on their own real dates (america.ts).
+  const ownDates = w.mode === 'story' && ATLANTIC.includes(country);
+  if (!v.atWar && greatPowersAtWar && !ownDates && e.conscription < ARMED_NEUTRALITY && !conscriptionBlocked(e, country, e.conscription + 1)) orders.push({ type: 'setConscription', country, level: e.conscription + 1 });
+  else if (v.atWar && longWar && e.conscription < (ownDates ? STORY_LAW_CAP[country] ?? 1 : CONSCRIPTION.length) && e.manpower + (e.callUp ?? 0) < Math.max(3, waiting) * MEN_PER_DIVISION && (e.callUp ?? 0) < 0.1 * v.manpowerCap && e.conscription < CONSCRIPTION.length - 2 && !conscriptionBlocked(e, country, e.conscription + 1)) orders.push({ type: 'setConscription', country, level: e.conscription + 1 });
 
   // Put idle military factories to work on whichever line is furthest below the mix.
   // It also moves one factory a month from the line furthest above the mix to one well below it.
@@ -258,6 +273,12 @@ export function aiEconomyOrders(w: World, country: string, tally?: Tally): Order
       .sort((a, b) => (a.country ? -1 : general.indexOf(a.id)) - (b.country ? -1 : general.indexOf(b.id)))
       .find((p) => v.budget.balance - p.cost * v.nominalGDP > -limit * 1.5);
     if (next) orders.push({ type: 'startPlan', country, plan: next.id });
+  }
+
+  // Lend-Lease (1.9): the share of its arms America sets aside for its friends (america.ts).
+  if (country === US) {
+    const o = aiLendLeaseOrder(w, v.lineRate);
+    if (o) orders.push(o);
   }
   return orders;
 }

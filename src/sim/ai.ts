@@ -37,9 +37,10 @@
 import { ATTACK_WIDTH, ATTACK_WIDTH_PER_EXTRA_DIRECTION, attackPower, defencePower, DEFENCE_WIDTH, STATS } from './combat';
 import { daysToEnter, distanceKm, EUROPE_SIZE, EUROPEAN, OUTPOST, PROVINCES } from './map';
 import { combatEdges } from './mods';
+import { ATLANTIC } from './countries';
 import { linkedProvinces, supplyCapacity } from './supply';
 import type { Order, Unit, World } from './types';
-import { expeditionShare, OVERSEAS_SHARE, seaOrders } from './aiForces';
+import { abroadShare, OVERSEAS_SHARE, seaOrders } from './aiForces';
 import { allianceMap, isMajor } from './diplomacy';
 import { musterPoint } from './economy';
 import { navalPicture } from './navy';
@@ -73,9 +74,11 @@ export type Theatre = 'europe' | 'world';
 export const splitTheatres = (w: Pick<World, 'mode'>, country: string): boolean => w.mode === 'story' && EUROPEAN.has(country);
 /** Is this province, or this enemy, part of that theatre? (No theatre: everything is.) */
 export const inTheatre = (t: Theatre | undefined, p: number): boolean => t === undefined || (t === 'europe') === p < EUROPE_SIZE;
-export const foeInTheatre = (t: Theatre | undefined, foe: string): boolean => t === undefined || (t === 'europe') === EUROPEAN.has(foe);
+export const foeInTheatre = (t: Theatre | undefined, foe: string): boolean => t === undefined || (t === 'europe') === IN_EUROPE.has(foe);
 /** The theatre of a war against this enemy, for a country whose wars are split. */
-export const theatreOf = (foe: string): Theatre => (EUROPEAN.has(foe) ? 'europe' : 'world');
+export const theatreOf = (foe: string): Theatre => (IN_EUROPE.has(foe) ? 'europe' : 'world');
+/** The countries an army commander in Europe fights: those of the Europe-only map, and the Americans and the Dominions who came to Europe to fight (1.9). */
+const IN_EUROPE = new Set([...EUROPEAN, ...ATLANTIC]);
 
 /** What an army pushing toward a target (armies.ts) asks of the commander. */
 export interface ArmyCommand {
@@ -337,7 +340,7 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
   const inArea = (o: Operation) => mine.filter((u) => o.area.includes(u.sea ? u.sea.to : u.at)).length;
   const abroadNow = mine.filter(isAbroad).length;
   const elsewhere = mine.filter((u) => isAbroad(u) && !opsUnderWay.some((o) => o.area.includes(u.sea ? u.sea.to : u.at))).length;
-  const abroadCap = abroadNow + Math.max(0, Math.floor(expeditionShare(country) * mine.length) - elsewhere) + opsUnderWay.reduce((a, o) => a + Math.max(0, o.follow - inArea(o)), 0);
+  const abroadCap = abroadNow + Math.max(0, Math.floor(abroadShare(w, country) * mine.length) - elsewhere) + opsUnderWay.reduce((a, o) => a + Math.max(0, o.follow - inArea(o)), 0);
 
   if (army && !fronts.length) return [];
   if (!fighting.length && enemies.size && !fronts.length) {
@@ -401,7 +404,7 @@ export function aiOrders(w: World, country: string, opts: AiOptions = {}): Order
     if (ended.some((o) => touches(f, o))) f.share = 0;
     else {
       const o = [...ops, ...ashore].filter((x) => touches(f, x));
-      const cap = Math.floor(expeditionShare(country) * mine.length);
+      const cap = Math.floor(abroadShare(w, country) * mine.length);
       // An island empire (aiForces.ts OVERSEAS_SHARE) sends its whole share, whatever the operation's own size.
       f.share = Math.min(f.share, o.length ? Math.max(OVERSEAS_SHARE[country] ? cap : 0, ...o.map((x) => x.follow)) : cap);
     }

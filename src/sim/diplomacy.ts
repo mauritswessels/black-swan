@@ -76,6 +76,9 @@ const HISTORY: [string, string, number][] = [
   ['Italy', 'Albania', 15], ['Germany', 'Austria', -15], ['Germany', 'Italy', -10], ['Poland', 'Lithuania', -30], ['Poland', 'Czechoslovakia', -20], ['Hungary', 'Yugoslavia', -20],
   ['Bulgaria', 'Yugoslavia', -15], ['France', 'Italy', -5], ['Sweden', 'Norway', 25], ['Sweden', 'Denmark', 25], ['Sweden', 'Finland', 25], ['Norway', 'Denmark', 25], ['Finland', 'Estonia', 20],
   ['Estonia', 'Latvia', 30], ['Latvia', 'Lithuania', 20], ['Belgium', 'Netherlands', 20], ['Belgium', 'Luxembourg', 25], ['Germany', 'Poland', 10],
+  // The Atlantic (1.9): Britain and its Dominions; America's sympathy for Britain and for China, and its quarrel with Japan over China.
+  ['United Kingdom', 'Canada', 45], ['United Kingdom', 'Australia', 45], ['United Kingdom', 'New Zealand', 45], ['United Kingdom', 'South Africa', 35], ['Canada', 'United States', 30],
+  ['United States', 'United Kingdom', 15], ['United States', 'France', 10], ['United States', 'China', 15], ['United States', 'Japan', -15], ['United States', 'Germany', -5],
   // East Asia (1.8): Japan had taken Manchuria in 1931 and wanted north China; China's Nationalists
   // had fought the Communists since 1927; the Soviet Union and Japan had a long border and a long quarrel.
   ['Japan', 'China', -45], ['Manchukuo', 'China', -40], ['China', 'Chinese Communists', -40], ['Japan', 'Soviet Union', -25], ['Manchukuo', 'Soviet Union', -20],
@@ -202,6 +205,11 @@ const START_PACTS: [PactKind, string, string][] = [
   // mutual help with Mongolia in March 1936 and stationed troops there from 1937.
   ['alliance', 'Japan', 'Manchukuo'],
   ['alliance', 'Soviet Union', 'Mongolia'],
+  // The Dominions (1.9): free to choose since 1931, but bound to Britain by the Crown, trade and family.
+  ['alliance', 'United Kingdom', 'Canada'],
+  ['alliance', 'United Kingdom', 'Australia'],
+  ['alliance', 'United Kingdom', 'New Zealand'],
+  ['alliance', 'United Kingdom', 'South Africa'],
 ];
 
 export const MAJORS = new Set(COUNTRIES.filter((c) => c.major).map((c) => c.name));
@@ -315,8 +323,24 @@ export function cannotDeclare(w: View, by: string, on: string): string | null {
   if (allied(w.diplomacy, by, on)) return 'you are allies: end the alliance first';
   const truce = w.diplomacy.truces[warKey(by, on)];
   if (truce !== undefined && truce > w.day) return `a truce holds for another ${truce - w.day} days`;
+  const opinion = neutralAmerica(w, by);
+  if (opinion !== null) return `Congress will not vote for war while most Americans want to stay out of it (war support ${opinion}, needs ${AMERICAN_WAR_OPINION})`;
   if (w.mode === 'story' && !causeFor(w, by, on)) return 'no cause for war: build a case first';
   return null;
+}
+
+/**
+ * America's neutrality (1.9). Most Americans remembered 1917 as a mistake, and the Neutrality
+ * Acts of 1935 to 1937 kept the country out of other people's wars. In Story mode the United
+ * States, while it is a democracy, may declare war only once its war support reaches
+ * AMERICAN_WAR_OPINION, or after it has been attacked. Returns its war support while it is held back, or null.
+ */
+export const AMERICAN_WAR_OPINION = 60;
+export function neutralAmerica(w: Pick<World, 'mode' | 'economies' | 'wars'>, by: string): number | null {
+  if (w.mode !== 'story' || by !== 'United States' || governmentOf(w, by) !== 'democracy') return null;
+  if (w.wars.some((k) => k.split('|').includes(by))) return null;
+  const support = Math.round(w.economies[by]?.warSupport ?? 0);
+  return support < AMERICAN_WAR_OPINION ? support : null;
 }
 
 /** Why `by` cannot start building a case against `on`, or null if it can. */
@@ -335,6 +359,7 @@ export function cannotGuarantee(w: View, by: string, on: string): string | null 
   if (by === on || !alive(w, by) || !alive(w, on)) return 'no such country';
   if (fighting(w, by, on)) return 'you are at war with it';
   if (hasPact(w.diplomacy, 'guarantee', by, on) || allied(w.diplomacy, by, on)) return 'you have already promised to defend it';
+  if (neutralAmerica(w, by) !== null) return 'the Neutrality Acts forbid promises that could take America into a foreign war';
   if (governmentOf(w, by) === 'democracy' && w.diplomacy.tension < GUARANTEE_TENSION) return `your voters will not accept the risk until world tension reaches ${GUARANTEE_TENSION}`;
   return null;
 }

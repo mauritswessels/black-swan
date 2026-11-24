@@ -56,10 +56,12 @@ export const COUNTRIES: Country[] = [
   c('EGY', 'Egypt', 'Egyptian', 'authoritarian', [2, 0, 0], [2, 1, 16, 0, 0]),
   c('IRQ', 'Iraq', 'Iraqi', 'authoritarian', [2, 0, 0], [1, 1, 3.5, 0, 5]),
   // The rest of the world (1.7). In Story mode most of them sit out the war for now ("asleep",
-  // world.ts), all but the five of East Asia (EAST_ASIA, 1.8); in Free-for-all they play like everyone else. America's huge peacetime industry had almost no
+  // world.ts), all but the five of East Asia (EAST_ASIA, 1.8) and the United States and the
+  // Dominions (ATLANTIC, 1.9); in Free-for-all they play like everyone else. The United States is a
+  // great power from 1.9. America's huge peacetime industry had almost no
   // arms factories; Japan's army was small but its war industry large for its size; China had
   // half a billion people and very little industry.
-  c('USA', 'United States', 'American', 'democracy', [10, 0, 1], [66, 4, 128, 50, 70]),
+  c('USA', 'United States', 'American', 'democracy', [10, 0, 1], [66, 4, 128, 50, 70], true),
   c('JAP', 'Japan', 'Japanese', 'authoritarian', [20, 1, 3], [18, 9, 69, 5, 0.5]),
   c('CHI', 'China', 'Chinese', 'authoritarian', [80, 0, 3], [10, 3, 450, 0.5, 0]),
   c('MAN', 'Manchukuo', 'Manchurian', 'authoritarian', [4, 0, 0], [3, 1, 33, 2, 0]),
@@ -110,8 +112,19 @@ export const WORLD_COUNTRIES: string[] = COUNTRIES.slice(EUROPE_COUNTRIES).map((
  * are awake from the start. The rest of the world still sits out the war (World.asleep).
  */
 export const EAST_ASIA: string[] = ['Japan', 'China', 'Manchukuo', 'Chinese Communists', 'Mongolia'];
+/**
+ * The British Dominions (version 1.9): self-governing, but they went to war beside Britain in
+ * September 1939 and sent their armies to fight in Europe and North Africa.
+ */
+export const DOMINIONS: string[] = ['Canada', 'Australia', 'New Zealand', 'South Africa'];
+/**
+ * The countries beyond the Europe-only map that fight in the war in Europe (version 1.9): the
+ * United States and the Dominions. In Story mode they are awake from the start, and an army
+ * commander in Europe counts them as enemies there (ai.ts Theatre).
+ */
+export const ATLANTIC: string[] = ['United States', ...DOMINIONS];
 /** The countries asleep at the start of a new Story game. */
-export const STORY_ASLEEP: string[] = WORLD_COUNTRIES.filter((c) => !EAST_ASIA.includes(c));
+export const STORY_ASLEEP: string[] = WORLD_COUNTRIES.filter((c) => !EAST_ASIA.includes(c) && !ATLANTIC.includes(c));
 
 export const countryByName = (name: string): Country => {
   const found = COUNTRIES.find((k) => k.name === name);

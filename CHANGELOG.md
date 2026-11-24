@@ -52,7 +52,8 @@ the ocean for real instead of appearing from off the map.
   two American national plans (the Two-Ocean Navy Act and the Victory Program), and chapter
   objectives for America.
 - **Speed.** About a third more work in the war years: 1943 takes about 30 ms a game day on the
-  cloud machine, inside the 60 ms the fastest speed allows.
+  cloud machine, inside the 60 ms the fastest speed allows. The speed tests (tests/speed/) now run
+  on their own after the other tests, so the others no longer slow them down on GitHub.
 - **Saves.** The save format is unchanged (version 15). Story games saved before 1.9 keep
   America and the Dominions out of their war, with the Lend-Lease of 1.8; start a new game for
   the war in the Atlantic.

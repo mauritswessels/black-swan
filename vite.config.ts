@@ -11,5 +11,7 @@ export default defineConfig({
   // The Mac app (Tauri) expects the dev server on this exact port.
   server: { port: 1420, strictPort: true },
   clearScreen: false,
-  test: { include: ['tests/**/*.test.ts'] },
+  // The speed tests (tests/speed/) run on their own after the rest (`npm test`), so that the
+  // other test files, running at the same time, do not slow them down.
+  test: process.env.SPEED_TESTS ? { include: ['tests/speed/*.test.ts'] } : { include: ['tests/**/*.test.ts'], exclude: ['tests/speed/**', 'node_modules/**'] },
 } as never);

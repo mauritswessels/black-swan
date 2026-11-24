@@ -215,9 +215,15 @@ describe('the story led by the AI (bot playtest, 1936 to the end of 1941)', () =
   it('stays quick on the busiest days, the summer of 1941 (speed test)', () => {
     // Version 1.7 (the world map) took about 30 ms a day here on the cloud machines; fail if that gets 50% slower.
     const M1_MS = 30;
-    const t0 = performance.now();
+    // Processor time of this test's own process, not the clock: the other test files run at the
+    // same time on the same machine, and on a small one (GitHub's) the clock counts their work too.
+    const cpu = () => {
+      const u = process.cpuUsage();
+      return (u.user + u.system) / 1000;
+    };
+    const t0 = cpu();
     until(mid, '1941-07-25');
-    const perDay = (performance.now() - t0) / 20;
+    const perDay = (cpu() - t0) / 20;
     expect(perDay).toBeLessThan(M1_MS * 1.5);
   });
 

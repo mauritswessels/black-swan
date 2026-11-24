@@ -112,9 +112,15 @@ describe('movement', () => {
   });
 
   it('simulates a year of the whole map quickly', () => {
-    const t0 = performance.now();
+    // Processor time of this test's own process, not the clock: the other test files run at the
+    // same time on the same machine, and on a small one (GitHub's) the clock counts their work too.
+    const cpu = () => {
+      const u = process.cpuUsage();
+      return (u.user + u.system) / 1000;
+    };
+    const t0 = cpu();
     run(newWorld('story', 'speed'), 366);
-    expect(performance.now() - t0).toBeLessThan(2000);
+    expect(cpu() - t0).toBeLessThan(2000);
   });
 });
 

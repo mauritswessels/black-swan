@@ -2,10 +2,11 @@
  * The Economy and Production panels, shown in the sidebar. They only display what the engine
  * (src/sim/economy.ts) works out and send orders back; no game maths happens here.
  */
+import { americaAwake, recipients, routeName, US } from '../../sim/america';
 import { modsOf } from '../../sim/mods';
 import type { ReactNode } from 'react';
 import {
-  BUILD_COST, BUILDERS_PER_PROJECT, cannotRaise, FORCE_UPKEEP, CONSCRIPTION, conscriptionBlocked, economyView, FACTORY_COST, KIT_COST, MEN_PER_DIVISION, musterPoint, payLevel, WAR_RATE_CAP, TAX_MAX, TAX_MIN, TAX_STABILITY, TRAINING_DAYS, UNIT_TYPES, UPKEEP, WAR_UPKEEP,
+  BUILD_COST, BUILDERS_PER_PROJECT, cannotRaise, LEND_LEASE_MAX, FORCE_UPKEEP, CONSCRIPTION, conscriptionBlocked, economyView, FACTORY_COST, KIT_COST, MEN_PER_DIVISION, musterPoint, payLevel, WAR_RATE_CAP, TAX_MAX, TAX_MIN, TAX_STABILITY, TRAINING_DAYS, UNIT_TYPES, UPKEEP, WAR_UPKEEP,
   type EconomyView, type Reason,
 } from '../../sim/economy';
 import { cannotRaiseWing, MEN_PER_WING } from '../../sim/air';
@@ -454,9 +455,57 @@ export function ProductionPanel({ w, me }: { w: World; me: string }) {
             : 'You have all you need at home.'}{' '}
         Military factories need steel; armour needs oil. What you do not use is sold abroad at {pct(Math.min(1, 0.5 + v.mods.exportShare) * 100)} of the world price{v.budget.exports > 0 ? ` (${money(v.budget.exports)} a month)` : ''}. Imports come by sea, so enemy submarines can sink them (Navy and air force, key F).
       </p>
+      <AmericanAid w={w} me={me} />
       <div className="sb-actions">
         <Link to={{ kind: 'economy' }}>Economy: budget, taxes, debt and inflation</Link>
       </div>
     </Frame>
+  );
+}
+
+/**
+ * Lend-Lease (1.9, src/sim/america.ts): for America, the share of its arms set aside for its
+ * friends; for everyone who receives it, last month's convoys and what the U-boats sank.
+ */
+function AmericanAid({ w, me }: { w: World; me: string }) {
+  const order = useGame.getState().economy;
+  const e = w.economies[me];
+  const last = w.story.lendLease;
+  const isUs = me === US && americaAwake(w);
+  const mine = (last?.shipments ?? []).filter((s) => isUs || s.to === me);
+  const total = last?.total[me];
+  if (!isUs && !mine.length && !total) return null;
+  const share = Math.round((e.lendLease ?? 0) * 100);
+  const who = recipients(w);
+  const days = (n: number) => `${Math.round(n).toLocaleString('en-GB')} factory-days`;
+  return (
+    <>
+      <h3>
+        <Term id="lend-lease">{isUs ? 'Arms for your friends' : 'American aid'}</Term>
+      </h3>
+      {isUs && (
+        <>
+          <input id="lend-lease" className="sb-range" type="range" min={0} max={LEND_LEASE_MAX * 100} step={5} value={share} onChange={(ev) => order({ type: 'setLendLease', share: Number(ev.target.value) / 100 })} aria-label="Share of your arms set aside for other countries" aria-valuetext={`${share} per cent`} />
+          <p className="sb-fine">
+            {share}% of what your military factories make is set aside and shipped once a month
+            {who.length ? ` to ${who.map((r) => `${r.to}${r.pays ? ' (pays cash)' : ''}`).join(', ')}` : ', but nobody may receive it yet: Congress must pass Cash and Carry or Lend-Lease first'}. Each country gets the kinds of equipment it asks for; what nobody asks for comes back to your own depots. Lend-Lease costs you nothing extra, but every division-set you send is one your own army does not get.
+          </p>
+        </>
+      )}
+      {mine.length > 0 && last && last.day >= w.day - 31 ? (
+        <div className="sb-rows">
+          {mine.map((s) => (
+            <Row key={s.route} label={`${isUs ? `${s.to}, by ` : 'By '}${routeName(s.route)}`} value={`${days(s.sent)}${s.sunk > 0 ? `, ${days(s.sunk)} sunk` : ''}${s.paid ? `, paid ${money(s.paid)}` : ''}`} bar={s.sent > 0 ? 100 * (1 - s.sunk / s.sent) : 0} warn={s.sunk > 0.2 * s.sent} />
+          ))}
+        </div>
+      ) : (
+        !isUs && <p className="sb-fine">No convoys arrived last month.</p>
+      )}
+      {total && !isUs && (
+        <p className="sb-fine">
+          Since the start: {days(total.sent)} shipped to you, {days(total.sunk)} of it sunk on the way. Equipment that arrives goes straight into your depots, ready for new divisions, wings and ships.
+        </p>
+      )}
+    </>
   );
 }

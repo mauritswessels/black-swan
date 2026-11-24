@@ -190,6 +190,12 @@ export const AGGRESSOR_SUPPORT: Record<Government, number> = { democracy: -10, a
 export const HOME_LOST_SUPPORT = 60;
 /** A war elsewhere worries people: points for each other country at war (up to the cap), and for a war on the border. */
 export const ALARM_PER_COUNTRY = 2;
+/**
+ * American opinion (1.9, Story mode): in peacetime most Americans wanted no part in Europe's wars
+ * (isolation pulls war support down); Pearl Harbor united the country; U-boat attacks on American
+ * ships in the autumn of 1941 angered it.
+ */
+export const AMERICAN_OPINION = { isolation: 20, pearlHarbor: 35, shootOnSight: 5 };
 export const ALARM_MAX = 10;
 export const ALARM_NEIGHBOUR = 8;
 /** Points of war support in peacetime for each point of world tension (see diplomacy.ts). */
@@ -358,7 +364,7 @@ const PORTS_OF = (name: string): Province[] => {
   return out;
 };
 
-type Holdings = Pick<World, 'controller' | 'factories' | 'units' | 'wars'> & { day?: number; startDate?: string; declaredBy?: World['declaredBy']; owner?: string[]; diplomacy?: { tension: number; aims?: Record<string, { incident?: number }> }; fleets?: World['fleets']; wings?: World['wings']; bombed?: World['bombed']; story?: { farEast?: number } };
+type Holdings = Pick<World, 'controller' | 'factories' | 'units' | 'wars'> & { day?: number; startDate?: string; declaredBy?: World['declaredBy']; owner?: string[]; diplomacy?: { tension: number; aims?: Record<string, { incident?: number }> }; fleets?: World['fleets']; wings?: World['wings']; bombed?: World['bombed']; story?: { farEast?: number; fired?: string[] }; mode?: World['mode'] };
 
 export function tallies(w: Holdings): Map<string, Tally> {
   const out = new Map<string, Tally>();
@@ -582,6 +588,14 @@ export function economyView(w: Holdings & Pick<World, 'economies'>, country: str
   support('enemy bombing of the cities', -Math.min(10, 40 * t.bombed));
   if (!atWar) support('mass conscription in peacetime', -5 * Math.max(0, e.conscription - 2));
   support('civil defence and national plans', m.warSupport);
+  // America (1.9, america.ts): staying out of Europe's war, until Pearl Harbor.
+  if (w.mode === 'story' && country === 'United States') {
+    const fired = w.story?.fired ?? [];
+    if (fired.includes('pearl-harbor')) support('Pearl Harbor: Japan has attacked the United States', AMERICAN_OPINION.pearlHarbor);
+    // Europe's tension was not America's: isolation cancels what world tension adds, and more.
+    else if (!atWar) support('most Americans want to stay out of other people\'s wars', -AMERICAN_OPINION.isolation - TENSION_SUPPORT * (w.diplomacy?.tension ?? 0));
+    if (fired.includes('shoot-on-sight') && !atWar) support('U-boats sink American ships', AMERICAN_OPINION.shootOnSight);
+  }
   const warSupportTarget = clamp(warSupportReasons.reduce((a, r) => a + r.points, 0), 0, 100);
 
   // People put up with higher taxes in a war they believe in.
@@ -612,6 +626,11 @@ export function economyView(w: Holdings & Pick<World, 'economies'>, country: str
 
 // ---------- the start of a game ----------
 
+/** Countries whose armies were all volunteers in 1936: Britain, and (1.9) the United States and the Dominions. */
+const VOLUNTEER_ARMIES = ['United Kingdom', 'United States', 'Canada', 'Australia', 'New Zealand', 'South Africa'];
+/** The largest share of its military factories' output a country may set aside for Lend-Lease (america.ts). */
+export const LEND_LEASE_MAX = 0.5;
+
 const START_TAX: Record<Government, number> = { democracy: 0.22, authoritarian: 0.22, fascist: 0.22, communist: 0.25 };
 
 const emptyEconomy = (): Economy => ({
@@ -640,7 +659,7 @@ export function startEconomies(w: Holdings): Record<string, Economy> {
     if (!t) continue;
     const e = emptyEconomy();
     e.research = emptyResearch(researchSlots(c.name));
-    e.conscription = c.name === 'United Kingdom' ? 0 : 1;
+    e.conscription = VOLUNTEER_ARMIES.includes(c.name) ? 0 : 1;
     e.government = c.government;
     e.taxRate = START_TAX[c.government];
     const total = c.startArmy[0] + c.startArmy[1] + c.startArmy[2];
@@ -672,6 +691,7 @@ export function startEconomies(w: Holdings): Record<string, Economy> {
 const cloneEconomy = (e: Economy): Economy => ({
   ...e,
   stock: { ...e.stock },
+  ...(e.aid ? { aid: { ...e.aid } } : {}),
   lines: Object.fromEntries(LINE_KINDS.map((k) => [k, { ...e.lines[k] }])) as Economy['lines'],
   construction: e.construction.map((c) => ({ ...c })),
   training: e.training.map((t) => ({ ...t })),
@@ -793,6 +813,11 @@ export function giveEconomyOrder(d: Pick<World, 'economies' | 'controller' | 'fa
     case 'setImports':
       e.imports = !!o.on;
       break;
+    case 'setLendLease': {
+      if (!Number.isFinite(o.share)) break;
+      e.lendLease = clamp(o.share, 0, LEND_LEASE_MAX);
+      break;
+    }
     case 'setConscription': {
       const level = clamp(Math.round(o.level), 0, CONSCRIPTION.length - 1);
       if (level === e.conscription || !Number.isFinite(o.level) || conscriptionBlocked(e, o.country, level)) break;
@@ -993,7 +1018,10 @@ export function runEconomies(d: EconomyDraft, capitulated: string[]): Map<string
     for (const k of LINE_KINDS) {
       const line = e.lines[k];
       if (!line.factories) continue;
-      e.stock[k] += v.lineRate[k];
+      // Lend-Lease (1.9): a share of what the line makes is set aside for other countries' convoys (america.ts).
+      const aid = e.lendLease ? e.lendLease * v.lineRate[k] : 0;
+      if (aid > 0) (e.aid ??= {})[k] = (e.aid[k] ?? 0) + aid;
+      e.stock[k] += v.lineRate[k] - aid;
       line.efficiency = Math.min(1, line.efficiency + LINE_GAIN * (1 + v.mods.lineGain));
     }
 

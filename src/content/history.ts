@@ -190,6 +190,11 @@ export const CARDS: HistoryCard[] = [
     note: 'Estimates of the Soviet deportations range from about 320,000 to more than a million.',
   },
   {
+    id: 'cash-and-carry', date: '1939-11-04', kind: 'economy', title: 'Cash and Carry',
+    text: 'The Neutrality Acts of 1935 to 1937 forbade Americans to sell arms or lend money to countries at war. Two months into the war in Europe, Congress allowed arms sales again, on condition that the buyers paid in cash and carried the goods away in their own ships.',
+    why: 'It helped Britain and France, who ruled the seas, without risking American ships or loans. It also drained their gold and dollars: by the end of 1940 Britain could hardly pay any more.',
+  },
+  {
     id: 'winter-war', date: '1939-11-30', kind: 'event', title: 'The Winter War',
     text: 'The Soviet Union attacked Finland after it refused to give up land near Leningrad. A Finnish army a fraction of the size held the Red Army for 105 days in deep snow and bitter cold. In March 1940 Finland gave up about a tenth of its territory and kept its independence.',
     why: 'The Red Army\'s poor showing, after Stalin had killed so many of its officers, convinced Hitler that the Soviet Union would be easy to beat.',
@@ -251,6 +256,11 @@ export const CARDS: HistoryCard[] = [
     id: 'vienna-2', date: '1940-08-30', kind: 'event', title: 'The Second Vienna Award',
     text: 'Germany and Italy ordered Romania to give northern Transylvania to Hungary. A week later Romania also returned southern Dobruja to Bulgaria. Having lost a third of its land in one summer, Romania turned to Germany for protection.',
     why: 'Germany wanted Romania\'s oil and quiet in the Balkans. Both Hungary and Romania ended up as its allies.',
+  },
+  {
+    id: 'destroyers', date: '1940-09-02', kind: 'event', title: 'Destroyers for Bases',
+    text: 'Britain was losing merchant ships to U-boats faster than it could build escorts. The United States gave it fifty old destroyers from the First World War, in return for 99-year leases on bases from Newfoundland to British Guiana. Two weeks later Congress passed the first peacetime call-up in American history.',
+    why: 'The ships themselves were old and few were ready before 1941, but the deal showed that the United States had taken Britain\'s side.',
   },
   {
     id: 'britain', date: '1940-09-15', kind: 'event', title: 'The Battle of Britain',
@@ -321,13 +331,23 @@ export const CARDS: HistoryCard[] = [
     id: 'usa', date: '1941-12-07', kind: 'event', title: 'The United States enters the war',
     text: 'Japan attacked the American fleet at Pearl Harbor in Hawaii. Four days later Hitler declared war on the United States, although his pact with Japan did not oblige him to.',
     why: 'The world\'s largest economy joined the war against Germany. From then on the Allies could out-produce the Axis several times over.',
-    note: 'In Story mode the United States sits out the war in this version, and the war in the Pacific is not played. American help reaches you as Lend-Lease.',
+    note: 'The war in the Pacific is not played in this version: Pearl Harbor moves American opinion, and the war in Europe is fought on the map.',
   },
   {
     id: 'wannsee', date: '1942-01-20', kind: 'atrocity', title: 'The Wannsee conference',
     text: 'Fifteen senior German officials met in a villa outside Berlin to organise what they called the "final solution": the deportation and murder of all the Jews of Europe. Death camps with gas chambers were already being built in occupied Poland. By 1945 about six million Jews had been murdered.',
     why: 'The Holocaust was not the work of a few fanatics. It was planned at a meeting, with minutes, by educated officials of a modern state.',
     note: 'The Nazi regime also murdered several hundred thousand Roma, about 250,000 disabled people, and millions of Polish and Soviet civilians and prisoners of war.',
+  },
+  {
+    id: 'pq17', date: '1942-07-04', kind: 'event', title: 'The Arctic convoys',
+    text: 'Convoys carried tanks, aircraft and lorries round the North Cape to Murmansk and Archangel, in polar night in winter and in endless daylight in summer. When convoy PQ 17 was ordered to scatter for fear of the battleship Tirpitz, U-boats and aircraft sank 24 of its 35 ships.',
+    why: 'Most American aid to the Soviet Union came by safer routes, across the Pacific to Vladivostok and through Iran, but the Arctic route was the shortest and the most famous.',
+  },
+  {
+    id: 'torch', date: '1942-11-08', kind: 'event', title: 'Operation Torch',
+    text: 'American and British troops landed in Morocco and Algeria, held by Vichy France. After three days of fighting the French there joined the Allies. Germany answered by occupying the rest of France, and at Toulon the French fleet scuttled itself. Germany and Italy rushed troops into Tunisia, where they held out until May 1943.',
+    why: 'It was the first great American operation against Germany. Together with El Alamein, a week earlier, it ended the Axis in Africa.',
   },
   {
     id: 'stalingrad', date: '1943-02-02', kind: 'event', title: 'Stalingrad',
@@ -338,6 +358,11 @@ export const CARDS: HistoryCard[] = [
     id: 'ghetto-uprising', date: '1943-04-19', kind: 'atrocity', title: 'The Warsaw ghetto uprising',
     text: 'When German forces came to deport the last 50,000 Jews of the Warsaw ghetto to the death camps, fewer than a thousand young fighters with pistols and home-made bombs held them off for nearly a month. The ghetto was burned down block by block.',
     why: 'They had no hope of winning and knew it. They chose how to die, and that they would be remembered.',
+  },
+  {
+    id: 'black-may', date: '1943-05-24', kind: 'event', title: 'The Battle of the Atlantic',
+    text: 'In May 1943 the U-boats lost 41 boats in a month, a quarter of those at sea. Admiral Dönitz called them back from the North Atlantic. Escort carriers, long-range aircraft, radar and broken German codes had turned the battle.',
+    why: 'Britain lived on imports, and every American soldier and tank for Europe crossed the Atlantic. Churchill wrote that the U-boat peril was the only thing that ever really frightened him.',
   },
   {
     id: 'italy-armistice', date: '1943-09-08', kind: 'event', title: 'Italy changes sides',

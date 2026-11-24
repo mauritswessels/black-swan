@@ -1,6 +1,6 @@
 {
   "name": "black-swan",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "private": true,
   "description": "A grand-strategy game set in Europe from 1936: lead a real country through the war and its hardships.",
   "type": "module",
@@ -9,7 +9,7 @@
     "dev:app": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
-    "test": "vitest run",
+    "test": "vitest run && SPEED_TESTS=1 vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
     "tauri": "tauri",

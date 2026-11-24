@@ -25,7 +25,7 @@ import { COAST, fleetPower, HOME_ZONES, seaDependence, seaRoute, TRADE_ROUTE, ZO
 import { supplyCapacity } from './supply';
 import type { Fleet, Order, Unit, World } from './types';
 import { atWar, enemiesOf } from './war';
-import { activeOperations, laterLandings, type Operation } from './operations';
+import { activeOperations, laterLandings, onlyOperations, type Operation } from './operations';
 import { dayOf } from './agenda';
 import { ITALIAN_FUEL } from './story';
 
@@ -270,6 +270,8 @@ export const EXPEDITION_SHARE = 0.12;
  */
 export const OVERSEAS_SHARE: Record<string, number> = { Japan: 0.8 };
 export const expeditionShare = (country: string): number => OVERSEAS_SHARE[country] ?? EXPEDITION_SHARE;
+/** The share in this game: none beyond their operations for America and the Dominions in Story mode (1.9, operations.ts onlyOperations). */
+export const abroadShare = (w: Pick<World, 'mode' | 'player' | 'story'>, country: string): number => (onlyOperations(w, country) ? 0 : expeditionShare(country));
 /** Divisions sent by sea in one day, at most. */
 const SHIPPED_PER_DAY = 3;
 
@@ -285,7 +287,7 @@ export function seaOrders(plan: SeaPlan): Order[] {
   const mine = w.units.filter((u) => u.owner === country);
   // At most an eighth of the army goes overseas, and never the last division in a province.
   const abroad = mine.filter((u) => u.sea || u.landing || w.owner[u.at] !== country).length;
-  const room = (plan.abroadCap ?? Math.floor(expeditionShare(country) * mine.length)) - abroad;
+  const room = (plan.abroadCap ?? Math.floor(abroadShare(w, country) * mine.length)) - abroad;
   // A planned landing goes ahead even when other expeditions have used up the share.
   const planned = Math.max(0, ...(plan.landings ?? []).map((o) => o.size), ...(plan.helps ?? []).map((o) => o.follow));
   if (room <= 0 && !planned) return orders;
@@ -358,7 +360,7 @@ export function seaOrders(plan: SeaPlan): Order[] {
       return orders;
     }
   }
-  if (room < 4) return orders;
+  if (room < 4 || onlyOperations(w, country)) return orders;
   // Not as a sideshow: a country that can reach the enemy on foot with most of its army fights there.
   if (plan.onLand ?? (plan.front.length > 0 && stranded.length < 0.3 * mine.length)) return orders;
   let best: { force: Unit[]; score: number; to: number } | null = null;

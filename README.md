@@ -4,11 +4,23 @@ A grand-strategy game set in the world of 1936. You lead a real country through 
 the war that followed, and face what its leaders faced: armies, factories, money, allies and
 public support. It is built to teach the history and the economics as you play.
 
+> **Version 1.9: America and the Atlantic.** The United States and the Dominions (Canada,
+> Australia, New Zealand and South Africa) now play their part in Story mode, and America is a
+> great power you can lead. It starts neutral: its people want to stay out, and Congress will
+> not vote for war until war support reaches 60. Cash and Carry, Destroyers for Bases, the
+> first peacetime draft and the Lend-Lease Act come on their real dates (as decisions if you
+> lead America). Lend-Lease is now shipped for real: America sets aside a share of what its
+> arms factories make, and convoys carry it to Britain across the North Atlantic, to the
+> Soviet Union by the Arctic, the Pacific and Iran, and to China, where U-boats and raiders can
+> sink it. After Pearl Harbor Germany declares war on America, American troops land in North
+> Africa (Operation Torch), Sicily, Italy, Normandy and Provence, and the Dominions send
+> divisions to Britain and Egypt.
+>
 > **Version 1.8: the war in China.** In Story mode Japan, China, the Chinese Communists,
 > Manchukuo and Mongolia now play their part: the Xi'an Incident, the Marco Polo Bridge, the
 > landings at Shanghai and Canton, the border battles with the Red Army at Lake Khasan and
 > Khalkhin Gol, and China's war paid for with the printing press. The Soviet Far East army
-> stands on the map facing Japan. America and the Pacific join in a later version.
+> stands on the map facing Japan.
 >
 > **Version 1.7: the world map.** The map now covers the whole world, about 600 provinces and
 > 56 sea zones, and wraps around: scroll right past Japan and you reach California. In
@@ -297,8 +309,11 @@ src/sim/          the game engine: pure TypeScript, no UI, fully testable
   agenda.ts       what each AI country wants and when (the real timetable of 1936 to 1941),
                   and the conditions that let the player change it
   story.ts        Story mode: history cards, decisions on real dates, Spain, Vichy,
-                  Lend-Lease, surprise and the purge, the Far East army, Italy's change
-                  of sides, arms for China, chapters, how a game ends
+                  surprise and the purge, the Far East army, Italy's change of sides,
+                  arms for China, chapters, how a game ends
+  america.ts      America and the Dominions in Story mode: neutrality, Cash and Carry,
+                  Destroyers for Bases, Lend-Lease convoys and their routes, Pearl Harbor,
+                  Germany's declaration of war, Torch and Case Anton
   operations.ts   the timetable of real expeditions and landings an AI country carries out,
                   how far Japan's armies go into China by date, and the borders Japan watches
   scenario.ts     starting a game: the 1936 and September 1939 starts, and Free-for-all
@@ -400,8 +415,8 @@ Version 1.0 completes the plan, 1.1 fixes the war economy, 1.2 makes the front m
 each province, 1.3 adds armies with Hold and Push orders, 1.4 the right-click attack menu
 for land, sea and air, 1.4.1 makes Poland hold out about as long as it really did, 1.5
 brings the finer map of 280 provinces and deep attacks, 1.6 is a balance pass so that the
-war in Europe lasts about as long as it really did, 1.7 the world map and 1.8 the war in China
-(see CHANGELOG.md). Next: America and the Pacific join the war in Story mode (the rest of Stage M), then playing
+war in Europe lasts about as long as it really did, 1.7 the world map, 1.8 the war in China
+and 1.9 America and the Atlantic (see CHANGELOG.md). Next: the war in the Pacific (the rest of Stage M), then playing
 against friends over the internet (the engine is already deterministic, with a fingerprint
 check for it).
 

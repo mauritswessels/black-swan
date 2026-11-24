@@ -1,11 +1,11 @@
 // Runs scripts/track.ts for many seeds in parallel and prints a table.
-//   node scripts/sweep.mjs <label> <1936|1939> <n> [jobs]
+//   node scripts/sweep.mjs <label> <1936|1939> <n> [jobs] [first seed number, default 1]
 import { spawn } from 'node:child_process';
 import fs from 'node:fs';
-const [label = 'run', start = '1936', n = '8', jobs = '4'] = process.argv.slice(2);
+const [label = 'run', start = '1936', n = '8', jobs = '4', from = '1'] = process.argv.slice(2);
 const dir = `/tmp/sweep/${label}`;
 fs.mkdirSync(dir, { recursive: true });
-const seeds = Array.from({ length: Number(n) }, (_, i) => `sweep-${start}-${i + 1}`);
+const seeds = Array.from({ length: Number(n) }, (_, i) => `sweep-${start}-${i + Number(from)}`);
 let next = 0;
 const run = () => new Promise((resolve) => {
   const go = () => {

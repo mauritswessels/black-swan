@@ -188,10 +188,18 @@ export interface RouteLeg {
 
 /** The state of a country's sea trade today, zone by zone, and the share of cargo lost in all. */
 export function tradeRoute(w: NavalView, sea: SeaPicture, friends: Map<string, Set<string>>, country: string): { legs: RouteLeg[]; lost: number } {
+  return convoyRoute(w, sea, friends, country, TRADE_ROUTE[country] ?? []);
+}
+
+/**
+ * Cargo for `country` crossing these zones (1.9: Lend-Lease convoys, americas.ts): what raiders at
+ * war with it sink in each, against its own and its allies' escorts, by the same rule as its trade.
+ */
+export function convoyRoute(w: NavalView, sea: SeaPicture, friends: Map<string, Set<string>>, country: string, zones: number[]): { legs: RouteLeg[]; lost: number } {
   const mods = modCache(w.economies);
   const mates = friends.get(country);
   let kept = 1;
-  const legs = (TRADE_ROUTE[country] ?? []).map((zone) => {
+  const legs = zones.map((zone) => {
     let raiders = 0;
     let escorts = 0;
     for (const f of w.fleets) {

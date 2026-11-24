@@ -20,10 +20,10 @@
  * story events (story.ts). In a game with loose history each date is shifted by a few weeks or
  * months (`world.story.drift`).
  */
-import { COUNTRIES } from './countries';
+import { ATLANTIC, COUNTRIES } from './countries';
 import {
   addPact, alive, isolated, allied, alliesOf, ask, cannotGuarantee, claimOf, CLAIMS, CONTAIN_AGGRESSION, CONTAIN_TENSION, governmentOf, hasPact, isMajor, note, oddsAgainst, peaceAnswer, raiseTension, sendUltimatum, shift,
-  owedBy, sendHome, startIncident, startWar, strengths, warScore, type DipDraft,
+  neutralAmerica, owedBy, sendHome, startIncident, startWar, strengths, warScore, type DipDraft,
 } from './diplomacy';
 import { monthEnds } from './economy';
 import { beyond, PROVINCES } from './map';
@@ -477,6 +477,8 @@ export function toTheEnd(w: Pick<World, 'mode' | 'economies' | 'capitulated' | '
   if (w.mode !== 'story' || w.diplomacy.aims[warKey(a, b)]) return false;
   // Nor between Japan's side and China's while Japan's army rules in Tokyo (1.8): Japan's terms meant the end of China, and Chiang refused them for eight years.
   if ([a, b].some((x) => JAPAN_SIDE.includes(x)) && [a, b].some((x) => CHINA_SIDE.includes(x)) && alive(w, 'Japan') && governmentOf(w, 'Japan') === 'authoritarian') return true;
+  // America and the Dominions (1.9) make no separate peace with the Axis: unconditional surrender, as agreed at Casablanca in January 1943.
+  if ([a, b].some((x) => ATLANTIC.includes(x)) && [a, b].some((x) => x === 'Germany' || x === 'Italy')) return true;
   return [a, b].some((x) => (x === 'Germany' || x === 'Italy') && alive(w, x) && governmentOf(w, x) === 'fascist');
 }
 const JAPAN_SIDE = ['Japan', 'Manchukuo'];
@@ -498,7 +500,8 @@ export function aiDiplomacyOrders(w: World): Order[] {
   // 2. Containment: the big democracies promise to defend what an aggressor claims.
   const aggressors = COUNTRIES.map((c) => c.name).filter((a) => alive(w, a) && (dip.aggression[a] ?? 0) >= (dip.tension >= CONTAIN_TENSION ? 1 : CONTAIN_AGGRESSION));
   for (const c of COUNTRIES) {
-    if (!c.major || c.name === w.player || !alive(w, c.name) || governmentOf(w, c.name) !== 'democracy') continue;
+    // Not a neutral America (1.9): the Neutrality Acts forbade such promises.
+    if (!c.major || c.name === w.player || !alive(w, c.name) || governmentOf(w, c.name) !== 'democracy' || neutralAmerica(w, c.name) !== null) continue;
     const busy = w.wars.some((k) => k.split('|').includes(c.name) && k.split('|').some((x) => x !== c.name && isMajor(x)));
     if (busy) continue;
     for (const a of aggressors) {

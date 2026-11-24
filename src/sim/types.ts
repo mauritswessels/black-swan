@@ -226,6 +226,13 @@ export interface Economy {
   callUp?: number;
   /** Finished equipment waiting to be used, by kind: division-sets, wings of aircraft, or ships. */
   stock: Record<LineKind, number>;
+  /**
+   * Share of what the military factories make that is set aside for other countries (1.9: Cash and
+   * Carry, then Lend-Lease, see america.ts), 0 to LEND_LEASE_MAX. Missing in older saves means none.
+   */
+  lendLease?: number;
+  /** Equipment set aside for other countries and waiting for the next convoys, by kind. */
+  aid?: Partial<Record<LineKind, number>>;
   lines: Record<LineKind, Line>;
   /** Share of the imports that have to come by sea which enemy raiders and blockade are sinking, 0 to 1 (see navy.ts). */
   blockade: number;
@@ -565,6 +572,24 @@ export interface StoryState {
   lesson?: string;
   /** Soviet divisions kept in the Far East, facing Japan, off this map (story.ts). Missing in older saves means none. */
   farEast?: number;
+  /** American aid shipped across the oceans (1.9, america.ts): the last month's convoys, and the totals so far. */
+  lendLease?: LendLeaseRecord;
+}
+
+/** One month's convoys of American aid to one country, by one route, in factory-days of equipment (KIT_COST). */
+export interface Shipment {
+  to: string;
+  route: string;
+  sent: number;
+  sunk: number;
+  /** Cash and Carry: what the buyer paid, in millions. */
+  paid?: number;
+}
+export interface LendLeaseRecord {
+  day: number;
+  shipments: Shipment[];
+  /** Totals since the start, by country: sent and sunk, in factory-days. */
+  total: Record<string, { sent: number; sunk: number }>;
 }
 
 export type PactKind = 'alliance' | 'guarantee' | 'nonAggression';
@@ -725,6 +750,8 @@ export type Order =
   | { type: 'setRationing'; country: string; on: boolean }
   | { type: 'setImports'; country: string; on: boolean }
   | { type: 'setConscription'; country: string; level: number }
+  /** Set aside this share of the military factories' output for Lend-Lease (1.9, america.ts). */
+  | { type: 'setLendLease'; country: string; share: number }
   /** Put this many military factories on the line for one kind of division. */
   | { type: 'setLine'; country: string; unit: LineKind; factories: number }
   /** Set aside this many civilian factories for construction. */

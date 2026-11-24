@@ -23,10 +23,11 @@
  * Pure TypeScript with no UI. runStory changes the draft of the world that step() made.
  */
 import { CARDS, type HistoryCard } from '../content/history';
+import { AMERICA, axisDeclares, cashAndCarry, destroyersForBases, LEND_LEASE, LEND_LEASE_GOODS, lendLeaseAct, pearlHarbor, selectiveService, torch, torchBlocked, US } from './america';
 import { AGENDA, aimDay, dayOf, surpriseLanding } from './agenda';
 import { CHAPTERS } from './chapters';
 import { COUNTRIES } from './countries';
-import { addPact, alive, allied, ask, between, capitulate, dropPacts, endWar, governmentOf, hasPact, isMajor, note, raiseTension, relation, restore, setEventHook, shift, startWar, type DipDraft } from './diplomacy';
+import { addPact, alive, allied, AMERICAN_WAR_OPINION, ask, between, capitulate, dropPacts, endWar, governmentOf, hasPact, isMajor, note, raiseTension, relation, restore, setEventHook, shift, startWar, type DipDraft } from './diplomacy';
 import { afar, beyond, OUTPOST, partsOf, PROVINCES } from './map';
 import { Rng, seedFrom } from './rng';
 import type { ArmyEffect, Decision, LineKind, StartId, StoryState } from './types';
@@ -34,6 +35,7 @@ import { warKey } from './war';
 import { dateWords } from './dmath';
 
 export { dayOf } from './agenda';
+export { LEND_LEASE, LEND_LEASE_GOODS } from './america';
 
 /** Story mode ends on the day the real war in Europe ended. */
 export const VE_DAY = '1945-05-08';
@@ -58,7 +60,6 @@ export const SHOCK = { days: 120, power: 0.65 };
 const WEST = ['France', 'United Kingdom', 'Belgium', 'Netherlands', 'Luxembourg'];
 /** Greece and Yugoslavia when Germany attacks them in April 1941. */
 export const BALKAN_SHOCK = { days: 60, power: 0.6 };
-export const LEND_LEASE = { britain: '1941-03-11', soviet: '1941-10-01' };
 /**
  * The Soviet Far East. From the border war with Japan in 1938 the Soviet Union kept about a
  * quarter of its army in Siberia and Mongolia, which are not on this map. In the autumn of 1941
@@ -73,11 +74,6 @@ export const FAR_EAST = { from: '1938-07-29', share: 0.25, until: '1941-10-15', 
  * big sortie was in June 1942. From this date an AI Italy in Story mode keeps its fleets in port.
  */
 export const ITALIAN_FUEL = { country: 'Italy', from: '1942-11-01' };
-/** Sets of equipment, wings of aircraft and ships that arrive each month under Lend-Lease. */
-export const LEND_LEASE_GOODS: Record<string, Partial<Record<LineKind, number>>> = {
-  'United Kingdom': { infantry: 0.6, artillery: 0.2, armour: 0.2, fighter: 0.3, bomber: 0.15, escort: 0.3 },
-  'Soviet Union': { infantry: 0.6, armour: 0.3, fighter: 0.3 },
-};
 /**
  * Arms for China (1.8), in sets of equipment a month: from the Soviet Union from late 1937 until
  * Germany invaded it (about 900 aircraft, 1,100 guns and tens of thousands of machine guns, with
@@ -177,6 +173,17 @@ const finance = (d: DipDraft, name: string): string => {
   return e ? `${name} takes ${pct(e.taxRate)} of output in tax, covers ${pct(e.bondShare)} of any shortfall with bonds and prints the rest. Its prices are rising ${e.inflation.toFixed(1)}% a year${e.rationing ? ', with rationing' : ''}.` : '';
 };
 
+/** A whole number with commas, e.g. 12,400 (not toLocaleString, which differs between computers). */
+const thousands = (n: number): string => String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+/** Last month's American convoys, in words. */
+const aidLine = (d: DipDraft): string => {
+  const ll = d.story.lendLease;
+  if (!ll || !ll.shipments.length) return 'Nothing has been shipped yet.';
+  const sent = ll.shipments.reduce((a, s) => a + s.sent, 0);
+  const sunk = ll.shipments.reduce((a, s) => a + s.sunk, 0);
+  return `Last month ${thousands(sent)} factory-days of equipment were shipped to ${[...new Set(ll.shipments.map((s) => s.to))].join(', ')}, and ${pct(sunk / Math.max(1, sent))} was sunk.`;
+};
+
 /** "In your game ..." for each card. Cards not listed here are atrocity cards and carry ATROCITY_LINE. */
 const COMPARE: Record<string, Compare> = {
   rhineland: (d) => (did(d, 'rhineland') ? 'German troops marched in on the same day.' : d.player === 'Germany' ? 'The decision is on your desk.' : 'Germany has not moved.'),
@@ -221,7 +228,18 @@ const COMPARE: Record<string, Compare> = {
   },
   greece: (d) => (fighting(d, 'Italy', 'Greece') ? 'Italy has attacked Greece too.' : d.capitulated.includes('Greece') ? 'Greece has already fallen.' : 'Greece is at peace with Italy.'),
   compass: (d) => (fighting(d, 'Italy', 'United Kingdom') ? `Italy and Britain are at war. Tripoli is held by ${holder(d, P('Tripolitania'))} and Cairo by ${holder(d, capitalOf('Egypt'))}.` : 'Italy and Britain are not at war.'),
-  'lend-lease': (d) => (fighting(d, 'Germany', 'United Kingdom') ? 'American equipment now reaches Britain every month.' : 'Britain is not at war with Germany, so no American aid is flowing.'),
+  'lend-lease': (d) => (d.asleep?.includes(US) ? (fighting(d, 'Germany', 'United Kingdom') ? 'American equipment now reaches Britain every month.' : 'Britain is not at war with Germany, so no American aid is flowing.') : d.story.fired.includes('lend-lease-act') ? `America has passed the Lend-Lease Act too. ${aidLine(d)}` : 'America has not passed a Lend-Lease Act.'),
+  'cash-and-carry': (d) => (d.story.fired.includes('cash-and-carry') ? `America sells arms for cash too. ${aidLine(d)}` : 'America sells no arms to countries at war.'),
+  destroyers: (d) => also(d.story.fired.includes('destroyers-for-bases'), 'America has traded its old destroyers for British bases too.', 'America has kept its destroyers.'),
+  pq17: (d) => {
+    const t = d.story.lendLease?.total['Soviet Union'];
+    return t ? `American aid shipped to the Soviet Union so far: ${thousands(t.sent)} factory-days of equipment, ${pct(t.sunk / Math.max(1, t.sent))} of it sunk on the way.` : 'No American aid has reached the Soviet Union.';
+  },
+  torch: (d) => (d.story.fired.includes('torch') ? 'American troops have landed in French North Africa too.' : fighting(d, US, 'Germany') ? 'America is at war with Germany, but there has been no landing in North Africa.' : 'America is not at war with Germany.'),
+  'black-may': (d) => {
+    const t = d.story.lendLease?.total['United Kingdom'];
+    return t ? `American aid shipped to Britain so far: ${thousands(t.sent)} factory-days of equipment, ${pct(t.sunk / Math.max(1, t.sent))} of it sunk on the way.` : 'No American aid has crossed the Atlantic.';
+  },
   balkans: (d) => `${status(d, 'Yugoslavia')}${fighting(d, 'Germany', 'Yugoslavia') ? ' and at war with Germany' : ''}; ${status(d, 'Greece').replace(/^Greece/, 'Greece')}${fighting(d, 'Germany', 'Greece') ? ' and at war with Germany' : ''}.`,
   barbarossa: eastFront,
   xian: (d) => also(allied(d.diplomacy, 'China', 'Chinese Communists'), 'The Nationalists and the Communists are allies against Japan too.', d.capitulated.includes('China') ? 'China has already been beaten.' : 'The Nationalists and the Communists have not joined forces.'),
@@ -234,9 +252,9 @@ const COMPARE: Record<string, Compare> = {
   'khalkhin-gol': (d) => (fighting(d, 'Japan', 'Mongolia') || fighting(d, 'Manchukuo', 'Mongolia') ? 'The battle on the Khalkhin Gol is being fought too.' : `Eastern Mongolia is held by ${holder(d, P('Eastern Mongolia'))}.`),
   'china-inflation': (d) => (d.capitulated.includes('China') ? 'China has already been beaten.' : `${finance(d, 'China')} Its prices are ${Math.round(d.economies.China?.priceLevel ?? 100)} against 100 at the start.`),
   'neutrality-pact': (d) => also(hasPact(d.diplomacy, 'nonAggression', 'Japan', 'Soviet Union'), 'Japan and the Soviet Union have signed their pact too.', fighting(d, 'Japan', 'Soviet Union') ? 'Japan and the Soviet Union are at war.' : 'There is no pact between Japan and the Soviet Union.'),
-  'atlantic-charter': () => 'In Story mode the United States sits out the war in this version. Its help reaches Britain and the Soviet Union as Lend-Lease while they fight Germany.',
+  'atlantic-charter': (d) => (d.asleep?.includes(US) ? 'In this saved game the United States sits out the war. Its help reaches Britain and the Soviet Union as Lend-Lease while they fight Germany.' : fighting(d, US, 'Germany') ? 'America is already at war with Germany.' : `America is still neutral. Its war support is ${Math.round(d.economies[US]?.warSupport ?? 0)}; Congress would vote for war at ${AMERICAN_WAR_OPINION}.`),
   moscow: eastFront,
-  usa: (d) => (d.capitulated.includes('Germany') ? 'Germany has already surrendered.' : 'In Story mode the United States sits out the war in this version, so no American army will arrive. Lend-Lease continues.'),
+  usa: (d) => (d.capitulated.includes('Germany') ? 'Germany has already surrendered.' : d.asleep?.includes(US) ? 'In this saved game the United States sits out the war, so no American army will arrive. Lend-Lease continues.' : fighting(d, US, 'Germany') ? 'America is at war with Germany too.' : 'America is not at war with Germany.'),
   stalingrad: eastFront,
   'italy-armistice': (d) => (d.capitulated.includes('Italy') ? 'Italy has been beaten too.' : fighting(d, 'Italy', 'United Kingdom') ? `Italy is still in the war. Enemies hold ${pct(lostShare(d, 'Italy'))} of its victory points.` : 'Italy is not at war with Britain.'),
   'd-day': (d) => `Paris is held by ${holder(d, capitalOf('France'))} and Normandy by ${holder(d, P('Normandy'))}.`,
@@ -481,6 +499,83 @@ const EVENTS: StoryEvent[] = [
       if (option === 0) signArmistice(d);
     },
   },
+  // ----- America (1.9) -----
+  {
+    id: 'cash-and-carry', date: AMERICA.cashAndCarry, for: [US],
+    when: (d) => ['United Kingdom', 'France'].some((x) => alive(d, x) && fighting(d, x, 'Germany')),
+    title: () => 'Cash and Carry',
+    text: () => 'Britain and France are at war with Germany and want to buy American aircraft and guns. The Neutrality Act forbids selling arms to countries at war. The President asks Congress to allow it, if the buyers pay in cash and carry the goods away in their own ships, so that no American ship or loan is put at risk.',
+    options: () => [
+      { label: 'Sell arms for cash', effect: 'What America really did. You may set aside a share of your arms factories for Britain and France (Production screen); they pay for what arrives. Relations with them +5, with Germany -5.' },
+      { label: 'Stay strictly neutral', effect: 'Nothing is sold. Britain and France fight with what they make themselves.' },
+    ],
+    historical: () => 0,
+    apply: (d, _me, option) => void (option === 0 && cashAndCarry(d)),
+  },
+  {
+    id: 'destroyers-for-bases', date: AMERICA.destroyers, for: [US],
+    when: (d) => alive(d, 'United Kingdom') && ['Germany', 'Italy'].some((x) => fighting(d, 'United Kingdom', x)),
+    title: () => 'Destroyers for Bases',
+    text: () => 'France has fallen and Britain fights on alone. Its convoys are losing ships to U-boats faster than it can build escorts, and Churchill asks for fifty of your old destroyers. In return Britain would lease you bases from Newfoundland to the Caribbean for 99 years.',
+    options: () => [
+      { label: 'Trade the destroyers', effect: `What America really did. ${3} escort flotillas from your Atlantic Squadron join Britain's convoys. Relations with Britain +10, with Germany -10.` },
+      { label: 'Keep them', effect: 'Your navy keeps its ships. Britain guards its convoys with what it has.' },
+    ],
+    historical: () => 0,
+    apply: (d, _me, option) => void (option === 0 && destroyersForBases(d)),
+  },
+  {
+    id: 'selective-service', date: AMERICA.draft, for: [US],
+    when: (d) => (d.economies[US]?.conscription ?? 1) < 1,
+    title: () => 'The first peacetime draft',
+    text: () => 'Your army is smaller than Portugal\'s. The Selective Training and Service Act would call up men aged 21 to 35 for a year of training, the first call-up in peacetime in American history. Many in Congress say it is a step toward war.',
+    options: () => [
+      { label: 'Sign the Act', effect: 'What America really did. Conscription law: Volunteer reserve. More men for new divisions.' },
+      { label: 'Keep a volunteer army', effect: 'Nothing changes. You can still change the law yourself later.' },
+    ],
+    historical: () => 0,
+    apply: (d, _me, option) => void (option === 0 && selectiveService(d)),
+  },
+  {
+    id: 'lend-lease-act', date: AMERICA.lendLease, for: [US],
+    when: (d) => ['Germany', 'Italy'].some((x) => ['United Kingdom', 'France', 'Soviet Union'].some((y) => alive(d, y) && fighting(d, y, x))),
+    title: () => 'Lend-Lease',
+    text: () => 'Britain has nearly run out of dollars to pay for American arms. The President proposes to lend them instead, like "lending your garden hose to a neighbour whose house is on fire", to be returned or paid back in kind after the war. America would become "the arsenal of democracy".',
+    options: () => [
+      { label: 'Pass the Lend-Lease Act', effect: 'What America really did. The arms you set aside (20% to begin with, Production screen) go free to Britain, and later to the Soviet Union and China, while they fight the Axis. Convoys cross the ocean, and U-boats sink some of them.' },
+      { label: 'Cash only', effect: 'Britain must pay for whatever it buys, and soon it cannot.' },
+    ],
+    historical: () => 0,
+    apply: (d, _me, option) => void (option === 0 && lendLeaseAct(d)),
+  },
+  {
+    id: 'usa-germany', date: AMERICA.germanyDeclares, for: ['Germany'],
+    when: (d) => d.story.fired.includes('pearl-harbor') && alive(d, US) && !fighting(d, 'Germany', US) && fighting(d, 'Germany', 'United Kingdom'),
+    title: () => 'War with America?',
+    text: () => 'Japan has attacked the American fleet at Pearl Harbor. Your treaty with Japan does not oblige you to join in, since Japan struck first. But American destroyers already escort British convoys and fire on your submarines, and Lend-Lease arms your enemies. Declaring war would let your U-boats hunt off the American coast; it would also give the greatest industrial power on earth a reason to send its army to Europe.',
+    options: () => [
+      { label: 'Declare war on the United States', effect: 'What Germany really did, on 11 December 1941. America enters the war in Europe, and Italy follows you.' },
+      { label: 'Leave America alone', effect: 'America stays neutral for now. Its people may still decide for war, now that it has been attacked.' },
+    ],
+    historical: () => 0,
+    apply: (d, _me, option) => {
+      if (option !== 0) return;
+      axisDeclares(d, 'Germany');
+      if (d.player !== 'Italy' && alive(d, 'Italy') && governmentOf(d, 'Italy') === 'fascist' && allied(d.diplomacy, 'Germany', 'Italy')) axisDeclares(d, 'Italy');
+    },
+  },
+  {
+    id: 'torch', date: AMERICA.torch, for: [US],
+    when: (d) => !torchBlocked(d),
+    title: () => 'Operation Torch',
+    text: () => 'Your army is not ready to cross the Channel this year, but your President wants American troops fighting Germany in 1942. The British propose landings in French North Africa, held by the government at Vichy. Its generals there may fight, or may change sides.',
+    options: () => [
+      { label: 'Land in North Africa', effect: `What America really did. ${6} of your divisions land in Morocco and Algeria, which change sides. Germany rushes troops to Tunisia and occupies the rest of France.` },
+      { label: 'Wait', effect: 'No landing. You plan your own war.' },
+    ],
+    historical: () => 0,
+    apply: (d, _me, option) => void (option === 0 && torch(d)),
+  },
 ];
 const EVENT_BY_ID = new Map(EVENTS.map((e) => [e.id, e]));
 
@@ -492,7 +587,7 @@ setEventHook((d: DipDraft, x: Decision, option: number) => {
 });
 
 function askEvent(d: DipDraft, e: StoryEvent, me: string): void {
-  ask(d, { country: me, kind: 'event', event: e.id, from: e.id.startsWith('spain') ? 'Spain' : e.id.includes('norway') ? 'Norway' : e.id.includes('poland') ? 'Poland' : e.id.includes('armistice') ? 'France' : e.id === 'rhineland-germany' ? 'France' : 'Germany', title: e.title(me), text: e.text(me), options: e.options(me), fallback: e.historical(me) });
+  ask(d, { country: me, kind: 'event', event: e.id, from: e.id === 'usa-germany' ? US : e.for.includes(US) ? 'United Kingdom' : e.id.startsWith('spain') ? 'Spain' : e.id.includes('norway') ? 'Norway' : e.id.includes('poland') ? 'Poland' : e.id.includes('armistice') ? 'France' : e.id === 'rhineland-germany' ? 'France' : 'Germany', title: e.title(me), text: e.text(me), options: e.options(me), fallback: e.historical(me) });
 }
 
 // ---------- one day ----------
@@ -640,13 +735,17 @@ export function runStory(d: DipDraft, monthEnd: boolean, seed: number): void {
   }
 
   if (monthEnd) farEast(d);
+  // Pearl Harbor, and Germany's declaration of war on America four days later (america.ts).
+  pearlHarbor(d);
   totalWar(d);
   allies(d);
   greeceGivesUp(d);
   italyChangesSides(d);
 
-  // Lend-Lease, once a month.
-  if (monthEnd) {
+  // Lend-Lease, once a month: from 1.9 it is shipped from America's own factories (america.ts).
+  // A game saved before 1.9, with America asleep, keeps the equipment of 1.8 that came from off the map.
+  const usAsleep = !!d.asleep?.includes(US);
+  if (monthEnd && usAsleep) {
     for (const [name, from] of [['United Kingdom', LEND_LEASE.britain], ['Soviet Union', LEND_LEASE.soviet]] as const) {
       const e = d.economies[name];
       if (!e || d.day < dayOf(d.startDate, from) || !alive(d, name) || !fighting(d, name, 'Germany')) continue;
@@ -661,7 +760,7 @@ export function runStory(d: DipDraft, monthEnd: boolean, seed: number): void {
   // Arms for China, once a month, while it fights Japan.
   if (monthEnd && d.economies.China && alive(d, 'China') && fighting(d, 'China', 'Japan')) {
     for (const aid of CHINA_AID) {
-      if (d.day < dayOf(d.startDate, aid.from) || d.day >= dayOf(d.startDate, aid.until) || !alive(d, aid.by) || fighting(d, aid.by, 'China')) continue;
+      if (d.day < dayOf(d.startDate, aid.from) || d.day >= dayOf(d.startDate, aid.until) || !alive(d, aid.by) || fighting(d, aid.by, 'China') || (aid.by === US && !usAsleep)) continue;
       for (const [k, n] of Object.entries(aid.goods) as [LineKind, number][]) d.economies.China.stock[k] += n;
       if (!s.fired.includes(`china-aid:${aid.by}`)) {
         s.fired = [...s.fired, `china-aid:${aid.by}`];

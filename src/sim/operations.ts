@@ -16,6 +16,7 @@
  *
  * In Story mode only, and only for a country the AI leads: a player plans their own landings.
  */
+import { ATLANTIC } from './countries';
 import { partsOf, PROVINCES } from './map';
 import type { World } from './types';
 import { SHOCK } from './story';
@@ -53,6 +54,14 @@ const named = (...names: string[]): number[] => names.map(P).flatMap(partsOf);
 const FRANCE = named('Île-de-France', 'Lorraine', 'Provence', 'Burgundy', 'Gascony', 'Guyenne', 'Roussillon', 'Languedoc', 'Poitou', 'Brittany', 'Normandy', 'Limousin', 'Orléanais');
 /** Italy itself, without Libya: holding Libya is not a landing in Italy. */
 const ITALY = named('Sicily', 'Sardinia', 'Calabria', 'Campania', 'Apulia', 'Lazio', 'Umbria', 'Emilia', 'Lombardy', 'Piedmont', 'Veneto');
+/** Great Britain and Northern Ireland, where the American and Canadian armies gathered. */
+const BRITAIN = named('Northern Ireland', 'Wales', 'Yorkshire', 'Southern England', 'Northern England', 'Scottish Lowlands', 'London', 'South West England', 'Scottish Highlands');
+/** North Africa from Morocco to Egypt. */
+const NORTH_AFRICA = named('Fez', 'Marrakech', 'Oran', 'Constantine', 'Tunisia', 'Tripolitania', 'Cyrenaica', 'Western Desert', 'Sollum', 'Cairo');
+/** Egypt and Libya: the Western Desert. */
+const DESERT = named('Western Desert', 'Sollum', 'Cairo', 'Sinai', 'Tripolitania', 'Cyrenaica');
+const LOW_COUNTRIES = (): number[] => landOf('Belgium', 'Netherlands', 'Luxembourg');
+const axisWar = (w: World, c: string): string | null => (!atWar(w, c, 'Germany') && !atWar(w, c, 'Italy') ? 'it is not at war with the Axis' : null);
 const first = (...checks: (string | null | false)[]): string | null => (checks.find((c) => !!c) as string | undefined) ?? null;
 const gone = (w: World, name: string): boolean => w.capitulated.includes(name) || w.story.armistice.includes(name);
 /** Days since Germany attacked through the Low Countries (when the shock of May 1940 began, story.ts), or -1. */
@@ -78,27 +87,90 @@ export const OPERATIONS: Operation[] = [
   },
   {
     id: 'op-husky', by: 'United Kingdom', kind: 'landing', date: '1943-07-10', until: '1945-05-08',
-    targets: [P('Sicily'), P('Calabria'), P('Sardinia')], area: ITALY, size: 8, follow: 20,
+    targets: [P('Sicily'), P('Calabria'), P('Sardinia')], area: ITALY, size: 8, follow: 14,
     needs: (w) => first(!atWar(w, 'United Kingdom', 'Italy') && 'it is not at war with Italy'),
     history: 'On 10 July 1943 British, Canadian and American troops landed in Sicily. The island was taken in five weeks, and within a fortnight of the landing Mussolini had fallen.',
   },
   {
     id: 'op-avalanche', by: 'United Kingdom', kind: 'landing', date: '1943-09-03', until: '1945-05-08',
-    targets: [P('Calabria'), P('Campania'), P('Apulia')], area: ITALY, size: 8, follow: 24,
+    targets: [P('Calabria'), P('Campania'), P('Apulia')], area: ITALY, size: 8, follow: 16,
     needs: (w) => first(!atWar(w, 'United Kingdom', 'Germany') && !atWar(w, 'United Kingdom', 'Italy') && 'it is not at war in Italy', ![P('Sicily'), P('Calabria')].some((p) => friendlyTo(w, 'United Kingdom', p)) && 'Sicily has not been taken'),
     history: 'British troops crossed to Calabria on 3 September 1943 and landed at Salerno on the 9th. The campaign up the length of Italy lasted until May 1945.',
   },
   {
     id: 'op-overlord', by: 'United Kingdom', kind: 'landing', date: '1944-06-06', until: '1945-05-08',
-    targets: [P('Normandy'), P('Brittany'), P('Holland')], area: [...FRANCE, ...landOf('Belgium', 'Netherlands', 'Luxembourg')], size: 10, follow: 50,
+    targets: [P('Normandy'), P('Brittany'), P('Holland')], area: [...FRANCE, ...LOW_COUNTRIES()], size: 8, follow: 35,
     needs: (w) => first(!atWar(w, 'United Kingdom', 'Germany') && 'it is not at war with Germany'),
     history: 'On 6 June 1944 the Allies landed in Normandy. Paris was freed on 25 August and the German army in France was destroyed in the Falaise pocket.',
   },
   {
-    id: 'op-dragoon', by: 'United Kingdom', kind: 'landing', date: '1944-08-15', until: '1945-05-08',
+    id: 'op-dragoon', by: 'United States', kind: 'landing', date: '1944-08-15', until: '1945-05-08',
     targets: [P('Provence'), P('Languedoc')], area: FRANCE, size: 6, follow: 12,
-    needs: (w) => first(!atWar(w, 'United Kingdom', 'Germany') && 'it is not at war with Germany'),
+    needs: (w) => first(!atWar(w, 'United States', 'Germany') && 'it is not at war with Germany'),
     history: 'On 15 August 1944 American and French troops landed in Provence and advanced up the Rhône valley.',
+  },
+  // ----- America and the Dominions (1.9) -----
+  {
+    id: 'op-bolero', by: 'United States', kind: 'help', date: '1942-01-26', until: '1945-05-08',
+    targets: [P('Northern Ireland'), P('South West England'), P('Southern England'), P('Wales')], area: BRITAIN, size: 0, follow: 12,
+    needs: (w) => first(!atWar(w, 'United States', 'Germany') && 'it is not at war with Germany', gone(w, 'United Kingdom') && 'Britain has fallen'),
+    history: 'The first American troops reached Northern Ireland on 26 January 1942. By June 1944 more than a million and a half Americans were in Britain, waiting for the invasion of France (Operation Bolero).',
+  },
+  {
+    id: 'op-torch', by: 'United States', kind: 'landing', date: '1942-11-08', until: '1945-05-08',
+    targets: [P('Oran'), P('Rabat'), P('Constantine')], area: NORTH_AFRICA, size: 6, follow: 10,
+    needs: (w) => axisWar(w, 'United States'),
+    history: 'On 8 November 1942 American and British troops landed in Morocco and Algeria, held by Vichy France. The French changed sides after three days; Germany rushed troops into Tunisia, where the Axis armies in Africa surrendered in May 1943.',
+  },
+  {
+    id: 'op-husky-us', by: 'United States', kind: 'landing', date: '1943-07-10', until: '1945-05-08',
+    targets: [P('Sicily'), P('Calabria'), P('Sardinia')], area: ITALY, size: 4, follow: 8,
+    needs: (w) => first(!atWar(w, 'United States', 'Italy') && !atWar(w, 'United States', 'Germany') && 'it is not at war in Italy'),
+    history: 'Patton\'s Seventh Army landed in the south-west of Sicily beside Montgomery\'s Eighth, and raced through Palermo to Messina.',
+  },
+  {
+    id: 'op-avalanche-us', by: 'United States', kind: 'landing', date: '1943-09-09', until: '1945-05-08',
+    targets: [P('Campania'), P('Calabria'), P('Lazio')], area: ITALY, size: 4, follow: 10,
+    needs: (w) => first(!atWar(w, 'United States', 'Germany') && !atWar(w, 'United States', 'Italy') && 'it is not at war in Italy', ![P('Sicily'), P('Calabria')].some((p) => friendlyTo(w, 'United States', p)) && 'Sicily has not been taken'),
+    history: 'The American Fifth Army landed at Salerno on 9 September 1943 and nearly lost the beachhead before it reached Naples on 1 October.',
+  },
+  {
+    id: 'op-overlord-us', by: 'United States', kind: 'landing', date: '1944-06-06', until: '1945-05-08',
+    targets: [P('Normandy'), P('Brittany'), P('Holland')], area: [...FRANCE, ...LOW_COUNTRIES()], size: 6, follow: 25,
+    needs: (w) => first(!atWar(w, 'United States', 'Germany') && 'it is not at war with Germany'),
+    history: 'Two of the five beaches in Normandy, Utah and Omaha, were American. By the end of the war in Europe the United States had sixty divisions on the Western Front.',
+  },
+  {
+    id: 'op-canada', by: 'Canada', kind: 'help', date: '1939-12-17', until: '1945-05-08',
+    targets: [P('Southern England'), P('South West England'), P('Wales')], area: BRITAIN, size: 0, follow: 4,
+    needs: (w) => first(!atWar(w, 'Canada', 'Germany') && 'it is not at war with Germany', gone(w, 'United Kingdom') && 'Britain has fallen'),
+    history: 'The 1st Canadian Division landed in Britain in December 1939. The Canadian Army in Britain grew to five divisions, guarding the south coast for years before it fought in Sicily, Italy and Normandy.',
+  },
+  {
+    id: 'op-overlord-ca', by: 'Canada', kind: 'landing', date: '1944-06-06', until: '1945-05-08',
+    targets: [P('Normandy'), P('Holland'), P('Brittany')], area: [...FRANCE, ...LOW_COUNTRIES()], size: 4, follow: 5,
+    needs: (w) => first(!atWar(w, 'Canada', 'Germany') && 'it is not at war with Germany'),
+    history: 'The 3rd Canadian Division landed on Juno beach on D-Day. The First Canadian Army then cleared the Channel coast and the Scheldt, and freed much of the Netherlands.',
+  },
+  {
+    id: 'op-anzac', by: 'Australia', kind: 'help', date: '1940-02-12', until: '1943-01-31',
+    targets: [P('Cairo'), P('Western Desert'), P('Sinai')], area: DESERT, size: 0, follow: 3,
+    needs: (w) => first(axisWar(w, 'Australia')),
+    ends: (w) => w.day >= dayOf(w.startDate, '1943-02-01'),
+    history: 'Three Australian divisions fought in North Africa, Greece, Crete and Syria: the 9th held Tobruk through a siege of eight months in 1941 and fought at El Alamein. With Japan at the door they went home, the last in February 1943.',
+  },
+  {
+    id: 'op-kiwi', by: 'New Zealand', kind: 'help', date: '1940-02-12', until: '1945-05-08',
+    targets: [P('Cairo'), P('Western Desert'), P('Sinai')], area: DESERT, size: 0, follow: 1,
+    needs: (w) => first(axisWar(w, 'New Zealand')),
+    history: 'The 2nd New Zealand Division fought in Greece, Crete, the Western Desert, Tunisia and Italy, one of the most famous divisions of the war.',
+  },
+  {
+    id: 'op-springbok', by: 'South Africa', kind: 'help', date: '1940-12-01', until: '1943-05-31',
+    targets: [P('Cairo'), P('Western Desert'), P('Sinai')], area: DESERT, size: 0, follow: 2,
+    needs: (w) => first(axisWar(w, 'South Africa')),
+    ends: (w) => w.day >= dayOf(w.startDate, '1943-06-01'),
+    history: 'South African divisions fought in East Africa and the Western Desert: the 2nd was captured at Tobruk in June 1942, the 1st fought at El Alamein. Only volunteers served abroad.',
   },
   // ----- East Asia (1.8) -----
   {
@@ -152,9 +224,17 @@ export function laterLandings(w: World, country: string): Set<number> {
   for (const o of OPERATIONS) if (o.by === country && o.kind === 'landing' && w.day < dayOf(w.startDate, o.date)) for (const p of [...o.targets, ...o.area]) out.add(p);
   // Nor on Germany's own coast, or in Denmark next door, before Normandy: the real Allies never tried
   // it, and a lucky landing that walked into an empty Berlin in 1941 (or from Jutland in 1943) ended the war in weeks.
-  const overlord = OPERATIONS.find((o) => o.id === 'op-overlord')!;
-  if (country === overlord.by && w.day < dayOf(w.startDate, overlord.date)) for (const p of PROVINCES) if (p.owner === 'Germany' || p.owner === 'Denmark') out.add(p.id);
+  const overlord = OPERATIONS.find((o) => o.id.startsWith('op-overlord') && o.by === country);
+  if (overlord && w.day < dayOf(w.startDate, overlord.date)) for (const p of PROVINCES) if (p.owner === 'Germany' || p.owner === 'Denmark') out.add(p.id);
   return out;
+}
+
+/**
+ * America and the Dominions (1.9) send divisions overseas only for their operations: no landings
+ * of the commander's own. Story mode, AI only.
+ */
+export function onlyOperations(w: Pick<World, 'mode' | 'player' | 'story'>, country: string): boolean {
+  return w.mode === 'story' && country !== w.player && !w.story.lesson && ATLANTIC.includes(country);
 }
 
 /**

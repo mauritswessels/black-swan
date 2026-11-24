@@ -62,6 +62,8 @@ export const CHAPTERS: Chapter[] = [
       ],
       Italy: [{ text: 'Albania is yours', test: (w) => holds(w, 'Italy', P('Albania')) }, army('Italy', 32), stable('Italy'), prices('Italy', 10)],
       'Soviet Union': [army('Soviet Union', 85), { text: 'At least 20 military factories', test: (w) => milFactories(w, 'Soviet Union') >= 20 }, { text: 'At peace with Germany', test: (w) => !fighting(w, 'Soviet Union', 'Germany') }, stable('Soviet Union')],
+      // 1.9: America, neutral and nearly unarmed.
+      'United States': [{ text: 'At peace with every country', test: (w) => !w.wars.some((k) => k.split('|').includes('United States')) }, { text: 'At least 10 military factories', test: (w) => milFactories(w, 'United States') >= 10 }, stable('United States', 55)],
       Poland: [army('Poland', 34), { text: 'A great power besides France has promised to defend you', test: (w) => promised(w, 'United Kingdom', 'Poland') || promised(w, 'Soviet Union', 'Poland') || promised(w, 'Italy', 'Poland') || promised(w, 'Germany', 'Poland') }, stable('Poland')],
     },
   },
@@ -83,6 +85,11 @@ export const CHAPTERS: Chapter[] = [
         army('Soviet Union', 130),
         { text: 'No enemy soldier stands on Soviet soil', test: (w) => homeFree(w, 'Soviet Union') },
       ],
+      'United States': [
+        { text: 'Britain is still fighting', test: (w) => standing(w, 'United Kingdom') },
+        { text: 'At least 30 military factories: "the arsenal of democracy"', test: (w) => milFactories(w, 'United States') >= 30 },
+        { text: 'No American has died in Europe\'s war', hard: true, test: (w) => !w.wars.some((k) => k.split('|').includes('United States')) },
+      ],
       Poland: [alive('Poland', 'Warsaw'), { text: 'No enemy soldier stands on Polish soil', hard: true, test: (w) => standing(w, 'Poland') && homeFree(w, 'Poland') }],
     },
   },
@@ -95,6 +102,7 @@ export const CHAPTERS: Chapter[] = [
       Germany: [alive('Germany', 'Berlin'), { text: 'No enemy soldier stands on German soil', test: (w) => standing(w, 'Germany') && homeFree(w, 'Germany') }, stable('Germany', 40)],
       Italy: [alive('Italy', 'Rome'), { text: 'No enemy soldier stands on Italian soil', test: (w) => standing(w, 'Italy') && homeFree(w, 'Italy') }, stable('Italy', 40)],
       'Soviet Union': [alive('Soviet Union', 'Moscow'), { text: 'Leningrad and Stalingrad are yours', test: (w) => holds(w, 'Soviet Union', P('Leningrad')) && holds(w, 'Soviet Union', P('Stalingrad')) }, germanyBeaten],
+      'United States': [germanyBeaten, { text: 'American troops hold Paris or Rome on the last day', test: (w) => holds(w, 'United States', capital('France')) || holds(w, 'United States', capital('Italy')) }, prices('United States', 10)],
       Poland: [alive('Poland', 'Warsaw'), germanyBeaten, { text: 'Poland has all its land of 1936', hard: true, test: (w) => standing(w, 'Poland') && PROVINCES.every((p) => p.owner !== 'Poland' || (w.owner[p.id] === 'Poland' && w.controller[p.id] === 'Poland')) }],
     },
   },

@@ -3,6 +3,61 @@
 Versions from 1.0.0 on are numbered. Each one starts with a heading like `## 1.0.1: What it brings`;
 that section becomes the notes on the GitHub release and on the update card in the app.
 
+## 1.9.0: America and the Atlantic (2026-11-24)
+
+The third part of Stage M. In Story mode the United States and the British Dominions (Canada,
+Australia, New Zealand and South Africa) now play their part, and Lend-Lease is shipped across
+the ocean for real instead of appearing from off the map.
+
+- **America is a great power you can lead.** It starts with the largest economy on Earth, a
+  tiny army and a people who want to stay out. Until Pearl Harbor its war support is held down
+  ("most Americans want to stay out of other people's wars"), and under the Neutrality Acts it
+  may not declare war or promise to defend anyone until war support reaches 60.
+- **The road to war, on the real dates.** Cash and Carry (November 1939: Britain and France buy
+  American arms for cash), Destroyers for Bases (September 1940: three escort flotillas join
+  Britain's convoys), the first peacetime draft, and the Lend-Lease Act (March 1941). An AI
+  America does what was really done; if you lead America, each one is a decision. From
+  September 1941 U-boats that sink American cargo give America a cause for war. Pearl Harbor
+  (7 December 1941) is not fought on the map yet, but it unites the country, and four days
+  later Germany and Italy declare war on America, which joins the Allies. A German player is
+  asked whether to declare.
+- **Lend-Lease is shipped for real.** America sets aside a share of what its arms factories
+  make (up to half, on the Production screen) and once a month the convoys sail: to Britain
+  across the North Atlantic, to the Soviet Union across the Pacific to Vladivostok, through Iran
+  and by the Arctic convoys to Murmansk, and to China over the Burma Road (or the Hump, by air,
+  if Burma is lost). Each country gets the equipment it asks for. Raiders at war with the
+  country a convoy sails for sink their share on the way, by the same rule as a country's own
+  trade. Under Cash and Carry Britain and France pay for what they receive. The Production
+  panel shows last month's convoys and what was sunk, for America and for everyone who receives.
+- **American troops in Europe.** Operation Torch (8 November 1942): American divisions land in
+  Morocco and Algeria, the French there change sides, Germany rushes troops into Tunisia and
+  occupies the rest of France (Case Anton), and the French fleet scuttles itself at Toulon. Then
+  American landings in Sicily, at Salerno, in Normandy beside the British and in Provence, and
+  an army in Britain from January 1942 (Operation Bolero). Britain's own landings are a little
+  smaller to make room. America and the Dominions send divisions abroad only for these planned
+  operations, and they make no separate peace with Germany or Italy.
+- **The Dominions** go to war beside Britain against every country it fights in Europe, in one
+  line of news, and make peace when it does. Canada sends a corps to Britain and lands in
+  Normandy; Australia, New Zealand and South Africa send divisions to Egypt (the Australians and
+  South Africans go home in 1943, as they did). Their call-ups stay small, as volunteers for
+  service abroad.
+- **Balance.** In 16 AI-only wars from 1939 and 8 from 1936 Germany surrenders later than in 1.8:
+  a median of about August 1944 from 1939 (1.8: late June) and November 1944 from 1936 (1.8: July),
+  a little closer to the real May 1945. Moscow falls in 1 of the 24 wars (the Soviet Union
+  surrenders in March 1942 in that one); in 1.8 it fell in none. Known gaps: Germany's U-boats are
+  worn down by the end of 1940, so few convoys are sunk after that, and China gets more
+  Lend-Lease than it really did (docs/balance-stage-m3.md).
+- **New:** 5 history cards (Cash and Carry, Destroyers for Bases, the Arctic convoys, Operation
+  Torch, the Battle of the Atlantic), 3 codex terms (Cash and Carry, Neutrality Acts, Dominion),
+  two American national plans (the Two-Ocean Navy Act and the Victory Program), and chapter
+  objectives for America.
+- **Speed.** About a third more work in the war years: 1943 takes about 30 ms a game day on the
+  cloud machine, inside the 60 ms the fastest speed allows. The speed tests (tests/speed/) now run
+  on their own after the other tests, so the others no longer slow them down on GitHub.
+- **Saves.** The save format is unchanged (version 15). Story games saved before 1.9 keep
+  America and the Dominions out of their war, with the Lend-Lease of 1.8; start a new game for
+  the war in the Atlantic.
+
 ## 1.8.0: The war in China (2026-11-23)
 
 The second part of Stage M. In Story mode Japan, China, the Chinese Communists, Manchukuo and

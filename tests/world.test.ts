@@ -110,12 +110,6 @@ describe('movement', () => {
     const play = () => run(step(start, [{ type: 'move', unit: id, to: berlin }]), 20);
     expect(play()).toEqual(play());
   });
-
-  it('simulates a year of the whole map quickly', () => {
-    const t0 = performance.now();
-    run(newWorld('story', 'speed'), 366);
-    expect(performance.now() - t0).toBeLessThan(2000);
-  });
 });
 
 describe('the codex', () => {
